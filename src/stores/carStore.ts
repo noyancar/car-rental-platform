@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import { mockCars } from '../lib/mockData';
+import { supabase } from '../lib/supabase';
 import type { Car } from '../types';
 
 interface CarFilters {
@@ -18,64 +18,112 @@ interface CarState {
   error: string | null;
   filters: CarFilters;
   
-  fetchCars: (filters?: CarFilters) => void;
-  fetchFeaturedCars: () => void;
-  fetchCarById: (id: number) => void;
-  setFilters: (filters: CarFilters) => void;
+  fetchCars: (filters?: CarFilters) => Promise<void>;
+  fetchFeaturedCars: () => Promise<void>;
+  fetchCarById: (id: number) => Promise<void>;
+  setFilters: (filters: CarFilters) => Promise<void>;
   clearFilters: () => void;
 }
 
 export const useCarStore = create<CarState>((set, get) => ({
-  cars: mockCars,
-  featuredCars: mockCars.slice(0, 4),
+  cars: [],
+  featuredCars: [],
   currentCar: null,
   loading: false,
   error: null,
   filters: {},
   
-  fetchCars: (filters) => {
-    const activeFilters = filters || get().filters;
-    let filteredCars = [...mockCars];
-    
-    if (activeFilters.category) {
-      filteredCars = filteredCars.filter(car => car.category === activeFilters.category);
+  fetchCars: async (filters) => {
+    try {
+      set({ loading: true, error: null });
+      
+      let query = supabase
+        .from('cars')
+        .select('*');
+      
+      const activeFilters = filters || get().filters;
+      
+      if (activeFilters.category) {
+        query = query.eq('category', activeFilters.category);
+      }
+      
+      if (activeFilters.make) {
+        query = query.eq('make', activeFilters.make);
+      }
+      
+      if (activeFilters.available !== undefined) {
+        query = query.eq('available', activeFilters.available);
+      }
+      
+      if (activeFilters.priceMin !== undefined) {
+        query = query.gte('price_per_day', activeFilters.priceMin);
+      }
+      
+      if (activeFilters.priceMax !== undefined) {
+        query = query.lte('price_per_day', activeFilters.priceMax);
+      }
+      
+      const { data, error } = await query.order('created_at', { ascending: false });
+      
+      if (error) throw error;
+      
+      set({ cars: data as Car[] });
+    } catch (error) {
+      set({ error: (error as Error).message });
+    } finally {
+      set({ loading: false });
     }
-    
-    if (activeFilters.make) {
-      filteredCars = filteredCars.filter(car => car.make === activeFilters.make);
-    }
-    
-    if (activeFilters.available !== undefined) {
-      filteredCars = filteredCars.filter(car => car.available === activeFilters.available);
-    }
-    
-    if (activeFilters.priceMin !== undefined) {
-      filteredCars = filteredCars.filter(car => car.price_per_day >= activeFilters.priceMin!);
-    }
-    
-    if (activeFilters.priceMax !== undefined) {
-      filteredCars = filteredCars.filter(car => car.price_per_day <= activeFilters.priceMax!);
-    }
-    
-    set({ cars: filteredCars });
   },
   
-  fetchFeaturedCars: () => {
-    set({ featuredCars: mockCars.slice(0, 4) });
+  fetchFeaturedCars: async () => {
+    try {
+      set({ loading: true, error: null });
+      
+      const { data, error } = await supabase
+        .from('cars')
+        .select('*')
+        .eq('available', true)
+        .order('created_at', { ascending: false })
+        .limit(4);
+      
+      if (error) throw error;
+      
+      set({ featuredCars: data as Car[] });
+    } catch (error) {
+      set({ error: (error as Error).message });
+    } finally {
+      set({ loading: false });
+    }
   },
   
-  fetchCarById: (id: number) => {
-    const car = mockCars.find(c => c.id === id) || null;
-    set({ currentCar: car });
+  fetchCarById: async (id: number) => {
+    try {
+      set({ loading: true, error: null });
+      
+      const { data, error } = await supabase
+        .from('cars')
+        .select('*')
+        .eq('id', id)
+        .single();
+      
+      if (error) throw error;
+      
+      set({ currentCar: data as Car });
+    } catch (error) {
+      set({ error: (error as Error).message });
+      set({ currentCar: null });
+    } finally {
+      set({ loading: false });
+    }
   },
   
-  setFilters: (filters: CarFilters) => {
+  setFilters: async (filters: CarFilters) => {
     set({ filters: { ...get().filters, ...filters } });
-    get().fetchCars();
+    await get().fetchCars(filters);
   },
   
   clearFilters: () => {
     set({ filters: {} });
-    get().fetchCars();
+    get().fetchCars({});
   },
 }));
