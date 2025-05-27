@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import { mockUser } from '../lib/supabase';
+import { mockUser } from '../lib/mockData';
 import type { User } from '../types';
 
 interface AuthState {

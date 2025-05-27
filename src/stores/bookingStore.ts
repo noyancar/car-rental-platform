@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import { mockBookings } from '../lib/supabase';
+import { mockBookings } from '../lib/mockData';
 import type { Booking } from '../types';
 
 interface BookingState {

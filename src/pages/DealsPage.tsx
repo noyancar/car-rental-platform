@@ -2,7 +2,7 @@ import React from 'react';
 import { Link } from 'react-router-dom';
 import { Calendar, Tag, Clock, ArrowRight } from 'lucide-react';
 import { Button } from '../components/ui/Button';
-import { mockCampaigns } from '../lib/supabase';
+import { mockCampaigns } from '../lib/mockData';
 
 const DealsPage: React.FC = () => {
   const activeCampaigns = mockCampaigns.filter(campaign => campaign.active);

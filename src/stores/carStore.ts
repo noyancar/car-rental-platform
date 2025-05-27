@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import { mockCars } from '../lib/supabase';
+import { mockCars } from '../lib/mockData';
 import type { Car } from '../types';
 
 interface CarFilters {
