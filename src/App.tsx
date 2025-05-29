@@ -5,7 +5,6 @@ import { Toaster } from 'sonner';
 // Layout components
 import { Navbar } from './components/layout/Navbar';
 import { Footer } from './components/layout/Footer';
-import { TestConnection } from './components/TestConnection';
 
 // Auth pages
 import Login from './pages/auth/Login';
@@ -71,11 +70,6 @@ function App() {
       <div className="flex flex-col min-h-screen">
         <Navbar />
         <main className="flex-grow pt-16">
-          {/* Add TestConnection component at the top of the page */}
-          <div className="container-custom mx-auto mb-8">
-            <TestConnection />
-          </div>
-          
           <Routes>
             {/* Public routes */}
             <Route path="/" element={<HomePage />} />
