@@ -4,6 +4,7 @@ import type { User } from '../types';
 
 interface AuthState {
   user: User | null;
+  isAdmin: boolean;
   loading: boolean;
   error: string | null;
   signUp: (email: string, password: string) => Promise<void>;
@@ -16,6 +17,7 @@ interface AuthState {
 
 export const useAuthStore = create<AuthState>((set) => ({
   user: null,
+  isAdmin: false,
   loading: false,
   error: null,
 
@@ -41,13 +43,15 @@ export const useAuthStore = create<AuthState>((set) => ({
           
         if (profileError) throw profileError;
         
-        set({ user: data.user as User });
+        set({ 
+          user: data.user as User,
+          isAdmin: data.user.email === 'admin@example.com'
+        });
       }
     } catch (error) {
       set({ error: (error as Error).message });
       throw error;
     } finally {
-      // Small delay before resetting loading state to prevent flicker
       setTimeout(() => {
         set({ loading: false });
       }, 300);
@@ -73,13 +77,15 @@ export const useAuthStore = create<AuthState>((set) => ({
           .single()
           .abortSignal(new AbortController().signal);
           
-        set({ user: { ...data.user, ...profile } as User });
+        set({ 
+          user: { ...data.user, ...profile } as User,
+          isAdmin: data.user.email === 'admin@example.com'
+        });
       }
     } catch (error) {
       set({ error: (error as Error).message });
       throw error;
     } finally {
-      // Small delay before resetting loading state to prevent flicker
       setTimeout(() => {
         set({ loading: false });
       }, 300);
@@ -93,12 +99,11 @@ export const useAuthStore = create<AuthState>((set) => ({
       const { error } = await supabase.auth.signOut();
       if (error) throw error;
       
-      set({ user: null });
+      set({ user: null, isAdmin: false });
     } catch (error) {
       set({ error: (error as Error).message });
       throw error;
     } finally {
-      // Small delay before resetting loading state to prevent flicker
       setTimeout(() => {
         set({ loading: false });
       }, 300);
@@ -127,7 +132,6 @@ export const useAuthStore = create<AuthState>((set) => ({
       set({ error: (error as Error).message });
       throw error;
     } finally {
-      // Small delay before resetting loading state to prevent flicker
       setTimeout(() => {
         set({ loading: false });
       }, 300);
@@ -151,12 +155,14 @@ export const useAuthStore = create<AuthState>((set) => ({
           
         if (profileError) throw profileError;
         
-        set({ user: { ...session.user, ...profile } as User });
+        set({ 
+          user: { ...session.user, ...profile } as User,
+          isAdmin: session.user.email === 'admin@example.com'
+        });
       }
     } catch (error) {
       set({ error: (error as Error).message });
     } finally {
-      // Small delay before resetting loading state to prevent flicker
       setTimeout(() => {
         set({ loading: false });
       }, 300);
@@ -166,7 +172,6 @@ export const useAuthStore = create<AuthState>((set) => ({
   clearError: () => set({ error: null }),
 }));
 
-// Set up auth state listener with debouncing
 let authTimeout: NodeJS.Timeout;
 supabase.auth.onAuthStateChange(async (event, session) => {
   const store = useAuthStore.getState();

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { Car, User, Menu, X, ShoppingCart } from 'lucide-react';
+import { Car, User, Menu, X, ShieldCheck } from 'lucide-react';
 import { Button } from '../ui/Button';
 import { useAuthStore } from '../../stores/authStore';
 
@@ -9,9 +9,8 @@ export const Navbar: React.FC = () => {
   const [isScrolled, setIsScrolled] = useState(false);
   const location = useLocation();
   
-  const { user, signOut } = useAuthStore();
+  const { user, isAdmin, signOut } = useAuthStore();
   
-  // Handle scroll event to change navbar background
   useEffect(() => {
     const handleScroll = () => {
       setIsScrolled(window.scrollY > 20);
@@ -21,7 +20,6 @@ export const Navbar: React.FC = () => {
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
   
-  // Close mobile menu when route changes
   useEffect(() => {
     setIsMenuOpen(false);
   }, [location]);
@@ -35,13 +33,11 @@ export const Navbar: React.FC = () => {
       }`}
     >
       <div className="container-custom mx-auto flex justify-between items-center">
-        {/* Logo */}
         <Link to="/" className="flex items-center">
           <Car className="h-8 w-8 text-primary-800" />
           <span className="ml-2 text-xl font-bold text-primary-800">DriveLuxe</span>
         </Link>
         
-        {/* Desktop Navigation */}
         <nav className="hidden md:flex items-center space-x-8">
           <Link 
             to="/cars" 
@@ -70,6 +66,15 @@ export const Navbar: React.FC = () => {
           
           {user ? (
             <div className="flex items-center space-x-4">
+              {isAdmin && (
+                <Link 
+                  to="/admin" 
+                  className="flex items-center space-x-1 text-accent-600 hover:text-accent-700"
+                >
+                  <ShieldCheck size={20} />
+                  <span>Admin</span>
+                </Link>
+              )}
               <Link 
                 to="/bookings" 
                 className={`font-medium hover:text-primary-700 transition-colors ${
@@ -106,7 +111,6 @@ export const Navbar: React.FC = () => {
           )}
         </nav>
         
-        {/* Mobile Menu Button */}
         <button 
           className="md:hidden text-secondary-800 focus:outline-none"
           onClick={() => setIsMenuOpen(!isMenuOpen)}
@@ -119,7 +123,6 @@ export const Navbar: React.FC = () => {
         </button>
       </div>
       
-      {/* Mobile Menu */}
       {isMenuOpen && (
         <div className="md:hidden bg-white shadow-md">
           <div className="container mx-auto py-4 space-y-3">
@@ -150,6 +153,15 @@ export const Navbar: React.FC = () => {
             
             {user ? (
               <>
+                {isAdmin && (
+                  <Link 
+                    to="/admin" 
+                    className="flex items-center space-x-1 py-2 text-accent-600 hover:text-accent-700"
+                  >
+                    <ShieldCheck size={20} />
+                    <span>Admin Dashboard</span>
+                  </Link>
+                )}
                 <Link 
                   to="/bookings" 
                   className={`block py-2 font-medium ${

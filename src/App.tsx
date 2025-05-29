@@ -37,10 +37,7 @@ const ProtectedRoute: React.FC<{ element: React.ReactElement; adminOnly?: boolea
   element, 
   adminOnly = false 
 }) => {
-  const { user, loading } = useAuthStore();
-  
-  // Check if the user is an admin (you'll need to add this logic)
-  const isAdmin = user?.email === 'admin@example.com'; // Replace with your admin check
+  const { user, isAdmin, loading } = useAuthStore();
   
   if (loading) {
     return <div className="min-h-screen flex items-center justify-center">Loading...</div>;
@@ -61,7 +58,6 @@ function App() {
   const { getProfile } = useAuthStore();
   
   useEffect(() => {
-    // Try to get the user profile on app load
     getProfile();
   }, [getProfile]);
   
