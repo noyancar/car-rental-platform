@@ -80,6 +80,7 @@ const Login: React.FC = () => {
               error={errors.email}
               placeholder="your.email@example.com"
               autoComplete="email"
+              disabled={loading}
             />
             
             <Input
@@ -91,6 +92,7 @@ const Login: React.FC = () => {
               error={errors.password}
               placeholder="••••••••"
               autoComplete="current-password"
+              disabled={loading}
             />
 
             <div className="flex items-center justify-between">
@@ -100,6 +102,7 @@ const Login: React.FC = () => {
                   name="remember-me"
                   type="checkbox"
                   className="h-4 w-4 text-primary-600 focus:ring-primary-500 border-secondary-300 rounded"
+                  disabled={loading}
                 />
                 <label htmlFor="remember-me" className="ml-2 block text-sm text-secondary-700">
                   Remember me
@@ -107,7 +110,10 @@ const Login: React.FC = () => {
               </div>
 
               <div className="text-sm">
-                <Link to="/forgot-password" className="font-medium text-primary-700 hover:text-primary-600">
+                <Link 
+                  to="/forgot-password" 
+                  className={`font-medium text-primary-700 hover:text-primary-600 ${loading ? 'pointer-events-none opacity-70' : ''}`}
+                >
                   Forgot your password?
                 </Link>
               </div>
@@ -119,6 +125,7 @@ const Login: React.FC = () => {
                 variant="primary"
                 fullWidth
                 isLoading={loading}
+                size="lg"
               >
                 Sign in
               </Button>
