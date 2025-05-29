@@ -47,7 +47,10 @@ export const useAuthStore = create<AuthState>((set) => ({
       set({ error: (error as Error).message });
       throw error;
     } finally {
-      set({ loading: false });
+      // Small delay before resetting loading state to prevent flicker
+      setTimeout(() => {
+        set({ loading: false });
+      }, 300);
     }
   },
 
@@ -76,7 +79,10 @@ export const useAuthStore = create<AuthState>((set) => ({
       set({ error: (error as Error).message });
       throw error;
     } finally {
-      set({ loading: false });
+      // Small delay before resetting loading state to prevent flicker
+      setTimeout(() => {
+        set({ loading: false });
+      }, 300);
     }
   },
 
@@ -92,7 +98,10 @@ export const useAuthStore = create<AuthState>((set) => ({
       set({ error: (error as Error).message });
       throw error;
     } finally {
-      set({ loading: false });
+      // Small delay before resetting loading state to prevent flicker
+      setTimeout(() => {
+        set({ loading: false });
+      }, 300);
     }
   },
 
@@ -118,7 +127,10 @@ export const useAuthStore = create<AuthState>((set) => ({
       set({ error: (error as Error).message });
       throw error;
     } finally {
-      set({ loading: false });
+      // Small delay before resetting loading state to prevent flicker
+      setTimeout(() => {
+        set({ loading: false });
+      }, 300);
     }
   },
 
@@ -144,7 +156,10 @@ export const useAuthStore = create<AuthState>((set) => ({
     } catch (error) {
       set({ error: (error as Error).message });
     } finally {
-      set({ loading: false });
+      // Small delay before resetting loading state to prevent flicker
+      setTimeout(() => {
+        set({ loading: false });
+      }, 300);
     }
   },
 
@@ -163,5 +178,5 @@ supabase.auth.onAuthStateChange(async (event, session) => {
     } else if (event === 'SIGNED_OUT') {
       store.signOut();
     }
-  }, 100);
+  }, 300);
 });

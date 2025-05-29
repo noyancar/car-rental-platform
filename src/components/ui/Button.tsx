@@ -25,7 +25,7 @@ export const Button: React.FC<ButtonProps> = ({
   ...props
 }) => {
   // Base classes
-  const baseClasses = 'inline-flex items-center justify-center font-medium transition-all duration-200 rounded-md focus:outline-none focus:ring-2 focus:ring-offset-2';
+  const baseClasses = 'inline-flex items-center justify-center font-medium transition-all duration-200 rounded-md focus:outline-none focus:ring-2 focus:ring-offset-2 relative';
   
   // Variant classes
   const variantClasses = {
@@ -36,28 +36,29 @@ export const Button: React.FC<ButtonProps> = ({
     ghost: 'text-primary-800 hover:bg-secondary-100 focus:ring-primary-500',
   };
   
-  // Size classes with fixed heights and min-widths
+  // Size classes with fixed heights and min-widths for stability
   const sizeClasses = {
-    sm: 'h-8 min-w-[80px] px-3 text-sm',
-    md: 'h-10 min-w-[100px] px-6',
-    lg: 'h-12 min-w-[120px] px-8 text-lg',
+    sm: 'h-9 min-w-[90px] px-3 text-sm',
+    md: 'h-11 min-w-[110px] px-6',
+    lg: 'h-13 min-w-[130px] px-8 text-lg',
   };
   
   // Width classes
   const widthClasses = fullWidth ? 'w-full' : '';
   
-  // Disabled classes
-  const disabledClasses = (disabled || isLoading) 
+  // Disabled and loading classes
+  const stateClasses = (disabled || isLoading) 
     ? 'opacity-70 cursor-not-allowed' 
     : '';
 
-  // Loading spinner with consistent size
+  // Loading spinner component with consistent sizing
   const LoadingSpinner = () => (
     <svg 
-      className="animate-spin h-4 w-4 text-current" 
+      className="animate-spin h-5 w-5 text-current" 
       xmlns="http://www.w3.org/2000/svg" 
       fill="none" 
       viewBox="0 0 24 24"
+      aria-hidden="true"
     >
       <circle 
         className="opacity-25" 
@@ -82,23 +83,23 @@ export const Button: React.FC<ButtonProps> = ({
         ${variantClasses[variant]}
         ${sizeClasses[size]}
         ${widthClasses}
-        ${disabledClasses}
+        ${stateClasses}
         ${className}
       `}
       disabled={disabled || isLoading}
       {...props}
     >
-      <span className="inline-flex items-center justify-center">
+      <span className="inline-flex items-center justify-center space-x-2 transition-opacity duration-200">
         {isLoading ? (
           <>
             <LoadingSpinner />
-            <span className="ml-2">{children}</span>
+            <span>{children}</span>
           </>
         ) : (
           <>
-            {leftIcon && <span className="mr-2">{leftIcon}</span>}
-            {children}
-            {rightIcon && <span className="ml-2">{rightIcon}</span>}
+            {leftIcon && <span>{leftIcon}</span>}
+            <span>{children}</span>
+            {rightIcon && <span>{rightIcon}</span>}
           </>
         )}
       </span>

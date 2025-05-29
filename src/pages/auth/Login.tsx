@@ -35,6 +35,8 @@ const Login: React.FC = () => {
   
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    if (loading) return; // Prevent multiple submissions
     clearError();
     
     if (!validate()) return;
@@ -56,7 +58,12 @@ const Login: React.FC = () => {
         </h2>
         <p className="mt-2 text-center text-sm text-secondary-600">
           Or{' '}
-          <Link to="/register" className="font-medium text-primary-700 hover:text-primary-600">
+          <Link 
+            to="/register" 
+            className={`font-medium text-primary-700 hover:text-primary-600 ${
+              loading ? 'pointer-events-none opacity-70' : ''
+            }`}
+          >
             create a new account
           </Link>
         </p>
@@ -70,7 +77,7 @@ const Login: React.FC = () => {
             </div>
           )}
           
-          <form className="space-y-6" onSubmit={handleSubmit}>
+          <form className="space-y-6" onSubmit={handleSubmit} noValidate>
             <Input
               label="Email address"
               type="email"
@@ -81,6 +88,7 @@ const Login: React.FC = () => {
               placeholder="your.email@example.com"
               autoComplete="email"
               disabled={loading}
+              required
             />
             
             <Input
@@ -93,6 +101,7 @@ const Login: React.FC = () => {
               placeholder="••••••••"
               autoComplete="current-password"
               disabled={loading}
+              required
             />
 
             <div className="flex items-center justify-between">
@@ -101,7 +110,7 @@ const Login: React.FC = () => {
                   id="remember-me"
                   name="remember-me"
                   type="checkbox"
-                  className="h-4 w-4 text-primary-600 focus:ring-primary-500 border-secondary-300 rounded"
+                  className="h-4 w-4 text-primary-600 focus:ring-primary-500 border-secondary-300 rounded disabled:opacity-70"
                   disabled={loading}
                 />
                 <label htmlFor="remember-me" className="ml-2 block text-sm text-secondary-700">
@@ -112,7 +121,10 @@ const Login: React.FC = () => {
               <div className="text-sm">
                 <Link 
                   to="/forgot-password" 
-                  className={`font-medium text-primary-700 hover:text-primary-600 ${loading ? 'pointer-events-none opacity-70' : ''}`}
+                  className={`font-medium text-primary-700 hover:text-primary-600 ${
+                    loading ? 'pointer-events-none opacity-70' : ''
+                  }`}
+                  tabIndex={loading ? -1 : undefined}
                 >
                   Forgot your password?
                 </Link>
@@ -126,6 +138,7 @@ const Login: React.FC = () => {
                 fullWidth
                 isLoading={loading}
                 size="lg"
+                disabled={loading}
               >
                 Sign in
               </Button>
