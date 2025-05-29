@@ -1,11 +1,24 @@
 import React, { useEffect, useState } from 'react';
-import { Plus, Edit, Trash2, Check, X, Search } from 'lucide-react';
+import { Plus, Edit, Trash2, Check, X, Search, Tag } from 'lucide-react';
 import { toast } from 'sonner';
 import { Button } from '../../components/ui/Button';
 import { Input } from '../../components/ui/Input';
 import { Select } from '../../components/ui/Select';
 import { useAdminStore } from '../../stores/adminStore';
 import type { Car } from '../../types';
+
+const COMMON_FEATURES = [
+  'Leather Seats',
+  'Navigation',
+  'Heated Seats',
+  'Sunroof',
+  'Backup Camera',
+  'Bluetooth',
+  'AC',
+  'Cruise Control',
+  'Premium Sound',
+  'Sport Mode',
+];
 
 const AdminCars: React.FC = () => {
   const { 
@@ -23,6 +36,10 @@ const AdminCars: React.FC = () => {
   const [filterCategory, setFilterCategory] = useState('');
   const [editingCar, setEditingCar] = useState<Car | null>(null);
   
+  // Features state management
+  const [selectedFeatures, setSelectedFeatures] = useState<string[]>([]);
+  const [customFeature, setCustomFeature] = useState('');
+  
   const [newCar, setNewCar] = useState({
     make: '',
     model: '',
@@ -38,8 +55,56 @@ const AdminCars: React.FC = () => {
     fetchAllCars();
   }, [fetchAllCars]);
   
+  const handleAddFeature = () => {
+    if (!customFeature.trim()) return;
+    
+    const feature = customFeature.trim();
+    const features = editingCar?.features || newCar.features;
+    
+    if (!features.includes(feature)) {
+      if (editingCar) {
+        setEditingCar({ ...editingCar, features: [...features, feature] });
+      } else {
+        setNewCar({ ...newCar, features: [...features, feature] });
+      }
+    }
+    
+    setCustomFeature('');
+  };
+  
+  const handleRemoveFeature = (feature: string) => {
+    const features = editingCar?.features || newCar.features;
+    const updatedFeatures = features.filter(f => f !== feature);
+    
+    if (editingCar) {
+      setEditingCar({ ...editingCar, features: updatedFeatures });
+    } else {
+      setNewCar({ ...newCar, features: updatedFeatures });
+    }
+  };
+  
+  const handleToggleCommonFeature = (feature: string) => {
+    const features = editingCar?.features || newCar.features;
+    const hasFeature = features.includes(feature);
+    
+    const updatedFeatures = hasFeature
+      ? features.filter(f => f !== feature)
+      : [...features, feature];
+    
+    if (editingCar) {
+      setEditingCar({ ...editingCar, features: updatedFeatures });
+    } else {
+      setNewCar({ ...newCar, features: updatedFeatures });
+    }
+  };
+  
   const handleAddCar = async () => {
     try {
+      if (newCar.features.length === 0) {
+        toast.error('Please add at least one feature');
+        return;
+      }
+      
       await addCar(newCar);
       setIsAddingCar(false);
       setNewCar({
@@ -60,6 +125,11 @@ const AdminCars: React.FC = () => {
   
   const handleUpdateCar = async (car: Car) => {
     try {
+      if (car.features.length === 0) {
+        toast.error('Please add at least one feature');
+        return;
+      }
+      
       await updateCar(car.id, car);
       setEditingCar(null);
       toast.success('Car updated successfully');
@@ -225,8 +295,8 @@ const AdminCars: React.FC = () => {
       
       {/* Add/Edit Car Modal */}
       {(isAddingCar || editingCar) && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-lg shadow-xl max-w-4xl w-full max-h-[90vh] overflow-y-auto">
             <div className="p-6">
               <h2 className="text-2xl font-semibold mb-6">
                 {isAddingCar ? 'Add New Car' : 'Edit Car'}
@@ -307,6 +377,69 @@ const AdminCars: React.FC = () => {
                     }
                   />
                 </div>
+                
+                {/* Features Section */}
+                <div className="md:col-span-2 space-y-4">
+                  <h3 className="text-lg font-semibold">Features</h3>
+                  
+                  {/* Common Features */}
+                  <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2">
+                    {COMMON_FEATURES.map((feature) => {
+                      const isSelected = (editingCar?.features || newCar.features).includes(feature);
+                      return (
+                        <button
+                          key={feature}
+                          type="button"
+                          onClick={() => handleToggleCommonFeature(feature)}
+                          className={`p-2 rounded-md text-sm flex items-center justify-between ${
+                            isSelected
+                              ? 'bg-primary-100 text-primary-800 border-primary-300'
+                              : 'bg-secondary-50 text-secondary-700 border-secondary-200'
+                          } border hover:bg-opacity-80 transition-colors`}
+                        >
+                          <span>{feature}</span>
+                          {isSelected && <Check size={16} className="ml-2" />}
+                        </button>
+                      );
+                    })}
+                  </div>
+                  
+                  {/* Custom Feature Input */}
+                  <div className="flex gap-2">
+                    <Input
+                      placeholder="Add custom feature..."
+                      value={customFeature}
+                      onChange={(e) => setCustomFeature(e.target.value)}
+                      onKeyPress={(e) => e.key === 'Enter' && handleAddFeature()}
+                    />
+                    <Button
+                      type="button"
+                      onClick={handleAddFeature}
+                      variant="outline"
+                    >
+                      Add
+                    </Button>
+                  </div>
+                  
+                  {/* Selected Features */}
+                  <div className="flex flex-wrap gap-2">
+                    {(editingCar?.features || newCar.features).map((feature) => (
+                      <span
+                        key={feature}
+                        className="bg-primary-50 text-primary-800 px-3 py-1 rounded-full text-sm flex items-center"
+                      >
+                        {feature}
+                        <button
+                          type="button"
+                          onClick={() => handleRemoveFeature(feature)}
+                          className="ml-2 hover:text-error-500"
+                        >
+                          <X size={14} />
+                        </button>
+                      </span>
+                    ))}
+                  </div>
+                </div>
               </div>
               
               <div className="flex justify-end space-x-4 mt-6">
@@ -315,6 +448,7 @@ const AdminCars: React.FC = () => {
                   onClick={() => {
                     setIsAddingCar(false);
                     setEditingCar(null);
+                    setCustomFeature('');
                   }}
                 >
                   Cancel
