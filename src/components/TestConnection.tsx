@@ -7,22 +7,38 @@ export const TestConnection: React.FC = () => {
   const [data, setData] = useState<any>(null);
 
   useEffect(() => {
+    let mounted = true;
+
     const checkConnection = async () => {
-      const result = await testConnection();
-      if (result.success) {
-        setStatus('success');
-        setData(result.data);
-      } else {
+      try {
+        const result = await testConnection();
+        if (!mounted) return;
+        
+        if (result.success) {
+          setStatus('success');
+          setData(result.data);
+        } else {
+          setStatus('error');
+          setError(result.error?.message || 'Failed to connect to database');
+        }
+      } catch (err) {
+        if (!mounted) return;
         setStatus('error');
-        setError(result.error?.message || 'Failed to connect to database');
+        setError((err as Error).message);
       }
     };
 
     checkConnection();
+    return () => { mounted = false; };
   }, []);
 
   if (status === 'loading') {
-    return <div>Testing database connection...</div>;
+    return (
+      <div className="flex items-center justify-center p-4 bg-secondary-50 rounded-md">
+        <div className="animate-spin rounded-full h-6 w-6 border-t-2 border-b-2 border-primary-800 mr-3"></div>
+        <span>Testing database connection...</span>
+      </div>
+    );
   }
 
   if (status === 'error') {

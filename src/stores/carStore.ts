@@ -63,7 +63,9 @@ export const useCarStore = create<CarState>((set, get) => ({
         query = query.lte('price_per_day', activeFilters.priceMax);
       }
       
-      const { data, error } = await query.order('created_at', { ascending: false });
+      const { data, error } = await query
+        .order('created_at', { ascending: false })
+        .abortSignal(new AbortController().signal);
       
       if (error) throw error;
       
@@ -84,7 +86,8 @@ export const useCarStore = create<CarState>((set, get) => ({
         .select('*')
         .eq('available', true)
         .order('created_at', { ascending: false })
-        .limit(4);
+        .limit(4)
+        .abortSignal(new AbortController().signal);
       
       if (error) throw error;
       
@@ -104,7 +107,8 @@ export const useCarStore = create<CarState>((set, get) => ({
         .from('cars')
         .select('*')
         .eq('id', id)
-        .single();
+        .single()
+        .abortSignal(new AbortController().signal);
       
       if (error) throw error;
       

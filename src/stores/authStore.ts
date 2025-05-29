@@ -26,15 +26,18 @@ export const useAuthStore = create<AuthState>((set) => ({
       const { data, error } = await supabase.auth.signUp({
         email,
         password,
+        options: {
+          emailRedirectTo: `${window.location.origin}/auth/callback`,
+        },
       });
       
       if (error) throw error;
       
       if (data.user) {
-        // Create initial profile
         const { error: profileError } = await supabase
           .from('profiles')
-          .insert([{ id: data.user.id }]);
+          .insert([{ id: data.user.id }])
+          .abortSignal(new AbortController().signal);
           
         if (profileError) throw profileError;
         
@@ -60,12 +63,12 @@ export const useAuthStore = create<AuthState>((set) => ({
       if (error) throw error;
       
       if (data.user) {
-        // Get user profile
         const { data: profile } = await supabase
           .from('profiles')
           .select('*')
           .eq('id', data.user.id)
-          .single();
+          .single()
+          .abortSignal(new AbortController().signal);
           
         set({ user: { ...data.user, ...profile } as User });
       }
@@ -97,13 +100,14 @@ export const useAuthStore = create<AuthState>((set) => ({
     try {
       set({ loading: true, error: null });
       
-      const { user } = await supabase.auth.getUser();
+      const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error('No user logged in');
       
       const { error } = await supabase
         .from('profiles')
         .update(data)
-        .eq('id', user.id);
+        .eq('id', user.id)
+        .abortSignal(new AbortController().signal);
         
       if (error) throw error;
       
@@ -122,17 +126,16 @@ export const useAuthStore = create<AuthState>((set) => ({
     try {
       set({ loading: true, error: null });
       
-      // Check if we have a session
       const { data: { session }, error: sessionError } = await supabase.auth.getSession();
       if (sessionError) throw sessionError;
       
       if (session?.user) {
-        // Get user profile
         const { data: profile, error: profileError } = await supabase
           .from('profiles')
           .select('*')
           .eq('id', session.user.id)
-          .single();
+          .single()
+          .abortSignal(new AbortController().signal);
           
         if (profileError) throw profileError;
         
@@ -148,20 +151,17 @@ export const useAuthStore = create<AuthState>((set) => ({
   clearError: () => set({ error: null }),
 }));
 
-// Set up auth state listener
+// Set up auth state listener with debouncing
+let authTimeout: NodeJS.Timeout;
 supabase.auth.onAuthStateChange(async (event, session) => {
   const store = useAuthStore.getState();
   
-  if (event === 'SIGNED_IN' && session?.user) {
-    // Get user profile
-    const { data: profile } = await supabase
-      .from('profiles')
-      .select('*')
-      .eq('id', session.user.id)
-      .single();
-      
-    store.getProfile();
-  } else if (event === 'SIGNED_OUT') {
-    store.signOut();
-  }
+  clearTimeout(authTimeout);
+  authTimeout = setTimeout(async () => {
+    if (event === 'SIGNED_IN' && session?.user) {
+      await store.getProfile();
+    } else if (event === 'SIGNED_OUT') {
+      store.signOut();
+    }
+  }, 100);
 });
