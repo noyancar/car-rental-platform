@@ -11,7 +11,7 @@ export const Footer: React.FC = () => {
           <div>
             <div className="flex items-center mb-4">
               <Car className="h-8 w-8" />
-              <span className="ml-2 text-xl font-bold">DriveLuxe</span>
+              <span className="ml-2 text-xl font-bold">Noyan Car</span>
             </div>
             <p className="text-secondary-300 mb-6">
               Experience premium car rentals with exceptional service and luxury vehicles for any occasion.
