@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import { mockUser } from '../lib/mockData';
+import { supabase } from '../lib/supabase';
 import type { User } from '../types';
 
 interface AuthState {
@@ -15,29 +15,153 @@ interface AuthState {
 }
 
 export const useAuthStore = create<AuthState>((set) => ({
-  user: mockUser,
+  user: null,
   loading: false,
   error: null,
 
-  signUp: async () => {
-    set({ user: mockUser });
+  signUp: async (email: string, password: string) => {
+    try {
+      set({ loading: true, error: null });
+      
+      const { data, error } = await supabase.auth.signUp({
+        email,
+        password,
+      });
+      
+      if (error) throw error;
+      
+      if (data.user) {
+        // Create initial profile
+        const { error: profileError } = await supabase
+          .from('profiles')
+          .insert([{ id: data.user.id }]);
+          
+        if (profileError) throw profileError;
+        
+        set({ user: data.user as User });
+      }
+    } catch (error) {
+      set({ error: (error as Error).message });
+      throw error;
+    } finally {
+      set({ loading: false });
+    }
   },
 
-  signIn: async () => {
-    set({ user: mockUser });
+  signIn: async (email: string, password: string) => {
+    try {
+      set({ loading: true, error: null });
+      
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      });
+      
+      if (error) throw error;
+      
+      if (data.user) {
+        // Get user profile
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('*')
+          .eq('id', data.user.id)
+          .single();
+          
+        set({ user: { ...data.user, ...profile } as User });
+      }
+    } catch (error) {
+      set({ error: (error as Error).message });
+      throw error;
+    } finally {
+      set({ loading: false });
+    }
   },
 
   signOut: async () => {
-    set({ user: null });
+    try {
+      set({ loading: true, error: null });
+      
+      const { error } = await supabase.auth.signOut();
+      if (error) throw error;
+      
+      set({ user: null });
+    } catch (error) {
+      set({ error: (error as Error).message });
+      throw error;
+    } finally {
+      set({ loading: false });
+    }
   },
 
   updateProfile: async (data: Partial<User>) => {
-    set({ user: { ...mockUser, ...data } });
+    try {
+      set({ loading: true, error: null });
+      
+      const { user } = await supabase.auth.getUser();
+      if (!user) throw new Error('No user logged in');
+      
+      const { error } = await supabase
+        .from('profiles')
+        .update(data)
+        .eq('id', user.id);
+        
+      if (error) throw error;
+      
+      set(state => ({
+        user: state.user ? { ...state.user, ...data } : null
+      }));
+    } catch (error) {
+      set({ error: (error as Error).message });
+      throw error;
+    } finally {
+      set({ loading: false });
+    }
   },
 
   getProfile: async () => {
-    set({ user: mockUser });
+    try {
+      set({ loading: true, error: null });
+      
+      // Check if we have a session
+      const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+      if (sessionError) throw sessionError;
+      
+      if (session?.user) {
+        // Get user profile
+        const { data: profile, error: profileError } = await supabase
+          .from('profiles')
+          .select('*')
+          .eq('id', session.user.id)
+          .single();
+          
+        if (profileError) throw profileError;
+        
+        set({ user: { ...session.user, ...profile } as User });
+      }
+    } catch (error) {
+      set({ error: (error as Error).message });
+    } finally {
+      set({ loading: false });
+    }
   },
 
   clearError: () => set({ error: null }),
 }));
+
+// Set up auth state listener
+supabase.auth.onAuthStateChange(async (event, session) => {
+  const store = useAuthStore.getState();
+  
+  if (event === 'SIGNED_IN' && session?.user) {
+    // Get user profile
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('*')
+      .eq('id', session.user.id)
+      .single();
+      
+    store.getProfile();
+  } else if (event === 'SIGNED_OUT') {
+    store.signOut();
+  }
+});
