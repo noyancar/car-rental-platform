@@ -40,7 +40,7 @@ export const Button: React.FC<ButtonProps> = ({
   const sizeClasses = {
     sm: 'h-9 min-w-[90px] px-3 text-sm',
     md: 'h-11 min-w-[110px] px-6',
-    lg: 'h-13 min-w-[130px] px-8 text-lg',
+    lg: 'h-12 min-w-[130px] px-8 text-lg',
   };
   
   // Width classes
