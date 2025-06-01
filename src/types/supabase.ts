@@ -22,10 +22,6 @@ export interface Database {
           available: boolean
           features: Json
           description: string
-          seats: number
-          transmission: string
-          mileage_type: string
-          min_rental_hours: number
         }
         Insert: {
           id?: number
@@ -39,10 +35,6 @@ export interface Database {
           available?: boolean
           features?: Json
           description: string
-          seats?: number
-          transmission?: string
-          mileage_type?: string
-          min_rental_hours?: number
         }
         Update: {
           id?: number
@@ -56,10 +48,6 @@ export interface Database {
           available?: boolean
           features?: Json
           description?: string
-          seats?: number
-          transmission?: string
-          mileage_type?: string
-          min_rental_hours?: number
         }
       }
       bookings: {

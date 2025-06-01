@@ -103,7 +103,7 @@ const CarDetailsPage: React.FC = () => {
                 <Users className="h-6 w-6 text-primary-700 mr-3" />
                 <div>
                   <p className="text-sm text-secondary-600">Seats</p>
-                  <p className="font-semibold">{currentCar.seats} Passengers</p>
+                  <p className="font-semibold">5 Passengers</p>
                 </div>
               </div>
               
@@ -111,7 +111,7 @@ const CarDetailsPage: React.FC = () => {
                 <Gauge className="h-6 w-6 text-primary-700 mr-3" />
                 <div>
                   <p className="text-sm text-secondary-600">Mileage</p>
-                  <p className="font-semibold">{currentCar.mileage_type}</p>
+                  <p className="font-semibold">Unlimited</p>
                 </div>
               </div>
               
@@ -119,7 +119,7 @@ const CarDetailsPage: React.FC = () => {
                 <CarIcon className="h-6 w-6 text-primary-700 mr-3" />
                 <div>
                   <p className="text-sm text-secondary-600">Transmission</p>
-                  <p className="font-semibold">{currentCar.transmission}</p>
+                  <p className="font-semibold">Automatic</p>
                 </div>
               </div>
               
@@ -127,7 +127,7 @@ const CarDetailsPage: React.FC = () => {
                 <Clock className="h-6 w-6 text-primary-700 mr-3" />
                 <div>
                   <p className="text-sm text-secondary-600">Min. Rental</p>
-                  <p className="font-semibold">{currentCar.min_rental_hours} Hours</p>
+                  <p className="font-semibold">24 Hours</p>
                 </div>
               </div>
             </div>
