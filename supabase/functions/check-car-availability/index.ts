@@ -18,9 +18,25 @@ serve(async (req) => {
     const carId = url.searchParams.get("car_id");
     const startDate = url.searchParams.get("start_date");
     const endDate = url.searchParams.get("end_date");
+    const startTime = url.searchParams.get("start_time") || "10:00";
+    const endTime = url.searchParams.get("end_time") || "10:00";
 
     if (!carId || !startDate || !endDate) {
       throw new Error("Car ID, start date, and end date are required");
+    }
+
+    // Validate time format (HH:MM)
+    const timeRegex = /^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/;
+    if (!timeRegex.test(startTime) || !timeRegex.test(endTime)) {
+      throw new Error("Invalid time format. Use HH:MM format (e.g., 10:00)");
+    }
+
+    // Create full datetime for comparison
+    const requestStartDateTime = new Date(`${startDate}T${startTime}:00`);
+    const requestEndDateTime = new Date(`${endDate}T${endTime}:00`);
+
+    if (requestStartDateTime >= requestEndDateTime) {
+      throw new Error("Start datetime must be before end datetime");
     }
 
     // Initialize Supabase client
@@ -43,7 +59,13 @@ serve(async (req) => {
       return new Response(
         JSON.stringify({
           available: false,
-          message: "This car is currently unavailable for booking",
+          requestedPeriod: {
+            startDate,
+            startTime,
+            endDate,
+            endTime
+          },
+          message: "This car is currently unavailable for booking"
         }),
         {
           headers: {
@@ -55,13 +77,17 @@ serve(async (req) => {
       );
     }
 
-    // Check for overlapping bookings
+    // Check for overlapping bookings with datetime precision
     const { data: overlappingBookings, error: bookingsError } = await supabase
       .from("bookings")
       .select("id")
       .eq("car_id", carId)
       .neq("status", "cancelled")
-      .or(`start_date,lte,${endDate},end_date,gte,${startDate}`);
+      .or(
+        `and(start_date.lt.${endDate},end_date.gt.${startDate}),` +
+        `and(start_date.eq.${endDate},start_time.lt.${endTime}),` +
+        `and(end_date.eq.${startDate},end_time.gt.${startTime})`
+      );
 
     if (bookingsError) {
       throw new Error(bookingsError.message);
@@ -72,9 +98,15 @@ serve(async (req) => {
     return new Response(
       JSON.stringify({
         available,
+        requestedPeriod: {
+          startDate,
+          startTime,
+          endDate,
+          endTime
+        },
         message: available
-          ? "Car is available for the selected dates"
-          : "Car is already booked for the selected dates",
+          ? `Car is available from ${startDate} ${startTime} to ${endDate} ${endTime}`
+          : "Car is already booked during the requested period"
       }),
       {
         headers: {
