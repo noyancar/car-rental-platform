@@ -22,6 +22,9 @@ export interface Database {
           available: boolean
           features: Json
           description: string
+          seats: number
+          transmission: string
+          mileage_type: string
         }
         Insert: {
           id?: number
@@ -35,6 +38,9 @@ export interface Database {
           available?: boolean
           features?: Json
           description: string
+          seats?: number
+          transmission?: string
+          mileage_type?: string
         }
         Update: {
           id?: number
@@ -48,6 +54,9 @@ export interface Database {
           available?: boolean
           features?: Json
           description?: string
+          seats?: number
+          transmission?: string
+          mileage_type?: string
         }
       }
       bookings: {
