@@ -28,18 +28,35 @@ export const useBookingStore = create<BookingState>((set, get) => ({
     try {
       set({ isCheckingAvailability: true });
       
-      const { data, error } = await supabase.functions.invoke('check-car-availability', {
-        method: 'GET',
-        query: {
-          car_id: carId.toString(),
-          start_date: startDate,
-          end_date: endDate,
-        }
-      });
-
-      if (error) throw error;
+      // Get current session for authentication
+      const { data: { session } } = await supabase.auth.getSession();
       
-      return data.available;
+      if (!session?.access_token) {
+        console.error('No active session for availability check');
+        return false;
+      }
+      
+      // Use secure fetch with proper authentication
+      const response = await fetch(
+        `https://lwhqqhlvmtbcugzasamf.supabase.co/functions/v1/check-car-availability?car_id=${encodeURIComponent(carId)}&start_date=${encodeURIComponent(startDate)}&end_date=${encodeURIComponent(endDate)}`,
+        {
+          method: 'GET',
+          headers: {
+            'Authorization': `Bearer ${session.access_token}`,
+            'Content-Type': 'application/json',
+          },
+        }
+      );
+      
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error('Availability check failed:', response.status, errorText);
+        return false;
+      }
+      
+      const result = await response.json();
+      return Boolean(result.available);
+      
     } catch (error) {
       console.error('Error checking availability:', error);
       return false;
