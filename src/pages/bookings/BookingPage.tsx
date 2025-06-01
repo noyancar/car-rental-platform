@@ -7,14 +7,14 @@ import { Button } from '../../components/ui/Button';
 import { Input } from '../../components/ui/Input';
 import { useAuthStore } from '../../stores/authStore';
 const BookingPage: React.FC = () => {
-const { carId } = useParams();
-const navigate = useNavigate();
-const { user } = useAuthStore();
-const { currentCar, loading: carLoading, error: carError, fetchCarById } = useCarStore();
-const { 
-const BookingPage: React.FC = () => {
-isCheckingAvailability
-} = useBookingStore();
+  const { carId } = useParams();
+  const navigate = useNavigate();
+  const { user } = useAuthStore();
+  const { currentCar, loading: carLoading, error: carError, fetchCarById } = useCarStore();
+  const { 
+    isCheckingAvailability 
+    // Diğer booking store değerleri buraya eklenecek
+  } = useBookingStore();
 
   // Initialize start date to today, but leave end date empty
   const [startDate, setStartDate] = useState(format(new Date(), 'yyyy-MM-dd'));
