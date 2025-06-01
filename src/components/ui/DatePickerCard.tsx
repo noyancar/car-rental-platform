@@ -160,7 +160,7 @@ export const DatePickerCard: React.FC<DatePickerCardProps> = ({
             value={pickupDate}
             onChange={handlePickupDateChange}
             min={format(new Date(), 'yyyy-MM-dd')}
-            leftIcon={<Calendar className="text-primary-800" size={20} />}
+            leftIcon={<Calendar className="text-primary-800\" size={20} />}
             className="bg-white/90 backdrop-blur-sm border-transparent focus:border-primary-500"
           />
         </div>
@@ -180,7 +180,7 @@ export const DatePickerCard: React.FC<DatePickerCardProps> = ({
             value={returnDate}
             onChange={handleReturnDateChange}
             min={pickupDate}
-            leftIcon={<Calendar className="text-primary-800" size={20} />}
+            leftIcon={<Calendar className="text-primary-800\" size={20} />}
             className="bg-white/90 backdrop-blur-sm border-transparent focus:border-primary-500"
             disabled={!pickupDate}
           />
