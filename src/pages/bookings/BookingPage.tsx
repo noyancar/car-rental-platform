@@ -1,7 +1,7 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { ArrowLeft, Calendar, CreditCard, AlertCircle, CheckCircle } from 'lucide-react';
-import { format, addDays } from 'date-fns';
+import { format, addDays, isBefore, isValid, parseISO } from 'date-fns';
 import { toast } from 'sonner';
 import { Button } from '../../components/ui/Button';
 import { Input } from '../../components/ui/Input';
@@ -22,40 +22,97 @@ const BookingPage: React.FC = () => {
     isCheckingAvailability
   } = useBookingStore();
   
+  // Initialize start date to today, but leave end date empty
   const [startDate, setStartDate] = useState(format(new Date(), 'yyyy-MM-dd'));
-  const [endDate, setEndDate] = useState(format(addDays(new Date(), 1), 'yyyy-MM-dd'));
+  const [endDate, setEndDate] = useState('');
   const [totalPrice, setTotalPrice] = useState(0);
   const [discountCode, setDiscountCode] = useState('');
   const [isAvailable, setIsAvailable] = useState<boolean | null>(null);
+  const [validationMessage, setValidationMessage] = useState('');
   
+  // Fetch car details on mount
   useEffect(() => {
     if (carId) {
       fetchCarById(parseInt(carId));
     }
   }, [carId, fetchCarById]);
   
+  // Validate dates and return status
+  const validateDates = useCallback(() => {
+    if (!startDate || !endDate) {
+      setValidationMessage('Please select both dates');
+      return false;
+    }
+
+    const start = parseISO(startDate);
+    const end = parseISO(endDate);
+    
+    if (!isValid(start) || !isValid(end)) {
+      setValidationMessage('Invalid date format');
+      return false;
+    }
+
+    if (isBefore(end, start)) {
+      setValidationMessage('End date must be after start date');
+      return false;
+    }
+
+    setValidationMessage('');
+    return true;
+  }, [startDate, endDate]);
+
+  // Handle start date change
+  const handleStartDateChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const newStartDate = e.target.value;
+    setStartDate(newStartDate);
+    
+    // Clear end date if it's before new start date
+    if (endDate && isBefore(parseISO(endDate), parseISO(newStartDate))) {
+      setEndDate('');
+    }
+    
+    // Reset availability status
+    setIsAvailable(null);
+  };
+
+  // Handle end date change
+  const handleEndDateChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setEndDate(e.target.value);
+    setIsAvailable(null);
+  };
+  
+  // Update price when dates change
   useEffect(() => {
     const updatePrice = async () => {
-      if (carId && startDate && endDate) {
-        const price = await calculatePrice(parseInt(carId), startDate, endDate);
-        setTotalPrice(price);
+      if (!carId || !startDate || !endDate || !validateDates()) {
+        setTotalPrice(0);
+        return;
       }
+      
+      const price = await calculatePrice(parseInt(carId), startDate, endDate);
+      setTotalPrice(price);
     };
     
-    updatePrice();
-  }, [carId, startDate, endDate, calculatePrice]);
+    const timeoutId = setTimeout(updatePrice, 300);
+    return () => clearTimeout(timeoutId);
+  }, [carId, startDate, endDate, calculatePrice, validateDates]);
   
+  // Check availability with debouncing
   useEffect(() => {
     const checkCarAvailability = async () => {
-      if (carId && startDate && endDate) {
-        const available = await checkAvailability(parseInt(carId), startDate, endDate);
-        setIsAvailable(available);
+      if (!carId || !startDate || !endDate || !validateDates()) {
+        setIsAvailable(null);
+        return;
       }
+      
+      const available = await checkAvailability(parseInt(carId), startDate, endDate);
+      setIsAvailable(available);
     };
     
-    checkCarAvailability();
-  }, [carId, startDate, endDate, checkAvailability]);
-  
+    const timeoutId = setTimeout(checkCarAvailability, 500);
+    return () => clearTimeout(timeoutId);
+  }, [carId, startDate, endDate, checkAvailability, validateDates]);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
@@ -65,8 +122,13 @@ const BookingPage: React.FC = () => {
       return;
     }
     
+    if (!validateDates()) {
+      toast.error(validationMessage);
+      return;
+    }
+    
     if (!isAvailable) {
-      toast.error('Car is not available for the selected dates');
+      toast.error('Car is not available for selected dates');
       return;
     }
     
@@ -85,7 +147,7 @@ const BookingPage: React.FC = () => {
         navigate(`/bookings/${booking.id}`);
       }
     } catch (error) {
-      toast.error('Failed to create booking');
+      toast.error((error as Error).message || 'Failed to create booking');
     }
   };
   
@@ -100,8 +162,13 @@ const BookingPage: React.FC = () => {
   if (carError || !currentCar) {
     return (
       <div className="min-h-screen pt-16 pb-12 flex flex-col items-center justify-center">
-        <div className="bg-error-50 text-error-500 p-4 rounded-md">
-          Error loading car details. Please try again.
+        <div className="text-center">
+          <h2 className="text-2xl font-semibold mb-4">Error loading car details</h2>
+          <Link to="/cars">
+            <Button variant="primary" leftIcon={<ArrowLeft size={20} />}>
+              Back to Cars
+            </Button>
+          </Link>
         </div>
       </div>
     );
@@ -129,7 +196,7 @@ const BookingPage: React.FC = () => {
                     label="Start Date"
                     type="date"
                     value={startDate}
-                    onChange={(e) => setStartDate(e.target.value)}
+                    onChange={handleStartDateChange}
                     min={format(new Date(), 'yyyy-MM-dd')}
                     leftIcon={<Calendar size={20} />}
                   />
@@ -138,18 +205,26 @@ const BookingPage: React.FC = () => {
                     label="End Date"
                     type="date"
                     value={endDate}
-                    onChange={(e) => setEndDate(e.target.value)}
+                    onChange={handleEndDateChange}
                     min={startDate}
                     leftIcon={<Calendar size={20} />}
+                    disabled={!startDate}
                   />
                 </div>
+                
+                {validationMessage && (
+                  <div className="text-error-500 text-sm flex items-center">
+                    <AlertCircle size={16} className="mr-1" />
+                    {validationMessage}
+                  </div>
+                )}
                 
                 {isCheckingAvailability ? (
                   <div className="flex items-center justify-center text-secondary-600">
                     <div className="animate-spin rounded-full h-5 w-5 border-t-2 border-b-2 border-primary-800 mr-2"></div>
                     Checking availability...
                   </div>
-                ) : isAvailable !== null && (
+                ) : startDate && endDate && isAvailable !== null && (
                   <div className={`flex items-center ${isAvailable ? 'text-success-500' : 'text-error-500'}`}>
                     {isAvailable ? (
                       <>
@@ -179,11 +254,15 @@ const BookingPage: React.FC = () => {
                   variant="primary"
                   fullWidth
                   size="lg"
-                  isLoading={bookingLoading}
-                  disabled={!isAvailable || bookingLoading}
+                  isLoading={bookingLoading || isCheckingAvailability}
+                  disabled={!startDate || !endDate || !isAvailable || bookingLoading || isCheckingAvailability}
                   leftIcon={<CreditCard size={20} />}
                 >
-                  Proceed to Payment
+                  {!user ? 'Sign in to Book' :
+                   !startDate || !endDate ? 'Select Dates' :
+                   isCheckingAvailability ? 'Checking Availability...' :
+                   !isAvailable ? 'Car Not Available' :
+                   'Proceed to Payment'}
                 </Button>
               </form>
             </div>
