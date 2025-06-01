@@ -5,17 +5,23 @@ import { format, addDays, isBefore, isValid, parseISO } from 'date-fns';
 import { toast } from 'sonner';
 import { Button } from '../../components/ui/Button';
 import { Input } from '../../components/ui/Input';
-@@ -12,7 +12,6 @@ import { useAuthStore } from '../../stores/authStore';
-const BookingPage: React.FC = () => {
-const { carId } = useParams();
-const navigate = useNavigate();
-const { user } = useAuthStore();
-const { currentCar, loading: carLoading, error: carError, fetchCarById } = useCarStore();
-const { 
-@@ -23,377 +22,139 @@ const BookingPage: React.FC = () => {
-isCheckingAvailability
-} = useBookingStore();
+import { useCarStore } from '../../stores/carStore';
+import { useBookingStore } from '../../stores/bookingStore';
+import { useAuthStore } from '../../stores/authStore';
 
+const BookingPage: React.FC = () => {
+  const { carId } = useParams();
+  const navigate = useNavigate();
+  const { user } = useAuthStore();
+  const { currentCar, loading: carLoading, error: carError, fetchCarById } = useCarStore();
+  const { 
+    createBooking, 
+    calculatePrice, 
+    checkAvailability,
+    loading: bookingLoading,
+    isCheckingAvailability
+  } = useBookingStore();
+  
   // Initialize start date to today, but leave end date empty
   const [startDate, setStartDate] = useState(format(new Date(), 'yyyy-MM-dd'));
   const [endDate, setEndDate] = useState('');
@@ -40,7 +46,7 @@ isCheckingAvailability
 
     const start = parseISO(startDate);
     const end = parseISO(endDate);
-
+    
     if (!isValid(start) || !isValid(end)) {
       setValidationMessage('Invalid date format');
       return false;
@@ -59,12 +65,12 @@ isCheckingAvailability
   const handleStartDateChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const newStartDate = e.target.value;
     setStartDate(newStartDate);
-
+    
     // Clear end date if it's before new start date
     if (endDate && isBefore(parseISO(endDate), parseISO(newStartDate))) {
       setEndDate('');
-}
-
+    }
+    
     // Reset availability status
     setIsAvailable(null);
   };
@@ -73,24 +79,24 @@ isCheckingAvailability
   const handleEndDateChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setEndDate(e.target.value);
     setIsAvailable(null);
-};
-
+  };
+  
   // Update price when dates change
-useEffect(() => {
+  useEffect(() => {
     const updatePrice = async () => {
       if (!carId || !startDate || !endDate || !validateDates()) {
         setTotalPrice(0);
-return;
-}
-
+        return;
+      }
+      
       const price = await calculatePrice(parseInt(carId), startDate, endDate);
       setTotalPrice(price);
-};
-
+    };
+    
     const timeoutId = setTimeout(updatePrice, 300);
     return () => clearTimeout(timeoutId);
   }, [carId, startDate, endDate, calculatePrice, validateDates]);
-
+  
   // Check availability with debouncing
   useEffect(() => {
     const checkCarAvailability = async () => {
@@ -102,20 +108,20 @@ return;
       const available = await checkAvailability(parseInt(carId), startDate, endDate);
       setIsAvailable(available);
     };
-
+    
     const timeoutId = setTimeout(checkCarAvailability, 500);
     return () => clearTimeout(timeoutId);
   }, [carId, startDate, endDate, checkAvailability, validateDates]);
 
-const handleSubmit = async (e: React.FormEvent) => {
-e.preventDefault();
-
-if (!user) {
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    if (!user) {
       toast.error('Please sign in to make a booking');
-navigate('/login');
-return;
-}
-
+      navigate('/login');
+      return;
+    }
+    
     if (!validateDates()) {
       toast.error(validationMessage);
       return;
@@ -123,52 +129,67 @@ return;
     
     if (!isAvailable) {
       toast.error('Car is not available for selected dates');
-return;
-}
-
-try {
-const booking = await createBooking({
+      return;
+    }
+    
+    try {
+      const booking = await createBooking({
         car_id: currentCar!.id,
-user_id: user.id,
+        user_id: user.id,
         start_date: startDate,
         end_date: endDate,
-total_price: totalPrice,
-status: 'pending',
-});
-
-if (booking) {
+        total_price: totalPrice,
+        status: 'pending',
+      });
+      
+      if (booking) {
         toast.success('Booking created successfully');
-navigate(`/bookings/${booking.id}`);
-}
-} catch (error) {
+        navigate(`/bookings/${booking.id}`);
+      }
+    } catch (error) {
       toast.error((error as Error).message || 'Failed to create booking');
-}
-};
-
+    }
+  };
+  
   if (carLoading) {
-return (
-<div className="min-h-screen pt-16 pb-12 flex flex-col items-center justify-center">
-<div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary-800"></div>
-</div>
-);
-}
-@@ -416,35 +177,100 @@ const BookingPage: React.FC = () => {
-return (
-<div className="min-h-screen pt-16 pb-12 bg-secondary-50">
-<div className="container-custom">
-<div className="mb-6">
+    return (
+      <div className="min-h-screen pt-16 pb-12 flex flex-col items-center justify-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary-800"></div>
+      </div>
+    );
+  }
+  
+  if (carError || !currentCar) {
+    return (
+      <div className="min-h-screen pt-16 pb-12 flex flex-col items-center justify-center">
+        <div className="text-center">
+          <h2 className="text-2xl font-semibold mb-4">Error loading car details</h2>
+          <Link to="/cars">
+            <Button variant="primary" leftIcon={<ArrowLeft size={20} />}>
+              Back to Cars
+            </Button>
+          </Link>
+        </div>
+      </div>
+    );
+  }
+  
+  return (
+    <div className="min-h-screen pt-16 pb-12 bg-secondary-50">
+      <div className="container-custom">
+        <div className="mb-6">
           <Link to={`/cars/${carId}`} className="inline-flex items-center text-primary-700 hover:text-primary-800">
-<ArrowLeft size={20} className="mr-2" />
+            <ArrowLeft size={20} className="mr-2" />
             Back to Car Details
-</Link>
-</div>
+          </Link>
+        </div>
         
-<div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-{/* Booking Form */}
-<div className="lg:col-span-2">
-<div className="bg-white rounded-lg shadow-md p-6">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+          {/* Booking Form */}
+          <div className="lg:col-span-2">
+            <div className="bg-white rounded-lg shadow-md p-6">
               <h1 className="text-2xl font-semibold mb-6">Book Your Rental</h1>
-
+              
               <form onSubmit={handleSubmit} className="space-y-6">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <Input
@@ -244,26 +265,30 @@ return (
                    'Proceed to Payment'}
                 </Button>
               </form>
-</div>
-</div>
+            </div>
+          </div>
           
-{/* Booking Summary */}
-<div className="lg:col-span-1">
+          {/* Booking Summary */}
+          <div className="lg:col-span-1">
             <div className="bg-white rounded-lg shadow-md p-6">
-<h2 className="text-xl font-semibold mb-4">Booking Summary</h2>
-
-<div className="mb-4">
-/>
-</div>
-
+              <h2 className="text-xl font-semibold mb-4">Booking Summary</h2>
+              
+              <div className="mb-4">
+                <img 
+                  src={currentCar.image_url} 
+                  alt={`${currentCar.make} ${currentCar.model}`}
+                  className="w-full h-48 object-cover rounded-md"
+                />
+              </div>
+              
               <div className="space-y-4">
                 <div>
                   <h3 className="font-semibold">
                     {currentCar.year} {currentCar.make} {currentCar.model}
                   </h3>
                   <p className="text-secondary-600">{currentCar.category}</p>
-</div>
-
+                </div>
+                
                 <div className="border-t border-b border-secondary-200 py-4">
                   <div className="flex justify-between mb-2">
                     <span>Daily Rate</span>
@@ -274,13 +299,21 @@ return (
                     <div className="flex justify-between mb-2 text-success-500">
                       <span>Discount</span>
                       <span>-$0.00</span>
-</div>
+                    </div>
                   )}
-</div>
+                </div>
                 
                 <div className="flex justify-between items-center text-lg font-semibold">
                   <span>Total</span>
                   <span>${totalPrice.toFixed(2)}</span>
-</div>
-</div>
-</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+export default BookingPage;
