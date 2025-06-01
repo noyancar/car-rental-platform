@@ -28,21 +28,17 @@ export const useBookingStore = create<BookingState>((set, get) => ({
     try {
       set({ isCheckingAvailability: true });
       
-      const response = await fetch(
-        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/check-car-availability?` + 
-        new URLSearchParams({
+      const { data, error } = await supabase.functions.invoke('check-car-availability', {
+        method: 'GET',
+        query: {
           car_id: carId.toString(),
           start_date: startDate,
           end_date: endDate,
-        }),
-        {
-          headers: {
-            Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
-          },
         }
-      );
+      });
 
-      const data = await response.json();
+      if (error) throw error;
+      
       return data.available;
     } catch (error) {
       console.error('Error checking availability:', error);
