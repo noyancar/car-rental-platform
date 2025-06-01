@@ -20,6 +20,10 @@ export type Car = {
   available: boolean;
   features: string[];
   description: string;
+  seats: number;
+  transmission: string;
+  mileage_type: string;
+  min_rental_hours: number;
 }
 
 export type Booking = {
