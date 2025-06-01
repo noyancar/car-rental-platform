@@ -14,7 +14,7 @@ interface BookingState {
   createBooking: (booking: Omit<Booking, 'id'>) => Promise<Booking | null>;
   updateBookingStatus: (id: number, status: Booking['status']) => Promise<void>;
   calculatePrice: (carId: number, startDate: string, endDate: string, discountCodeId?: number) => Promise<number>;
-  checkAvailability: (carId: number, startDate: string, endDate: string) => Promise<boolean>;
+  checkAvailability: (carId: number, startDate: string, endDate: string) => Promise<{ available: boolean; message: string; conflictingBookings?: number }>;
 }
 
 export const useBookingStore = create<BookingState>((set, get) => ({
@@ -28,21 +28,47 @@ export const useBookingStore = create<BookingState>((set, get) => ({
     try {
       set({ isCheckingAvailability: true });
       
-      const { data, error } = await supabase.functions.invoke('check-car-availability', {
-        method: 'GET',
-        query: {
-          car_id: carId.toString(),
-          start_date: startDate,
-          end_date: endDate,
-        }
-      });
-
-      if (error) throw error;
+      // First check if car exists and is available
+      const { data: car, error: carError } = await supabase
+        .from('cars')
+        .select('available')
+        .eq('id', carId)
+        .single();
       
-      return data.available;
+      if (carError || !car) {
+        return { available: false, message: 'Car not found' };
+      }
+      
+      if (!car.available) {
+        return { available: false, message: 'Car is currently unavailable' };
+      }
+      
+      // Check for overlapping bookings
+      const { data: overlappingBookings, error: bookingsError } = await supabase
+        .from('bookings')
+        .select('id, start_date, end_date')
+        .eq('car_id', carId)
+        .neq('status', 'cancelled')
+        .or(`start_date.lte.${endDate},end_date.gte.${startDate}`);
+      
+      if (bookingsError) {
+        console.error('Error checking bookings:', bookingsError);
+        return { available: false, message: 'Error checking availability' };
+      }
+      
+      const available = !overlappingBookings || overlappingBookings.length === 0;
+      
+      return {
+        available,
+        message: available 
+          ? 'Car is available for selected dates' 
+          : `Car is already booked for ${overlappingBookings.length} overlapping period(s)`,
+        conflictingBookings: overlappingBookings?.length || 0
+      };
+      
     } catch (error) {
-      console.error('Error checking availability:', error);
-      return false;
+      console.error('Availability check error:', error);
+      return { available: false, message: 'Error checking availability' };
     } finally {
       set({ isCheckingAvailability: false });
     }
@@ -113,14 +139,14 @@ export const useBookingStore = create<BookingState>((set, get) => ({
       set({ loading: true, error: null });
       
       // Check availability before creating booking
-      const isAvailable = await get().checkAvailability(
+      const availabilityCheck = await get().checkAvailability(
         booking.car_id,
         booking.start_date,
         booking.end_date
       );
       
-      if (!isAvailable) {
-        throw new Error('Car is not available for the selected dates');
+      if (!availabilityCheck.available) {
+        throw new Error(availabilityCheck.message);
       }
       
       const { data, error } = await supabase
@@ -142,8 +168,22 @@ export const useBookingStore = create<BookingState>((set, get) => ({
       set(state => ({ bookings: [newBooking, ...state.bookings] }));
       return newBooking;
     } catch (error) {
-      set({ error: (error as Error).message });
-      return null;
+      let errorMessage = 'An error occurred';
+      
+      if (error instanceof Error) {
+        if (error.message.includes('overlapping')) {
+          errorMessage = 'This car is already booked for the selected dates';
+        } else if (error.message.includes('not found')) {
+          errorMessage = 'The selected car is no longer available';
+        } else if (error.message.includes('unavailable')) {
+          errorMessage = 'This car is currently unavailable for booking';
+        } else {
+          errorMessage = error.message;
+        }
+      }
+      
+      set({ error: errorMessage });
+      throw new Error(errorMessage);
     } finally {
       set({ loading: false });
     }

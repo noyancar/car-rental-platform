@@ -19,14 +19,22 @@ const BookingPage: React.FC = () => {
     calculatePrice, 
     checkAvailability,
     loading: bookingLoading,
-    isCheckingAvailability
+    isCheckingAvailability 
   } = useBookingStore();
   
   const [startDate, setStartDate] = useState(format(new Date(), 'yyyy-MM-dd'));
   const [endDate, setEndDate] = useState(format(addDays(new Date(), 1), 'yyyy-MM-dd'));
   const [totalPrice, setTotalPrice] = useState(0);
   const [discountCode, setDiscountCode] = useState('');
-  const [isAvailable, setIsAvailable] = useState<boolean | null>(null);
+  const [availabilityStatus, setAvailabilityStatus] = useState<{
+    available: boolean;
+    message: string;
+    checking: boolean;
+  }>({
+    available: true,
+    message: '',
+    checking: false
+  });
   
   useEffect(() => {
     if (carId) {
@@ -47,14 +55,44 @@ const BookingPage: React.FC = () => {
   
   useEffect(() => {
     const checkCarAvailability = async () => {
-      if (carId && startDate && endDate) {
-        const available = await checkAvailability(parseInt(carId), startDate, endDate);
-        setIsAvailable(available);
-      }
+      if (!carId || !startDate || !endDate) return;
+      
+      setAvailabilityStatus(prev => ({ ...prev, checking: true }));
+      
+      const result = await checkAvailability(parseInt(carId), startDate, endDate);
+      
+      setAvailabilityStatus({
+        available: result.available,
+        message: result.message,
+        checking: false
+      });
     };
     
-    checkCarAvailability();
+    const timeoutId = setTimeout(checkCarAvailability, 500);
+    return () => clearTimeout(timeoutId);
   }, [carId, startDate, endDate, checkAvailability]);
+  
+  const validateDates = () => {
+    const start = new Date(startDate);
+    const end = new Date(endDate);
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    
+    if (start < today) {
+      return 'Start date cannot be in the past';
+    }
+    
+    if (end <= start) {
+      return 'End date must be after start date';
+    }
+    
+    const daysDiff = Math.ceil((end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24));
+    if (daysDiff > 30) {
+      return 'Maximum rental period is 30 days';
+    }
+    
+    return null;
+  };
   
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -65,8 +103,14 @@ const BookingPage: React.FC = () => {
       return;
     }
     
-    if (!isAvailable) {
-      toast.error('Car is not available for the selected dates');
+    const dateError = validateDates();
+    if (dateError) {
+      toast.error(dateError);
+      return;
+    }
+    
+    if (!availabilityStatus.available) {
+      toast.error('Please select different dates - car is not available');
       return;
     }
     
@@ -85,7 +129,7 @@ const BookingPage: React.FC = () => {
         navigate(`/bookings/${booking.id}`);
       }
     } catch (error) {
-      toast.error('Failed to create booking');
+      toast.error(error instanceof Error ? error.message : 'Failed to create booking');
     }
   };
   
@@ -144,26 +188,26 @@ const BookingPage: React.FC = () => {
                   />
                 </div>
                 
-                {isCheckingAvailability ? (
-                  <div className="flex items-center justify-center text-secondary-600">
-                    <div className="animate-spin rounded-full h-5 w-5 border-t-2 border-b-2 border-primary-800 mr-2"></div>
-                    Checking availability...
-                  </div>
-                ) : isAvailable !== null && (
-                  <div className={`flex items-center ${isAvailable ? 'text-success-500' : 'text-error-500'}`}>
-                    {isAvailable ? (
-                      <>
+                {/* Availability Status */}
+                <div className="p-4 rounded-md bg-secondary-50">
+                  {availabilityStatus.checking ? (
+                    <div className="flex items-center justify-center text-secondary-600">
+                      <div className="animate-spin rounded-full h-5 w-5 border-t-2 border-b-2 border-primary-800 mr-2"></div>
+                      Checking availability...
+                    </div>
+                  ) : (
+                    <div className={`flex items-center ${
+                      availabilityStatus.available ? 'text-success-500' : 'text-error-500'
+                    }`}>
+                      {availabilityStatus.available ? (
                         <CheckCircle size={20} className="mr-2" />
-                        Car is available for selected dates
-                      </>
-                    ) : (
-                      <>
+                      ) : (
                         <AlertCircle size={20} className="mr-2" />
-                        Car is not available for selected dates
-                      </>
-                    )}
-                  </div>
-                )}
+                      )}
+                      {availabilityStatus.message}
+                    </div>
+                  )}
+                </div>
                 
                 <div>
                   <Input
@@ -179,11 +223,11 @@ const BookingPage: React.FC = () => {
                   variant="primary"
                   fullWidth
                   size="lg"
-                  isLoading={bookingLoading}
-                  disabled={!isAvailable || bookingLoading}
+                  isLoading={bookingLoading || availabilityStatus.checking}
+                  disabled={!availabilityStatus.available || bookingLoading || availabilityStatus.checking}
                   leftIcon={<CreditCard size={20} />}
                 >
-                  Proceed to Payment
+                  {availabilityStatus.available ? 'Proceed to Payment' : 'Car Not Available'}
                 </Button>
               </form>
             </div>
