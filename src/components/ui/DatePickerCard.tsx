@@ -146,7 +146,7 @@ export const DatePickerCard: React.FC<DatePickerCardProps> = ({
               value={pickupDate}
               onChange={handlePickupDateChange}
               min={format(new Date(), 'yyyy-MM-dd')}
-              leftIcon={<Calendar className="text-primary-800" size={20} />}
+              leftIcon={<Calendar className="text-primary-800\" size={20} />}
               className="
                 h-12 bg-white/95 rounded-xl
                 border-2 border-white/20
@@ -168,7 +168,7 @@ export const DatePickerCard: React.FC<DatePickerCardProps> = ({
               value={returnDate}
               onChange={handleReturnDateChange}
               min={pickupDate}
-              leftIcon={<Calendar className="text-primary-800" size={20} />}
+              leftIcon={<Calendar className="text-primary-800\" size={20} />}
               className="
                 h-12 bg-white/95 rounded-xl
                 border-2 border-white/20
@@ -195,7 +195,7 @@ export const DatePickerCard: React.FC<DatePickerCardProps> = ({
             value={pickupDate}
             onChange={handlePickupDateChange}
             min={format(new Date(), 'yyyy-MM-dd')}
-            leftIcon={<Calendar className="text-primary-800" size={20} />}
+            leftIcon={<Calendar className="text-primary-800\" size={20} />}
             className="
               h-12 bg-white/95 rounded-xl
               border-2 border-white/20
@@ -216,7 +216,7 @@ export const DatePickerCard: React.FC<DatePickerCardProps> = ({
             value={returnDate}
             onChange={handleReturnDateChange}
             min={pickupDate}
-            leftIcon={<Calendar className="text-primary-800" size={20} />}
+            leftIcon={<Calendar className="text-primary-800\" size={20} />}
             className="
               h-12 bg-white/95 rounded-xl
               border-2 border-white/20
