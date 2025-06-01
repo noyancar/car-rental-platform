@@ -5,14 +5,13 @@ import { format, addDays, isBefore, isValid, parseISO } from 'date-fns';
 import { toast } from 'sonner';
 import { Button } from '../../components/ui/Button';
 import { Input } from '../../components/ui/Input';
-@@ -12,7 +12,6 @@ import { useAuthStore } from '../../stores/authStore';
+import { useAuthStore } from '../../stores/authStore';
 const BookingPage: React.FC = () => {
 const { carId } = useParams();
 const navigate = useNavigate();
 const { user } = useAuthStore();
 const { currentCar, loading: carLoading, error: carError, fetchCarById } = useCarStore();
-const { 
-@@ -23,377 +22,139 @@ const BookingPage: React.FC = () => {
+const BookingPage: React.FC = () => {
 isCheckingAvailability
 } = useBookingStore();
 
@@ -152,7 +151,7 @@ return (
 </div>
 );
 }
-@@ -416,35 +177,100 @@ const BookingPage: React.FC = () => {
+const BookingPage: React.FC = () => {
 return (
 <div className="min-h-screen pt-16 pb-12 bg-secondary-50">
 <div className="container-custom">
