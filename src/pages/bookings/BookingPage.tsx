@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
-import { ArrowLeft, Calendar, CreditCard } from 'lucide-react';
+import { ArrowLeft, Calendar, CreditCard, AlertCircle, CheckCircle } from 'lucide-react';
 import { format, addDays } from 'date-fns';
 import { toast } from 'sonner';
 import { Button } from '../../components/ui/Button';
@@ -14,12 +14,19 @@ const BookingPage: React.FC = () => {
   const navigate = useNavigate();
   const { user } = useAuthStore();
   const { currentCar, loading: carLoading, error: carError, fetchCarById } = useCarStore();
-  const { createBooking, calculatePrice, loading: bookingLoading } = useBookingStore();
+  const { 
+    createBooking, 
+    calculatePrice, 
+    checkAvailability,
+    loading: bookingLoading,
+    isCheckingAvailability
+  } = useBookingStore();
   
   const [startDate, setStartDate] = useState(format(new Date(), 'yyyy-MM-dd'));
   const [endDate, setEndDate] = useState(format(addDays(new Date(), 1), 'yyyy-MM-dd'));
   const [totalPrice, setTotalPrice] = useState(0);
   const [discountCode, setDiscountCode] = useState('');
+  const [isAvailable, setIsAvailable] = useState<boolean | null>(null);
   
   useEffect(() => {
     if (carId) {
@@ -38,6 +45,50 @@ const BookingPage: React.FC = () => {
     updatePrice();
   }, [carId, startDate, endDate, calculatePrice]);
   
+  useEffect(() => {
+    const checkCarAvailability = async () => {
+      if (carId && startDate && endDate) {
+        const available = await checkAvailability(parseInt(carId), startDate, endDate);
+        setIsAvailable(available);
+      }
+    };
+    
+    checkCarAvailability();
+  }, [carId, startDate, endDate, checkAvailability]);
+  
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    if (!user) {
+      toast.error('Please sign in to make a booking');
+      navigate('/login');
+      return;
+    }
+    
+    if (!isAvailable) {
+      toast.error('Car is not available for the selected dates');
+      return;
+    }
+    
+    try {
+      const booking = await createBooking({
+        car_id: currentCar!.id,
+        user_id: user.id,
+        start_date: startDate,
+        end_date: endDate,
+        total_price: totalPrice,
+        status: 'pending',
+      });
+      
+      if (booking) {
+        toast.success('Booking created successfully');
+        navigate(`/bookings/${booking.id}`);
+      }
+    } catch (error) {
+      toast.error('Failed to create booking');
+    }
+  };
+  
   if (carLoading) {
     return (
       <div className="min-h-screen pt-16 pb-12 flex flex-col items-center justify-center">
@@ -55,34 +106,6 @@ const BookingPage: React.FC = () => {
       </div>
     );
   }
-  
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    
-    if (!user) {
-      toast.error('Please sign in to make a booking');
-      navigate('/login');
-      return;
-    }
-    
-    try {
-      const booking = await createBooking({
-        car_id: currentCar.id,
-        user_id: user.id,
-        start_date: startDate,
-        end_date: endDate,
-        total_price: totalPrice,
-        status: 'pending',
-      });
-      
-      if (booking) {
-        toast.success('Booking created successfully');
-        navigate(`/bookings/${booking.id}`);
-      }
-    } catch (error) {
-      toast.error('Failed to create booking');
-    }
-  };
   
   return (
     <div className="min-h-screen pt-16 pb-12 bg-secondary-50">
@@ -121,6 +144,27 @@ const BookingPage: React.FC = () => {
                   />
                 </div>
                 
+                {isCheckingAvailability ? (
+                  <div className="flex items-center justify-center text-secondary-600">
+                    <div className="animate-spin rounded-full h-5 w-5 border-t-2 border-b-2 border-primary-800 mr-2"></div>
+                    Checking availability...
+                  </div>
+                ) : isAvailable !== null && (
+                  <div className={`flex items-center ${isAvailable ? 'text-success-500' : 'text-error-500'}`}>
+                    {isAvailable ? (
+                      <>
+                        <CheckCircle size={20} className="mr-2" />
+                        Car is available for selected dates
+                      </>
+                    ) : (
+                      <>
+                        <AlertCircle size={20} className="mr-2" />
+                        Car is not available for selected dates
+                      </>
+                    )}
+                  </div>
+                )}
+                
                 <div>
                   <Input
                     label="Discount Code"
@@ -136,6 +180,7 @@ const BookingPage: React.FC = () => {
                   fullWidth
                   size="lg"
                   isLoading={bookingLoading}
+                  disabled={!isAvailable || bookingLoading}
                   leftIcon={<CreditCard size={20} />}
                 >
                   Proceed to Payment

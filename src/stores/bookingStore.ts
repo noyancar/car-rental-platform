@@ -7,12 +7,14 @@ interface BookingState {
   currentBooking: Booking | null;
   loading: boolean;
   error: string | null;
+  isCheckingAvailability: boolean;
   
   fetchUserBookings: () => Promise<void>;
   fetchBookingById: (id: number) => Promise<void>;
   createBooking: (booking: Omit<Booking, 'id'>) => Promise<Booking | null>;
   updateBookingStatus: (id: number, status: Booking['status']) => Promise<void>;
   calculatePrice: (carId: number, startDate: string, endDate: string, discountCodeId?: number) => Promise<number>;
+  checkAvailability: (carId: number, startDate: string, endDate: string) => Promise<boolean>;
 }
 
 export const useBookingStore = create<BookingState>((set, get) => ({
@@ -20,6 +22,35 @@ export const useBookingStore = create<BookingState>((set, get) => ({
   currentBooking: null,
   loading: false,
   error: null,
+  isCheckingAvailability: false,
+  
+  checkAvailability: async (carId: number, startDate: string, endDate: string) => {
+    try {
+      set({ isCheckingAvailability: true });
+      
+      const response = await fetch(
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/check-car-availability?` + 
+        new URLSearchParams({
+          car_id: carId.toString(),
+          start_date: startDate,
+          end_date: endDate,
+        }),
+        {
+          headers: {
+            Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
+          },
+        }
+      );
+
+      const data = await response.json();
+      return data.available;
+    } catch (error) {
+      console.error('Error checking availability:', error);
+      return false;
+    } finally {
+      set({ isCheckingAvailability: false });
+    }
+  },
   
   fetchUserBookings: async () => {
     try {
@@ -35,8 +66,7 @@ export const useBookingStore = create<BookingState>((set, get) => ({
           cars (*)
         `)
         .eq('user_id', user.id)
-        .order('created_at', { ascending: false })
-        .abortSignal(new AbortController().signal);
+        .order('created_at', { ascending: false });
       
       if (error) throw error;
       
@@ -64,8 +94,7 @@ export const useBookingStore = create<BookingState>((set, get) => ({
           cars (*)
         `)
         .eq('id', id)
-        .single()
-        .abortSignal(new AbortController().signal);
+        .single();
       
       if (error) throw error;
       
@@ -87,6 +116,17 @@ export const useBookingStore = create<BookingState>((set, get) => ({
     try {
       set({ loading: true, error: null });
       
+      // Check availability before creating booking
+      const isAvailable = await get().checkAvailability(
+        booking.car_id,
+        booking.start_date,
+        booking.end_date
+      );
+      
+      if (!isAvailable) {
+        throw new Error('Car is not available for the selected dates');
+      }
+      
       const { data, error } = await supabase
         .from('bookings')
         .insert([booking])
@@ -94,8 +134,7 @@ export const useBookingStore = create<BookingState>((set, get) => ({
           *,
           cars (*)
         `)
-        .single()
-        .abortSignal(new AbortController().signal);
+        .single();
       
       if (error) throw error;
       
@@ -121,8 +160,7 @@ export const useBookingStore = create<BookingState>((set, get) => ({
       const { error } = await supabase
         .from('bookings')
         .update({ status })
-        .eq('id', id)
-        .abortSignal(new AbortController().signal);
+        .eq('id', id);
       
       if (error) throw error;
       
@@ -147,8 +185,7 @@ export const useBookingStore = create<BookingState>((set, get) => ({
         .from('cars')
         .select('price_per_day')
         .eq('id', carId)
-        .single()
-        .abortSignal(new AbortController().signal);
+        .single();
       
       if (carError || !car) return 0;
       
@@ -163,8 +200,7 @@ export const useBookingStore = create<BookingState>((set, get) => ({
           .from('discount_codes')
           .select('discount_percentage')
           .eq('id', discountCodeId)
-          .single()
-          .abortSignal(new AbortController().signal);
+          .single();
         
         if (!discountError && discount) {
           price = price * (1 - discount.discount_percentage / 100);
