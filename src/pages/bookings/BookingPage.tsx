@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
-import { ArrowLeft, Calendar, CreditCard, AlertCircle, CheckCircle } from 'lucide-react';
-import { format, addDays, isBefore, isValid, parseISO } from 'date-fns';
+import { ArrowLeft, Calendar, CreditCard, AlertCircle, CheckCircle, Clock } from 'lucide-react';
+import { format, addDays, differenceInDays, isBefore, isValid, parseISO } from 'date-fns';
 import { toast } from 'sonner';
 import { Button } from '../../components/ui/Button';
 import { Input } from '../../components/ui/Input';
@@ -22,38 +22,65 @@ const BookingPage: React.FC = () => {
     isCheckingAvailability
   } = useBookingStore();
   
-  // Initialize start date to today, but leave end date empty
-  const [startDate, setStartDate] = useState(format(new Date(), 'yyyy-MM-dd'));
-  const [endDate, setEndDate] = useState('');
+  // Initialize with today as start date, tomorrow as end date
+  const today = new Date();
+  const tomorrow = addDays(today, 1);
+  
+  const [startDate, setStartDate] = useState(format(today, 'yyyy-MM-dd'));
+  const [endDate, setEndDate] = useState(format(tomorrow, 'yyyy-MM-dd'));
   const [totalPrice, setTotalPrice] = useState(0);
   const [discountCode, setDiscountCode] = useState('');
   const [isAvailable, setIsAvailable] = useState<boolean | null>(null);
   const [validationMessage, setValidationMessage] = useState('');
+  const [rentalDuration, setRentalDuration] = useState(1);
   
-  // Fetch car details on mount
   useEffect(() => {
     if (carId) {
       fetchCarById(parseInt(carId));
     }
   }, [carId, fetchCarById]);
   
+  // Calculate rental duration whenever dates change
+  useEffect(() => {
+    if (startDate && endDate) {
+      const start = parseISO(startDate);
+      const end = parseISO(endDate);
+      if (isValid(start) && isValid(end)) {
+        const days = differenceInDays(end, start);
+        setRentalDuration(Math.max(1, days));
+      }
+    }
+  }, [startDate, endDate]);
+  
   // Validate dates and return status
   const validateDates = useCallback(() => {
     if (!startDate || !endDate) {
-      setValidationMessage('Please select both dates');
+      setValidationMessage('Please select both pickup and return dates');
       return false;
     }
 
     const start = parseISO(startDate);
     const end = parseISO(endDate);
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
     
     if (!isValid(start) || !isValid(end)) {
       setValidationMessage('Invalid date format');
       return false;
     }
 
+    if (isBefore(start, today)) {
+      setValidationMessage('Pickup date cannot be in the past');
+      return false;
+    }
+
     if (isBefore(end, start)) {
-      setValidationMessage('End date must be after start date');
+      setValidationMessage('Return date must be after pickup date');
+      return false;
+    }
+
+    if (differenceInDays(end, start) < 1) {
+      setValidationMessage('Minimum rental period is 1 day');
       return false;
     }
 
@@ -61,30 +88,44 @@ const BookingPage: React.FC = () => {
     return true;
   }, [startDate, endDate]);
 
-  // Handle start date change
+  // Handle start date change with smart end date adjustment
   const handleStartDateChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const newStartDate = e.target.value;
     setStartDate(newStartDate);
     
-    // Clear end date if it's before new start date
-    if (endDate && isBefore(parseISO(endDate), parseISO(newStartDate))) {
-      setEndDate('');
+    // Auto-adjust end date if it's invalid
+    const start = parseISO(newStartDate);
+    const end = parseISO(endDate);
+    
+    if (isValid(start) && (!isValid(end) || isBefore(end, start) || differenceInDays(end, start) < 1)) {
+      // Set end date to start date + 1 day
+      setEndDate(format(addDays(start, 1), 'yyyy-MM-dd'));
     }
     
-    // Reset availability status
+    // Reset availability check
     setIsAvailable(null);
   };
 
   // Handle end date change
   const handleEndDateChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setEndDate(e.target.value);
+    const newEndDate = e.target.value;
+    setEndDate(newEndDate);
+    
+    // Validate minimum rental period
+    const start = parseISO(startDate);
+    const end = parseISO(newEndDate);
+    
+    if (isValid(start) && isValid(end) && differenceInDays(end, start) < 1) {
+      toast.error('Minimum rental period is 1 day');
+    }
+    
     setIsAvailable(null);
   };
   
-  // Update price when dates change
+  // Update price with debouncing
   useEffect(() => {
     const updatePrice = async () => {
-      if (!carId || !startDate || !endDate || !validateDates()) {
+      if (!carId || !validateDates()) {
         setTotalPrice(0);
         return;
       }
@@ -93,14 +134,14 @@ const BookingPage: React.FC = () => {
       setTotalPrice(price);
     };
     
-    const timeoutId = setTimeout(updatePrice, 300);
+    const timeoutId = setTimeout(updatePrice, 400);
     return () => clearTimeout(timeoutId);
   }, [carId, startDate, endDate, calculatePrice, validateDates]);
   
   // Check availability with debouncing
   useEffect(() => {
     const checkCarAvailability = async () => {
-      if (!carId || !startDate || !endDate || !validateDates()) {
+      if (!carId || !validateDates()) {
         setIsAvailable(null);
         return;
       }
@@ -109,7 +150,7 @@ const BookingPage: React.FC = () => {
       setIsAvailable(available);
     };
     
-    const timeoutId = setTimeout(checkCarAvailability, 500);
+    const timeoutId = setTimeout(checkCarAvailability, 400);
     return () => clearTimeout(timeoutId);
   }, [carId, startDate, endDate, checkAvailability, validateDates]);
 
@@ -128,7 +169,7 @@ const BookingPage: React.FC = () => {
     }
     
     if (!isAvailable) {
-      toast.error('Car is not available for selected dates');
+      toast.error('This car is not available for the selected dates');
       return;
     }
     
@@ -147,7 +188,12 @@ const BookingPage: React.FC = () => {
         navigate(`/bookings/${booking.id}`);
       }
     } catch (error) {
-      toast.error((error as Error).message || 'Failed to create booking');
+      const errorMessage = (error as Error).message;
+      if (errorMessage.includes('availability')) {
+        toast.error('Sorry, this car was just booked. Please try different dates.');
+      } else {
+        toast.error(errorMessage || 'Failed to create booking');
+      }
     }
   };
   
@@ -163,7 +209,7 @@ const BookingPage: React.FC = () => {
     return (
       <div className="min-h-screen pt-16 pb-12 flex flex-col items-center justify-center">
         <div className="text-center">
-          <h2 className="text-2xl font-semibold mb-4">Error loading car details</h2>
+          <h2 className="text-2xl font-semibold mb-4">Error Loading Car Details</h2>
           <Link to="/cars">
             <Button variant="primary" leftIcon={<ArrowLeft size={20} />}>
               Back to Cars
@@ -193,48 +239,61 @@ const BookingPage: React.FC = () => {
               <form onSubmit={handleSubmit} className="space-y-6">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <Input
-                    label="Start Date"
+                    label="Pickup Date"
                     type="date"
                     value={startDate}
                     onChange={handleStartDateChange}
                     min={format(new Date(), 'yyyy-MM-dd')}
                     leftIcon={<Calendar size={20} />}
+                    required
                   />
                   
                   <Input
-                    label="End Date"
+                    label="Return Date"
                     type="date"
                     value={endDate}
                     onChange={handleEndDateChange}
-                    min={startDate}
+                    min={format(parseISO(startDate), 'yyyy-MM-dd')}
                     leftIcon={<Calendar size={20} />}
-                    disabled={!startDate}
+                    required
                   />
                 </div>
                 
+                {/* Rental Duration */}
+                {startDate && endDate && validateDates() && (
+                  <div className="flex items-center text-secondary-600 bg-secondary-50 p-3 rounded-md">
+                    <Clock className="h-5 w-5 mr-2" />
+                    <span>Rental Duration: {rentalDuration} {rentalDuration === 1 ? 'day' : 'days'}</span>
+                  </div>
+                )}
+                
+                {/* Validation Message */}
                 {validationMessage && (
-                  <div className="text-error-500 text-sm flex items-center">
-                    <AlertCircle size={16} className="mr-1" />
+                  <div className="flex items-center text-error-500 bg-error-50 p-3 rounded-md">
+                    <AlertCircle className="h-5 w-5 mr-2" />
                     {validationMessage}
                   </div>
                 )}
                 
+                {/* Availability Status */}
                 {isCheckingAvailability ? (
-                  <div className="flex items-center justify-center text-secondary-600">
-                    <div className="animate-spin rounded-full h-5 w-5 border-t-2 border-b-2 border-primary-800 mr-2"></div>
+                  <div className="flex items-center justify-center text-secondary-600 bg-secondary-50 p-3 rounded-md">
+                    <div className="animate-spin h-5 w-5 border-2 border-primary-800 border-t-transparent rounded-full mr-2"></div>
                     Checking availability...
                   </div>
-                ) : startDate && endDate && isAvailable !== null && (
-                  <div className={`flex items-center ${isAvailable ? 'text-success-500' : 'text-error-500'}`}>
+                ) : isAvailable !== null && validateDates() && (
+                  <div className={`flex items-center p-3 rounded-md ${
+                    isAvailable ? 'bg-success-50 text-success-500' : 'bg-error-50 text-error-500'
+                  }`}>
                     {isAvailable ? (
                       <>
-                        <CheckCircle size={20} className="mr-2" />
-                        Car is available for selected dates
+                        <CheckCircle className="h-5 w-5 mr-2" />
+                        Car is available for your selected dates
                       </>
                     ) : (
                       <>
-                        <AlertCircle size={20} className="mr-2" />
-                        Car is not available for selected dates
+                        <AlertCircle className="h-5 w-5 mr-2" />
+                        Car is not available for these dates
                       </>
                     )}
                   </div>
@@ -242,7 +301,7 @@ const BookingPage: React.FC = () => {
                 
                 <div>
                   <Input
-                    label="Discount Code"
+                    label="Discount Code (Optional)"
                     value={discountCode}
                     onChange={(e) => setDiscountCode(e.target.value)}
                     placeholder="Enter discount code"
@@ -255,14 +314,14 @@ const BookingPage: React.FC = () => {
                   fullWidth
                   size="lg"
                   isLoading={bookingLoading || isCheckingAvailability}
-                  disabled={!startDate || !endDate || !isAvailable || bookingLoading || isCheckingAvailability}
+                  disabled={!validateDates() || !isAvailable || bookingLoading || isCheckingAvailability}
                   leftIcon={<CreditCard size={20} />}
                 >
                   {!user ? 'Sign in to Book' :
-                   !startDate || !endDate ? 'Select Dates' :
+                   !validateDates() ? 'Select Valid Dates' :
                    isCheckingAvailability ? 'Checking Availability...' :
                    !isAvailable ? 'Car Not Available' :
-                   'Proceed to Payment'}
+                   `Book Now • $${totalPrice}`}
                 </Button>
               </form>
             </div>
@@ -294,6 +353,13 @@ const BookingPage: React.FC = () => {
                     <span>Daily Rate</span>
                     <span>${currentCar.price_per_day}/day</span>
                   </div>
+                  
+                  {validateDates() && (
+                    <div className="flex justify-between mb-2 text-secondary-600">
+                      <span>Duration</span>
+                      <span>{rentalDuration} {rentalDuration === 1 ? 'day' : 'days'}</span>
+                    </div>
+                  )}
                   
                   {discountCode && (
                     <div className="flex justify-between mb-2 text-success-500">
