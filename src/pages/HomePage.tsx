@@ -1,10 +1,12 @@
 import React, { useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { CalendarDays, CheckCircle, ShieldCheck, Car as CarIcon, Star } from 'lucide-react';
 import { Button } from '../components/ui/Button';
+import { DatePickerCard } from '../components/ui/DatePickerCard';
 import { useCarStore } from '../stores/carStore';
 
 const HomePage: React.FC = () => {
+  const navigate = useNavigate();
   const { featuredCars, fetchFeaturedCars, loading } = useCarStore();
   
   useEffect(() => {
@@ -37,6 +39,17 @@ const HomePage: React.FC = () => {
             <p className="text-xl mb-8 text-white/90 animate-fade-in" style={{ animationDelay: '0.2s' }}>
               Rent premium vehicles with exceptional service for unforgettable drives.
             </p>
+            
+            {/* DatePickerCard Integration */}
+            <div className="animate-fade-in" style={{ animationDelay: '0.3s' }}>
+              <DatePickerCard 
+                onSearch={(pickup, return_) => {
+                  navigate(`/cars?pickup=${pickup}&return=${return_}`);
+                }}
+                className="mb-8 max-w-3xl"
+              />
+            </div>
+            
             <div className="flex flex-wrap gap-4 animate-fade-in" style={{ animationDelay: '0.4s' }}>
               <Link to="/cars">
                 <Button variant="primary" size="lg">
