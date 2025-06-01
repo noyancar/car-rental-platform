@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useCallback } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Mail, Lock } from 'lucide-react';
 import { toast } from 'sonner';
@@ -15,7 +15,7 @@ const Login: React.FC = () => {
   const navigate = useNavigate();
   const { signIn, loading, error, clearError } = useAuthStore();
   
-  const validate = () => {
+  const validate = useCallback(() => {
     const newErrors: { email?: string; password?: string } = {};
     
     if (!email) {
@@ -32,7 +32,7 @@ const Login: React.FC = () => {
     
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
-  };
+  }, [email, password]);
   
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -55,6 +55,8 @@ const Login: React.FC = () => {
     }
   };
   
+  const isDisabled = loading || isSubmitting;
+  
   return (
     <div className="min-h-screen pt-16 pb-12 flex flex-col justify-center bg-secondary-50">
       <div className="sm:mx-auto sm:w-full sm:max-w-md">
@@ -66,6 +68,7 @@ const Login: React.FC = () => {
           <Link 
             to="/register" 
             className="font-medium text-primary-700 hover:text-primary-600"
+            tabIndex={isDisabled ? -1 : undefined}
           >
             create a new account
           </Link>
@@ -90,7 +93,7 @@ const Login: React.FC = () => {
               error={errors.email}
               placeholder="your.email@example.com"
               autoComplete="email"
-              disabled={loading || isSubmitting}
+              disabled={isDisabled}
               required
             />
             
@@ -103,7 +106,7 @@ const Login: React.FC = () => {
               error={errors.password}
               placeholder="••••••••"
               autoComplete="current-password"
-              disabled={loading || isSubmitting}
+              disabled={isDisabled}
               required
             />
 
@@ -113,8 +116,8 @@ const Login: React.FC = () => {
                   id="remember-me"
                   name="remember-me"
                   type="checkbox"
-                  className="h-4 w-4 text-primary-600 focus:ring-primary-500 border-secondary-300 rounded disabled:opacity-70"
-                  disabled={loading || isSubmitting}
+                  className="h-4 w-4 text-primary-600 focus:ring-primary-500 border-secondary-300 rounded"
+                  disabled={isDisabled}
                 />
                 <label htmlFor="remember-me" className="ml-2 block text-sm text-secondary-700">
                   Remember me
@@ -125,7 +128,7 @@ const Login: React.FC = () => {
                 <Link 
                   to="/forgot-password" 
                   className="font-medium text-primary-700 hover:text-primary-600"
-                  tabIndex={loading || isSubmitting ? -1 : undefined}
+                  tabIndex={isDisabled ? -1 : undefined}
                 >
                   Forgot your password?
                 </Link>
@@ -137,9 +140,9 @@ const Login: React.FC = () => {
                 type="submit"
                 variant="primary"
                 fullWidth
-                isLoading={loading || isSubmitting}
+                isLoading={isDisabled}
                 size="lg"
-                disabled={loading || isSubmitting}
+                disabled={isDisabled}
               >
                 Sign in
               </Button>
