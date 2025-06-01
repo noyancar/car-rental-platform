@@ -1,10 +1,11 @@
 import { create } from 'zustand';
 import { supabase } from '../lib/supabase';
-import type { Car, Booking, DiscountCode, Campaign } from '../types';
+import type { Car, CarWithFeatures, Booking, DiscountCode, Campaign } from '../types';
+import { createCarWithFeatures } from '../types';
 
 interface AdminState {
   // Cars
-  allCars: Car[];
+  allCars: CarWithFeatures[];
   // Bookings
   allBookings: Booking[];
   // Discount codes
@@ -17,7 +18,7 @@ interface AdminState {
   
   // Car management
   fetchAllCars: () => Promise<void>;
-  addCar: (car: Omit<Car, 'id'>) => Promise<void>;
+  addCar: (car: Omit<Car, 'id' | 'created_at'>) => Promise<void>;
   updateCar: (id: number, car: Partial<Car>) => Promise<void>;
   toggleCarAvailability: (id: number, available: boolean) => Promise<void>;
   
@@ -58,7 +59,10 @@ export const useAdminStore = create<AdminState>((set, get) => ({
       
       if (error) throw error;
       
-      set({ allCars: data as Car[] });
+      // Transform cars with parsed features
+      const carsWithFeatures = (data as Car[]).map(createCarWithFeatures);
+      
+      set({ allCars: carsWithFeatures });
     } catch (error) {
       set({ error: (error as Error).message });
     } finally {
@@ -122,7 +126,6 @@ export const useAdminStore = create<AdminState>((set, get) => ({
     }
   },
   
-  // Booking management
   fetchAllBookings: async () => {
     try {
       set({ loading: true, error: null });
@@ -137,9 +140,9 @@ export const useAdminStore = create<AdminState>((set, get) => ({
       
       if (error) throw error;
       
-      const bookings: Booking[] = data.map(item => ({
-        ...item,
-        car: item.cars,
+      const bookings = data.map(booking => ({
+        ...booking,
+        car: booking.cars ? createCarWithFeatures(booking.cars as Car) : undefined,
       }));
       
       set({ allBookings: bookings });
@@ -169,7 +172,6 @@ export const useAdminStore = create<AdminState>((set, get) => ({
     }
   },
   
-  // Discount code management
   fetchDiscountCodes: async () => {
     try {
       set({ loading: true, error: null });
@@ -181,7 +183,7 @@ export const useAdminStore = create<AdminState>((set, get) => ({
       
       if (error) throw error;
       
-      set({ discountCodes: data as DiscountCode[] });
+      set({ discountCodes: data });
     } catch (error) {
       set({ error: (error as Error).message });
     } finally {
@@ -193,15 +195,9 @@ export const useAdminStore = create<AdminState>((set, get) => ({
     try {
       set({ loading: true, error: null });
       
-      // Set initial values for current_uses
-      const newCode = {
-        ...code,
-        current_uses: 0,
-      };
-      
       const { error } = await supabase
         .from('discount_codes')
-        .insert([newCode]);
+        .insert([{ ...code, current_uses: 0 }]);
       
       if (error) throw error;
       
@@ -251,7 +247,6 @@ export const useAdminStore = create<AdminState>((set, get) => ({
     }
   },
   
-  // Campaign management
   fetchCampaigns: async () => {
     try {
       set({ loading: true, error: null });
@@ -263,7 +258,7 @@ export const useAdminStore = create<AdminState>((set, get) => ({
       
       if (error) throw error;
       
-      set({ campaigns: data as Campaign[] });
+      set({ campaigns: data });
     } catch (error) {
       set({ error: (error as Error).message });
     } finally {
@@ -327,3 +322,5 @@ export const useAdminStore = create<AdminState>((set, get) => ({
     }
   },
 }));
+
+export { useAdminStore }
