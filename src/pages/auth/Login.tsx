@@ -10,6 +10,7 @@ const Login: React.FC = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [errors, setErrors] = useState<{ email?: string; password?: string }>({});
+  const [isSubmitting, setIsSubmitting] = useState(false);
   
   const navigate = useNavigate();
   const { signIn, loading, error, clearError } = useAuthStore();
@@ -36,10 +37,12 @@ const Login: React.FC = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (loading) return; // Prevent multiple submissions
+    if (isSubmitting || loading) return;
     clearError();
     
     if (!validate()) return;
+    
+    setIsSubmitting(true);
     
     try {
       await signIn(email, password);
@@ -47,6 +50,8 @@ const Login: React.FC = () => {
       navigate('/');
     } catch (err) {
       // Error is already handled in the store
+    } finally {
+      setIsSubmitting(false);
     }
   };
   
@@ -60,9 +65,7 @@ const Login: React.FC = () => {
           Or{' '}
           <Link 
             to="/register" 
-            className={`font-medium text-primary-700 hover:text-primary-600 ${
-              loading ? 'pointer-events-none opacity-70' : ''
-            }`}
+            className="font-medium text-primary-700 hover:text-primary-600"
           >
             create a new account
           </Link>
@@ -87,7 +90,7 @@ const Login: React.FC = () => {
               error={errors.email}
               placeholder="your.email@example.com"
               autoComplete="email"
-              disabled={loading}
+              disabled={loading || isSubmitting}
               required
             />
             
@@ -100,7 +103,7 @@ const Login: React.FC = () => {
               error={errors.password}
               placeholder="••••••••"
               autoComplete="current-password"
-              disabled={loading}
+              disabled={loading || isSubmitting}
               required
             />
 
@@ -111,7 +114,7 @@ const Login: React.FC = () => {
                   name="remember-me"
                   type="checkbox"
                   className="h-4 w-4 text-primary-600 focus:ring-primary-500 border-secondary-300 rounded disabled:opacity-70"
-                  disabled={loading}
+                  disabled={loading || isSubmitting}
                 />
                 <label htmlFor="remember-me" className="ml-2 block text-sm text-secondary-700">
                   Remember me
@@ -121,10 +124,8 @@ const Login: React.FC = () => {
               <div className="text-sm">
                 <Link 
                   to="/forgot-password" 
-                  className={`font-medium text-primary-700 hover:text-primary-600 ${
-                    loading ? 'pointer-events-none opacity-70' : ''
-                  }`}
-                  tabIndex={loading ? -1 : undefined}
+                  className="font-medium text-primary-700 hover:text-primary-600"
+                  tabIndex={loading || isSubmitting ? -1 : undefined}
                 >
                   Forgot your password?
                 </Link>
@@ -136,9 +137,9 @@ const Login: React.FC = () => {
                 type="submit"
                 variant="primary"
                 fullWidth
-                isLoading={loading}
+                isLoading={loading || isSubmitting}
                 size="lg"
-                disabled={loading}
+                disabled={loading || isSubmitting}
               >
                 Sign in
               </Button>

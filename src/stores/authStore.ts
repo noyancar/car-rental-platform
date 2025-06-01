@@ -38,8 +38,7 @@ export const useAuthStore = create<AuthState>((set) => ({
       if (data.user) {
         const { error: profileError } = await supabase
           .from('profiles')
-          .insert([{ id: data.user.id }])
-          .abortSignal(new AbortController().signal);
+          .insert([{ id: data.user.id }]);
           
         if (profileError) throw profileError;
         
@@ -52,9 +51,9 @@ export const useAuthStore = create<AuthState>((set) => ({
       set({ error: (error as Error).message });
       throw error;
     } finally {
-      setTimeout(() => {
-        set({ loading: false });
-      }, 300);
+      // Add a small delay before setting loading to false
+      await new Promise(resolve => setTimeout(resolve, 300));
+      set({ loading: false });
     }
   },
 
@@ -74,8 +73,7 @@ export const useAuthStore = create<AuthState>((set) => ({
           .from('profiles')
           .select('*')
           .eq('id', data.user.id)
-          .single()
-          .abortSignal(new AbortController().signal);
+          .single();
           
         set({ 
           user: { ...data.user, ...profile } as User,
@@ -86,9 +84,9 @@ export const useAuthStore = create<AuthState>((set) => ({
       set({ error: (error as Error).message });
       throw error;
     } finally {
-      setTimeout(() => {
-        set({ loading: false });
-      }, 300);
+      // Add a small delay before setting loading to false
+      await new Promise(resolve => setTimeout(resolve, 300));
+      set({ loading: false });
     }
   },
 
@@ -104,9 +102,9 @@ export const useAuthStore = create<AuthState>((set) => ({
       set({ error: (error as Error).message });
       throw error;
     } finally {
-      setTimeout(() => {
-        set({ loading: false });
-      }, 300);
+      // Add a small delay before setting loading to false
+      await new Promise(resolve => setTimeout(resolve, 300));
+      set({ loading: false });
     }
   },
 
@@ -120,8 +118,7 @@ export const useAuthStore = create<AuthState>((set) => ({
       const { error } = await supabase
         .from('profiles')
         .update(data)
-        .eq('id', user.id)
-        .abortSignal(new AbortController().signal);
+        .eq('id', user.id);
         
       if (error) throw error;
       
@@ -132,9 +129,9 @@ export const useAuthStore = create<AuthState>((set) => ({
       set({ error: (error as Error).message });
       throw error;
     } finally {
-      setTimeout(() => {
-        set({ loading: false });
-      }, 300);
+      // Add a small delay before setting loading to false
+      await new Promise(resolve => setTimeout(resolve, 300));
+      set({ loading: false });
     }
   },
 
@@ -150,8 +147,7 @@ export const useAuthStore = create<AuthState>((set) => ({
           .from('profiles')
           .select('*')
           .eq('id', session.user.id)
-          .single()
-          .abortSignal(new AbortController().signal);
+          .single();
           
         if (profileError) throw profileError;
         
@@ -163,15 +159,16 @@ export const useAuthStore = create<AuthState>((set) => ({
     } catch (error) {
       set({ error: (error as Error).message });
     } finally {
-      setTimeout(() => {
-        set({ loading: false });
-      }, 300);
+      // Add a small delay before setting loading to false
+      await new Promise(resolve => setTimeout(resolve, 300));
+      set({ loading: false });
     }
   },
 
   clearError: () => set({ error: null }),
 }));
 
+// Debounce auth state changes
 let authTimeout: NodeJS.Timeout;
 supabase.auth.onAuthStateChange(async (event, session) => {
   const store = useAuthStore.getState();
