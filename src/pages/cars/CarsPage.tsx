@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
-import { Link } from 'react-router-dom';
-import { Search, Filter, Car as CarIcon, Calendar, Sliders, X } from 'lucide-react';
+import { Link, useSearchParams, useNavigate } from 'react-router-dom';
+import { Search, Filter, Car as CarIcon, Calendar, Sliders, X, ArrowRight } from 'lucide-react';
+import { format } from 'date-fns';
 import { Button } from '../../components/ui/Button';
 import { Input } from '../../components/ui/Input';
 import { Select } from '../../components/ui/Select';
@@ -10,6 +11,24 @@ const CarsPage: React.FC = () => {
   const { cars, loading, error, filters, setFilters, clearFilters, fetchCars } = useCarStore();
   const [isFilterOpen, setIsFilterOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
+  const [searchParams] = useSearchParams();
+  const navigate = useNavigate();
+  
+  // Get date/time params
+  const pickupDate = searchParams.get('pickup');
+  const pickupTime = searchParams.get('pickupTime') || '10:00';
+  const returnDate = searchParams.get('return');
+  const returnTime = searchParams.get('returnTime') || '10:00';
+  
+  // Calculate rental days
+  const calculateDays = () => {
+    if (!pickupDate || !returnDate) return 0;
+    const start = new Date(pickupDate);
+    const end = new Date(returnDate);
+    return Math.ceil((end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24));
+  };
+  
+  const rentalDays = calculateDays();
   
   // Local filter state
   const [localFilters, setLocalFilters] = useState({
@@ -89,6 +108,56 @@ const CarsPage: React.FC = () => {
               </Button>
             </div>
           </div>
+          
+          {/* Selected Dates Display */}
+          {pickupDate && returnDate && (
+            <div className="mt-6 bg-blue-50 border border-blue-200 rounded-lg p-6">
+              <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                <div className="flex flex-col md:flex-row md:items-center gap-4 md:gap-6">
+                  <div className="flex items-center">
+                    <Calendar className="w-5 h-5 text-blue-600 mr-2" />
+                    <div>
+                      <span className="font-semibold text-gray-800">Pickup:</span>
+                      <span className="ml-2 text-blue-700">
+                        {format(new Date(pickupDate), 'MMM dd, yyyy')} at {pickupTime}
+                      </span>
+                    </div>
+                  </div>
+                  
+                  <ArrowRight className="hidden md:block w-5 h-5 text-blue-400" />
+                  
+                  <div className="flex items-center">
+                    <Calendar className="w-5 h-5 text-blue-600 mr-2" />
+                    <div>
+                      <span className="font-semibold text-gray-800">Return:</span>
+                      <span className="ml-2 text-blue-700">
+                        {format(new Date(returnDate), 'MMM dd, yyyy')} at {returnTime}
+                      </span>
+                    </div>
+                  </div>
+                  
+                  <div className="bg-blue-100 px-3 py-1 rounded-full self-start md:self-auto">
+                    <span className="text-blue-800 font-medium">
+                      {rentalDays} day{rentalDays > 1 ? 's' : ''}
+                    </span>
+                  </div>
+                </div>
+                
+                <Button 
+                  variant="outline" 
+                  size="sm"
+                  onClick={() => navigate('/cars')}
+                  className="border-blue-300 text-blue-700 hover:bg-blue-50"
+                >
+                  Clear Dates
+                </Button>
+              </div>
+              
+              <p className="text-gray-600 mt-2">
+                Showing cars available for your selected dates and times
+              </p>
+            </div>
+          )}
           
           {/* Filter panel */}
           {isFilterOpen && (
