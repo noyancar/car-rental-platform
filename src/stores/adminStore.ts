@@ -322,3 +322,5 @@ export const useAdminStore = create<AdminState>((set, get) => ({
     }
   },
 }));
+
+export { useAdminStore }
