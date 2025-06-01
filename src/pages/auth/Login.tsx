@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useRef } from 'react';
+import React, { useState, useCallback } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Mail, Lock } from 'lucide-react';
 import { toast } from 'sonner';
@@ -10,7 +10,7 @@ const Login: React.FC = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [errors, setErrors] = useState<{ email?: string; password?: string }>({});
-  const isSubmittingRef = useRef(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   
   const navigate = useNavigate();
   const { signIn, loading, error, clearError } = useAuthStore();
@@ -37,12 +37,12 @@ const Login: React.FC = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (isSubmittingRef.current || loading) return;
+    if (isSubmitting || loading) return;
     clearError();
     
     if (!validate()) return;
     
-    isSubmittingRef.current = true;
+    setIsSubmitting(true);
     
     try {
       await signIn(email, password);
@@ -51,11 +51,11 @@ const Login: React.FC = () => {
     } catch (err) {
       // Error is already handled in the store
     } finally {
-      isSubmittingRef.current = false;
+      setIsSubmitting(false);
     }
   };
   
-  const isDisabled = loading || isSubmittingRef.current;
+  const isDisabled = loading || isSubmitting;
   
   return (
     <div className="min-h-screen pt-16 pb-12 flex flex-col justify-center bg-secondary-50">
