@@ -51,8 +51,6 @@ export const useAuthStore = create<AuthState>((set) => ({
       set({ error: (error as Error).message });
       throw error;
     } finally {
-      // Add a small delay before setting loading to false
-      await new Promise(resolve => setTimeout(resolve, 300));
       set({ loading: false });
     }
   },
@@ -84,8 +82,6 @@ export const useAuthStore = create<AuthState>((set) => ({
       set({ error: (error as Error).message });
       throw error;
     } finally {
-      // Add a small delay before setting loading to false
-      await new Promise(resolve => setTimeout(resolve, 300));
       set({ loading: false });
     }
   },
@@ -102,8 +98,6 @@ export const useAuthStore = create<AuthState>((set) => ({
       set({ error: (error as Error).message });
       throw error;
     } finally {
-      // Add a small delay before setting loading to false
-      await new Promise(resolve => setTimeout(resolve, 300));
       set({ loading: false });
     }
   },
@@ -129,8 +123,6 @@ export const useAuthStore = create<AuthState>((set) => ({
       set({ error: (error as Error).message });
       throw error;
     } finally {
-      // Add a small delay before setting loading to false
-      await new Promise(resolve => setTimeout(resolve, 300));
       set({ loading: false });
     }
   },
@@ -159,8 +151,6 @@ export const useAuthStore = create<AuthState>((set) => ({
     } catch (error) {
       set({ error: (error as Error).message });
     } finally {
-      // Add a small delay before setting loading to false
-      await new Promise(resolve => setTimeout(resolve, 300));
       set({ loading: false });
     }
   },
@@ -168,17 +158,13 @@ export const useAuthStore = create<AuthState>((set) => ({
   clearError: () => set({ error: null }),
 }));
 
-// Debounce auth state changes
-let authTimeout: NodeJS.Timeout;
+// Initialize auth state
 supabase.auth.onAuthStateChange(async (event, session) => {
   const store = useAuthStore.getState();
   
-  clearTimeout(authTimeout);
-  authTimeout = setTimeout(async () => {
-    if (event === 'SIGNED_IN' && session?.user) {
-      await store.getProfile();
-    } else if (event === 'SIGNED_OUT') {
-      store.signOut();
-    }
-  }, 300);
+  if (event === 'SIGNED_IN' && session?.user) {
+    await store.getProfile();
+  } else if (event === 'SIGNED_OUT') {
+    store.signOut();
+  }
 });
