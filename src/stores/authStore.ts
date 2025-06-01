@@ -51,6 +51,8 @@ export const useAuthStore = create<AuthState>((set) => ({
       set({ error: (error as Error).message });
       throw error;
     } finally {
+      // Add a small delay before setting loading to false
+      await new Promise(resolve => setTimeout(resolve, 300));
       set({ loading: false });
     }
   },
@@ -82,6 +84,8 @@ export const useAuthStore = create<AuthState>((set) => ({
       set({ error: (error as Error).message });
       throw error;
     } finally {
+      // Add a small delay before setting loading to false
+      await new Promise(resolve => setTimeout(resolve, 300));
       set({ loading: false });
     }
   },
@@ -98,6 +102,8 @@ export const useAuthStore = create<AuthState>((set) => ({
       set({ error: (error as Error).message });
       throw error;
     } finally {
+      // Add a small delay before setting loading to false
+      await new Promise(resolve => setTimeout(resolve, 300));
       set({ loading: false });
     }
   },
@@ -123,6 +129,8 @@ export const useAuthStore = create<AuthState>((set) => ({
       set({ error: (error as Error).message });
       throw error;
     } finally {
+      // Add a small delay before setting loading to false
+      await new Promise(resolve => setTimeout(resolve, 300));
       set({ loading: false });
     }
   },
@@ -151,6 +159,8 @@ export const useAuthStore = create<AuthState>((set) => ({
     } catch (error) {
       set({ error: (error as Error).message });
     } finally {
+      // Add a small delay before setting loading to false
+      await new Promise(resolve => setTimeout(resolve, 300));
       set({ loading: false });
     }
   },
@@ -158,34 +168,17 @@ export const useAuthStore = create<AuthState>((set) => ({
   clearError: () => set({ error: null }),
 }));
 
-// Auth state change handler - fixed to prevent infinite loops
+// Debounce auth state changes
+let authTimeout: NodeJS.Timeout;
 supabase.auth.onAuthStateChange(async (event, session) => {
-  if (event === 'SIGNED_IN' && session?.user) {
-    try {
-      const { data: profile } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('id', session.user.id)
-        .single();
-        
-      useAuthStore.setState({ 
-        user: { ...session.user, ...profile } as User,
-        isAdmin: session.user.email === 'admin@example.com',
-        loading: false,
-        error: null
-      });
-    } catch (error) {
-      useAuthStore.setState({ 
-        error: (error as Error).message,
-        loading: false 
-      });
+  const store = useAuthStore.getState();
+  
+  clearTimeout(authTimeout);
+  authTimeout = setTimeout(async () => {
+    if (event === 'SIGNED_IN' && session?.user) {
+      await store.getProfile();
+    } else if (event === 'SIGNED_OUT') {
+      store.signOut();
     }
-  } else if (event === 'SIGNED_OUT') {
-    useAuthStore.setState({ 
-      user: null, 
-      isAdmin: false,
-      loading: false,
-      error: null 
-    });
-  }
+  }, 300);
 });
