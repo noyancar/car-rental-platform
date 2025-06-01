@@ -347,8 +347,18 @@ const CarsPage: React.FC = () => {
                       {car.category}
                     </span>
                   </div>
-                  <div className="absolute bottom-0 left-0 bg-primary-800 text-white px-3 py-1">
-                    ${car.price_per_day}/day
+                  <div className="absolute bottom-0 left-0 bg-gradient-to-r from-primary-800 to-primary-700 text-white px-4 py-2 rounded-tr-lg">
+                    <div className="text-sm font-medium">
+                      ${car.price_per_day}/day
+                    </div>
+                    {rentalDays > 0 && (
+                      <div className="text-xs text-primary-100 mt-1">
+                        {rentalDays} day{rentalDays > 1 ? 's' : ''}: 
+                        <span className="font-bold text-white ml-1">
+                          ${(car.price_per_day * rentalDays).toFixed(0)} total
+                        </span>
+                      </div>
+                    )}
                   </div>
                   {!car.available && (
                     <div className="absolute inset-0 bg-black bg-opacity-50 flex items-center justify-center">
@@ -390,13 +400,25 @@ const CarsPage: React.FC = () => {
                         Details
                       </Button>
                     </Link>
-                    <Link to={car.available ? `/booking/${car.id}` : '#'}>
+                    <Link 
+                      to={car.available 
+                        ? `/booking/${car.id}${pickupDate && returnDate 
+                            ? `?pickup=${pickupDate}&pickupTime=${pickupTime}&return=${returnDate}&returnTime=${returnTime}` 
+                            : ''}`
+                        : '#'
+                      }
+                    >
                       <Button 
                         variant="primary" 
                         fullWidth
                         disabled={!car.available}
                       >
-                        {car.available ? 'Book Now' : 'Unavailable'}
+                        {car.available 
+                          ? (rentalDays > 0 
+                              ? `Book ${rentalDays}d - $${(car.price_per_day * rentalDays).toFixed(0)}`
+                              : 'Book Now')
+                          : 'Unavailable'
+                        }
                       </Button>
                     </Link>
                   </div>
