@@ -64,12 +64,21 @@ export const useCarStore = create<CarState>((set, get) => ({
       }
       
       const { data, error } = await query
-        .order('created_at', { ascending: false })
-        .abortSignal(new AbortController().signal);
+        .order('created_at', { ascending: false });
       
       if (error) throw error;
       
-      set({ cars: data as Car[] });
+      // Ensure default values for new fields if they're null
+      const carsWithDefaults = data?.map(car => ({
+        ...car,
+        seats: car.seats ?? 5,
+        transmission: car.transmission ?? 'Automatic',
+        mileage_type: car.mileage_type ?? 'Unlimited',
+        min_rental_hours: car.min_rental_hours ?? 24,
+        features: Array.isArray(car.features) ? car.features : []
+      })) ?? [];
+      
+      set({ cars: carsWithDefaults });
     } catch (error) {
       set({ error: (error as Error).message });
     } finally {
@@ -86,12 +95,21 @@ export const useCarStore = create<CarState>((set, get) => ({
         .select('*')
         .eq('available', true)
         .order('created_at', { ascending: false })
-        .limit(4)
-        .abortSignal(new AbortController().signal);
+        .limit(4);
       
       if (error) throw error;
       
-      set({ featuredCars: data as Car[] });
+      // Ensure default values for new fields
+      const featuredWithDefaults = data?.map(car => ({
+        ...car,
+        seats: car.seats ?? 5,
+        transmission: car.transmission ?? 'Automatic',
+        mileage_type: car.mileage_type ?? 'Unlimited',
+        min_rental_hours: car.min_rental_hours ?? 24,
+        features: Array.isArray(car.features) ? car.features : []
+      })) ?? [];
+      
+      set({ featuredCars: featuredWithDefaults });
     } catch (error) {
       set({ error: (error as Error).message });
     } finally {
@@ -107,12 +125,21 @@ export const useCarStore = create<CarState>((set, get) => ({
         .from('cars')
         .select('*')
         .eq('id', id)
-        .single()
-        .abortSignal(new AbortController().signal);
+        .single();
       
       if (error) throw error;
       
-      set({ currentCar: data as Car });
+      // Ensure default values for new fields
+      const carWithDefaults = data ? {
+        ...data,
+        seats: data.seats ?? 5,
+        transmission: data.transmission ?? 'Automatic',
+        mileage_type: data.mileage_type ?? 'Unlimited',
+        min_rental_hours: data.min_rental_hours ?? 24,
+        features: Array.isArray(data.features) ? data.features : []
+      } : null;
+      
+      set({ currentCar: carWithDefaults });
     } catch (error) {
       set({ error: (error as Error).message });
       set({ currentCar: null });
