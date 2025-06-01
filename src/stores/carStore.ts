@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import { supabase } from '../lib/supabase';
-import type { Car } from '../types';
+import type { Car, CarWithFeatures, Json } from '../types';
+import { createCarWithFeatures } from '../types';
 
 interface CarFilters {
   category?: string;
@@ -11,9 +12,9 @@ interface CarFilters {
 }
 
 interface CarState {
-  cars: Car[];
-  featuredCars: Car[];
-  currentCar: Car | null;
+  cars: CarWithFeatures[];
+  featuredCars: CarWithFeatures[];
+  currentCar: CarWithFeatures | null;
   loading: boolean;
   error: string | null;
   filters: CarFilters;
@@ -64,12 +65,14 @@ export const useCarStore = create<CarState>((set, get) => ({
       }
       
       const { data, error } = await query
-        .order('created_at', { ascending: false })
-        .abortSignal(new AbortController().signal);
+        .order('created_at', { ascending: false });
       
       if (error) throw error;
       
-      set({ cars: data as Car[] });
+      // Transform cars with parsed features
+      const carsWithFeatures = (data as Car[]).map(createCarWithFeatures);
+      
+      set({ cars: carsWithFeatures });
     } catch (error) {
       set({ error: (error as Error).message });
     } finally {
@@ -86,12 +89,14 @@ export const useCarStore = create<CarState>((set, get) => ({
         .select('*')
         .eq('available', true)
         .order('created_at', { ascending: false })
-        .limit(4)
-        .abortSignal(new AbortController().signal);
+        .limit(4);
       
       if (error) throw error;
       
-      set({ featuredCars: data as Car[] });
+      // Transform cars with parsed features
+      const featuredWithFeatures = (data as Car[]).map(createCarWithFeatures);
+      
+      set({ featuredCars: featuredWithFeatures });
     } catch (error) {
       set({ error: (error as Error).message });
     } finally {
@@ -107,12 +112,14 @@ export const useCarStore = create<CarState>((set, get) => ({
         .from('cars')
         .select('*')
         .eq('id', id)
-        .single()
-        .abortSignal(new AbortController().signal);
+        .single();
       
       if (error) throw error;
       
-      set({ currentCar: data as Car });
+      // Transform car with parsed features
+      const carWithFeatures = createCarWithFeatures(data as Car);
+      
+      set({ currentCar: carWithFeatures });
     } catch (error) {
       set({ error: (error as Error).message });
       set({ currentCar: null });
