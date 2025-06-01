@@ -11,6 +11,7 @@ const { carId } = useParams();
 const navigate = useNavigate();
 const { user } = useAuthStore();
 const { currentCar, loading: carLoading, error: carError, fetchCarById } = useCarStore();
+const { 
 const BookingPage: React.FC = () => {
 isCheckingAvailability
 } = useBookingStore();
