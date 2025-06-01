@@ -1,47 +1,102 @@
 import React, { useState, useCallback } from 'react';
-import { Calendar } from 'lucide-react';
+import { Calendar, Clock } from 'lucide-react';
 import { format, addDays, isBefore, isValid, parseISO } from 'date-fns';
 import { Button } from './Button';
 import { Input } from './Input';
 
+// Business hours for car rental industry standard
+const BUSINESS_HOURS = [
+  "09:00", "09:30", "10:00", "10:30", "11:00", "11:30",
+  "12:00", "12:30", "13:00", "13:30", "14:00", "14:30",
+  "15:00", "15:30", "16:00", "16:30", "17:00", "17:30", "18:00"
+];
+
+const DEFAULT_PICKUP_TIME = "10:00";
+const DEFAULT_RETURN_TIME = "10:00";
+
 interface DatePickerCardProps {
-  onSearch?: (pickupDate: string, returnDate: string) => void;
+  onSearch?: (
+    pickupDate: string,
+    pickupTime: string,
+    returnDate: string,
+    returnTime: string
+  ) => void;
   className?: string;
 }
+
+const TimeSelector: React.FC<{
+  value: string;
+  onChange: (time: string) => void;
+  label: string;
+  disabled?: boolean;
+}> = ({ value, onChange, label, disabled }) => (
+  <div className="flex-1">
+    <label className="block text-sm font-medium text-white/90 mb-1">
+      {label}
+    </label>
+    <select
+      value={value}
+      onChange={(e) => onChange(e.target.value)}
+      disabled={disabled}
+      className="
+        w-full h-[42px] bg-white/90 backdrop-blur-sm
+        border-transparent focus:border-primary-500
+        rounded-md text-secondary-900 text-sm
+        disabled:opacity-50 disabled:cursor-not-allowed
+      "
+    >
+      {BUSINESS_HOURS.map(time => (
+        <option key={time} value={time}>{time}</option>
+      ))}
+    </select>
+  </div>
+);
 
 export const DatePickerCard: React.FC<DatePickerCardProps> = ({
   onSearch,
   className = '',
 }) => {
-  // Initialize pickup date to today, but leave return date empty
+  // Date states
   const [pickupDate, setPickupDate] = useState(format(new Date(), 'yyyy-MM-dd'));
   const [returnDate, setReturnDate] = useState('');
+  
+  // Time states
+  const [pickupTime, setPickupTime] = useState(DEFAULT_PICKUP_TIME);
+  const [returnTime, setReturnTime] = useState(DEFAULT_RETURN_TIME);
+  
   const [validationMessage, setValidationMessage] = useState('');
   const [isSearching, setIsSearching] = useState(false);
 
-  // Validate dates and return status
-  const validateDates = useCallback(() => {
+  // Validate dates and times
+  const validateDateTime = useCallback(() => {
     if (!pickupDate || !returnDate) {
       setValidationMessage('Please select both dates');
       return false;
     }
 
-    const pickup = parseISO(pickupDate);
-    const return_ = parseISO(returnDate);
+    const pickup = new Date(`${pickupDate}T${pickupTime}`);
+    const return_ = new Date(`${returnDate}T${returnTime}`);
     
     if (!isValid(pickup) || !isValid(return_)) {
-      setValidationMessage('Invalid date format');
+      setValidationMessage('Invalid date/time format');
       return false;
     }
 
     if (isBefore(return_, pickup)) {
-      setValidationMessage('Return date must be after pickup date');
+      setValidationMessage('Return date/time must be after pickup');
+      return false;
+    }
+
+    // Ensure minimum 24-hour rental
+    const hoursDifference = (return_.getTime() - pickup.getTime()) / (1000 * 60 * 60);
+    if (hoursDifference < 24) {
+      setValidationMessage('Minimum rental period is 24 hours');
       return false;
     }
 
     setValidationMessage('');
     return true;
-  }, [pickupDate, returnDate]);
+  }, [pickupDate, pickupTime, returnDate, returnTime]);
 
   // Handle pickup date change
   const handlePickupDateChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -56,7 +111,18 @@ export const DatePickerCard: React.FC<DatePickerCardProps> = ({
     setValidationMessage('');
   };
 
-  // Handle return date change
+  // Handle pickup time change
+  const handlePickupTimeChange = (time: string) => {
+    setPickupTime(time);
+    
+    // If pickup time is after 15:00 and return is same day, suggest next day
+    if (time >= "15:00" && returnDate === pickupDate) {
+      const nextDay = format(addDays(parseISO(pickupDate), 1), 'yyyy-MM-dd');
+      setReturnDate(nextDay);
+    }
+  };
+
+  // Handle return date/time changes
   const handleReturnDateChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setReturnDate(e.target.value);
     setValidationMessage('');
@@ -64,14 +130,14 @@ export const DatePickerCard: React.FC<DatePickerCardProps> = ({
 
   // Handle search
   const handleSearch = () => {
-    if (!validateDates()) {
+    if (!validateDateTime()) {
       return;
     }
 
     setIsSearching(true);
     
     try {
-      onSearch?.(pickupDate, returnDate);
+      onSearch?.(pickupDate, pickupTime, returnDate, returnTime);
     } finally {
       setIsSearching(false);
     }
@@ -85,43 +151,58 @@ export const DatePickerCard: React.FC<DatePickerCardProps> = ({
         ${className}
       `}
     >
-      <div className="flex flex-col md:flex-row gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
         {/* Pickup Date */}
-        <div className="flex-1">
+        <div className="md:col-span-2">
           <Input
             label="Pickup Date"
             type="date"
             value={pickupDate}
             onChange={handlePickupDateChange}
             min={format(new Date(), 'yyyy-MM-dd')}
-            leftIcon={<Calendar className="text-primary-800\" size={20} />}
+            leftIcon={<Calendar className="text-primary-800" size={20} />}
             className="bg-white/90 backdrop-blur-sm border-transparent focus:border-primary-500"
           />
         </div>
 
+        {/* Pickup Time */}
+        <TimeSelector
+          label="Pickup Time"
+          value={pickupTime}
+          onChange={handlePickupTimeChange}
+        />
+
         {/* Return Date */}
-        <div className="flex-1">
+        <div className="md:col-span-2">
           <Input
             label="Return Date"
             type="date"
             value={returnDate}
             onChange={handleReturnDateChange}
             min={pickupDate}
-            leftIcon={<Calendar className="text-primary-800\" size={20} />}
+            leftIcon={<Calendar className="text-primary-800" size={20} />}
             className="bg-white/90 backdrop-blur-sm border-transparent focus:border-primary-500"
             disabled={!pickupDate}
           />
         </div>
 
+        {/* Return Time */}
+        <TimeSelector
+          label="Return Time"
+          value={returnTime}
+          onChange={setReturnTime}
+          disabled={!returnDate}
+        />
+
         {/* Search Button */}
-        <div className="flex items-end">
+        <div className="md:col-span-5">
           <Button
             variant="primary"
             size="lg"
             onClick={handleSearch}
             disabled={!pickupDate || !returnDate || Boolean(validationMessage) || isSearching}
             isLoading={isSearching}
-            className="w-full md:w-auto min-w-[160px] bg-primary-800 hover:bg-primary-700"
+            className="w-full bg-primary-800 hover:bg-primary-700"
           >
             {!pickupDate || !returnDate ? 'Select Dates' : 'Find Available Cars'}
           </Button>
