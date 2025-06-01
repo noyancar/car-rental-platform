@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Plus, Edit, Trash2, Check, X, Search, Tag } from 'lucide-react';
 import { toast } from 'sonner';
 import { Button } from '../../components/ui/Button';
@@ -36,7 +36,6 @@ const AdminCars: React.FC = () => {
   const [filterCategory, setFilterCategory] = useState('');
   const [editingCar, setEditingCar] = useState<Car | null>(null);
   
-  // Features state management
   const [selectedFeatures, setSelectedFeatures] = useState<string[]>([]);
   const [customFeature, setCustomFeature] = useState('');
   
@@ -49,6 +48,9 @@ const AdminCars: React.FC = () => {
     image_url: '',
     description: '',
     features: [] as string[],
+    seats: 5,
+    transmission: 'Automatic',
+    mileage_type: 'Unlimited',
   });
   
   useEffect(() => {
@@ -116,6 +118,9 @@ const AdminCars: React.FC = () => {
         image_url: '',
         description: '',
         features: [],
+        seats: 5,
+        transmission: 'Automatic',
+        mileage_type: 'Unlimited',
       });
       toast.success('Car added successfully');
     } catch (error) {
@@ -364,6 +369,47 @@ const AdminCars: React.FC = () => {
                   onChange={(e) => editingCar
                     ? setEditingCar({ ...editingCar, image_url: e.target.value })
                     : setNewCar({ ...newCar, image_url: e.target.value })
+                  }
+                />
+
+                <Input
+                  label="Number of Seats"
+                  type="number"
+                  min="2"
+                  max="8"
+                  value={editingCar?.seats || newCar.seats}
+                  onChange={(e) => editingCar
+                    ? setEditingCar({ ...editingCar, seats: parseInt(e.target.value) })
+                    : setNewCar({ ...newCar, seats: parseInt(e.target.value) })
+                  }
+                />
+
+                <Select
+                  label="Transmission"
+                  options={[
+                    { value: 'Automatic', label: 'Automatic' },
+                    { value: 'Manual', label: 'Manual' },
+                    { value: 'Semi-Automatic', label: 'Semi-Automatic' },
+                  ]}
+                  value={editingCar?.transmission || newCar.transmission}
+                  onChange={(e) => editingCar
+                    ? setEditingCar({ ...editingCar, transmission: e.target.value })
+                    : setNewCar({ ...newCar, transmission: e.target.value })
+                  }
+                />
+
+                <Select
+                  label="Mileage Type"
+                  options={[
+                    { value: 'Unlimited', label: 'Unlimited' },
+                    { value: '150 miles/day', label: '150 miles/day' },
+                    { value: '200 miles/day', label: '200 miles/day' },
+                    { value: '300 miles/day', label: '300 miles/day' },
+                  ]}
+                  value={editingCar?.mileage_type || newCar.mileage_type}
+                  onChange={(e) => editingCar
+                    ? setEditingCar({ ...editingCar, mileage_type: e.target.value })
+                    : setNewCar({ ...newCar, mileage_type: e.target.value })
                   }
                 />
                 
