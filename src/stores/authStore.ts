@@ -180,10 +180,10 @@ supabase.auth.onAuthStateChange(async (event, session) => {
     } else if (event === 'SIGNED_OUT') {
       useAuthStore.setState({ 
     user: null, 
-    isAdmin: false, 
-    loading: false, Add commentMore actions
+    isAdmin: false, Add commentMore actions
+    loading: false, 
     error: null 
   });
     }
-    });
+    };
 });
