@@ -1,7 +1,6 @@
 import { create } from 'zustand';
 import { supabase } from '../lib/supabase';
 import type { Car } from '../types';
-import { isWithinInterval, parseISO } from 'date-fns';
 
 interface CarFilters {
   category?: string;
@@ -9,8 +8,6 @@ interface CarFilters {
   priceMax?: number;
   make?: string;
   available?: boolean;
-  startDate?: string;
-  endDate?: string;
 }
 
 interface CarState {
@@ -42,14 +39,7 @@ export const useCarStore = create<CarState>((set, get) => ({
       
       let query = supabase
         .from('cars')
-        .select(`
-          *,
-          bookings (
-            start_date,
-            end_date,
-            status
-          )
-        `);
+        .select('*');
       
       const activeFilters = filters || get().filters;
       
@@ -74,45 +64,12 @@ export const useCarStore = create<CarState>((set, get) => ({
       }
       
       const { data, error } = await query
-        .order('created_at', { ascending: false });
+        .order('created_at', { ascending: false })
+        .abortSignal(new AbortController().signal);
       
       if (error) throw error;
-
-      // Filter out cars with booking conflicts
-      const filteredCars = data.map(car => {
-        const carData = { ...car };
-        delete carData.bookings;
-        return carData;
-      }).filter(car => {
-        if (!activeFilters.startDate || !activeFilters.endDate) {
-          return true;
-        }
-
-        const selectedStart = parseISO(activeFilters.startDate);
-        const selectedEnd = parseISO(activeFilters.endDate);
-
-        // Check for booking conflicts
-        const hasConflict = data
-          .find(d => d.id === car.id)?.bookings
-          ?.some(booking => {
-            if (booking.status === 'cancelled') return false;
-            
-            const bookingStart = parseISO(booking.start_date);
-            const bookingEnd = parseISO(booking.end_date);
-
-            // Check for any overlap
-            return (
-              isWithinInterval(selectedStart, { start: bookingStart, end: bookingEnd }) ||
-              isWithinInterval(selectedEnd, { start: bookingStart, end: bookingEnd }) ||
-              isWithinInterval(bookingStart, { start: selectedStart, end: selectedEnd }) ||
-              isWithinInterval(bookingEnd, { start: selectedStart, end: selectedEnd })
-            );
-          });
-
-        return !hasConflict;
-      });
       
-      set({ cars: filteredCars as Car[] });
+      set({ cars: data as Car[] });
     } catch (error) {
       set({ error: (error as Error).message });
     } finally {
@@ -126,27 +83,15 @@ export const useCarStore = create<CarState>((set, get) => ({
       
       const { data, error } = await supabase
         .from('cars')
-        .select(`
-          *,
-          bookings (
-            start_date,
-            end_date,
-            status
-          )
-        `)
+        .select('*')
         .eq('available', true)
         .order('created_at', { ascending: false })
-        .limit(4);
+        .limit(4)
+        .abortSignal(new AbortController().signal);
       
       if (error) throw error;
-
-      const filteredCars = data.map(car => {
-        const carData = { ...car };
-        delete carData.bookings;
-        return carData;
-      });
       
-      set({ featuredCars: filteredCars as Car[] });
+      set({ featuredCars: data as Car[] });
     } catch (error) {
       set({ error: (error as Error).message });
     } finally {
@@ -160,23 +105,14 @@ export const useCarStore = create<CarState>((set, get) => ({
       
       const { data, error } = await supabase
         .from('cars')
-        .select(`
-          *,
-          bookings (
-            start_date,
-            end_date,
-            status
-          )
-        `)
+        .select('*')
         .eq('id', id)
-        .single();
+        .single()
+        .abortSignal(new AbortController().signal);
       
       if (error) throw error;
-
-      const carData = { ...data };
-      delete carData.bookings;
       
-      set({ currentCar: carData as Car });
+      set({ currentCar: data as Car });
     } catch (error) {
       set({ error: (error as Error).message });
       set({ currentCar: null });
