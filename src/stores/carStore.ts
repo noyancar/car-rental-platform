@@ -17,15 +17,12 @@ interface CarState {
   loading: boolean;
   error: string | null;
   filters: CarFilters;
-  isCheckingAvailability: boolean;
   
   fetchCars: (filters?: CarFilters) => Promise<void>;
   fetchFeaturedCars: () => Promise<void>;
   fetchCarById: (id: number) => Promise<void>;
   setFilters: (filters: CarFilters) => Promise<void>;
   clearFilters: () => void;
-  fetchAvailableCars: (pickupDate: string, pickupTime: string, returnDate: string, returnTime: string) => Promise<void>;
-  checkSingleCarAvailability: (carId: number, pickupDate: string, pickupTime: string, returnDate: string, returnTime: string) => Promise<boolean>;
 }
 
 export const useCarStore = create<CarState>((set, get) => ({
@@ -35,7 +32,6 @@ export const useCarStore = create<CarState>((set, get) => ({
   loading: false,
   error: null,
   filters: {},
-  isCheckingAvailability: false,
   
   fetchCars: async (filters) => {
     try {
@@ -68,7 +64,8 @@ export const useCarStore = create<CarState>((set, get) => ({
       }
       
       const { data, error } = await query
-        .order('created_at', { ascending: false });
+        .order('created_at', { ascending: false })
+        .abortSignal(new AbortController().signal);
       
       if (error) throw error;
       
@@ -89,7 +86,8 @@ export const useCarStore = create<CarState>((set, get) => ({
         .select('*')
         .eq('available', true)
         .order('created_at', { ascending: false })
-        .limit(4);
+        .limit(4)
+        .abortSignal(new AbortController().signal);
       
       if (error) throw error;
       
@@ -109,7 +107,8 @@ export const useCarStore = create<CarState>((set, get) => ({
         .from('cars')
         .select('*')
         .eq('id', id)
-        .single();
+        .single()
+        .abortSignal(new AbortController().signal);
       
       if (error) throw error;
       
@@ -130,76 +129,5 @@ export const useCarStore = create<CarState>((set, get) => ({
   clearFilters: () => {
     set({ filters: {} });
     get().fetchCars({});
-  },
-
-  fetchAvailableCars: async (pickupDate: string, pickupTime: string, returnDate: string, returnTime: string) => {
-    try {
-      set({ loading: true, error: null });
-      
-      // First get all cars
-      const { data: allCars, error: carsError } = await supabase
-        .from('cars')
-        .select('*')
-        .eq('available', true);
-      
-      if (carsError) throw carsError;
-
-      // Check availability for each car
-      const availabilityChecks = await Promise.all(
-        allCars.map(async (car) => {
-          const isAvailable = await get().checkSingleCarAvailability(
-            car.id,
-            pickupDate,
-            pickupTime,
-            returnDate,
-            returnTime
-          );
-          return { ...car, isAvailable };
-        })
-      );
-      
-      // Filter only available cars
-      const availableCars = availabilityChecks.filter(car => car.isAvailable);
-      
-      set({ cars: availableCars });
-    } catch (error) {
-      set({ error: (error as Error).message });
-    } finally {
-      set({ loading: false });
-    }
-  },
-
-  checkSingleCarAvailability: async (carId: number, pickupDate: string, pickupTime: string, returnDate: string, returnTime: string): Promise<boolean> => {
-    try {
-      set({ isCheckingAvailability: true });
-      
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session?.access_token) return false;
-
-      const response = await fetch(
-        `${supabase.supabaseUrl}/functions/v1/check-car-availability?` + 
-        `car_id=${carId}&` +
-        `start_date=${pickupDate}&` +
-        `pickup_time=${pickupTime}&` +
-        `end_date=${returnDate}&` +
-        `return_time=${returnTime}`,
-        {
-          headers: {
-            'Authorization': `Bearer ${session.access_token}`,
-            'Content-Type': 'application/json',
-          },
-        }
-      );
-      
-      if (!response.ok) return false;
-      
-      const result = await response.json();
-      return result.available;
-    } catch (error) {
-      console.error('Error checking availability:', error);
-      return false;
-    } finally {
-      set({ isCheckingAvailability: false });
-    }
   },
 }));

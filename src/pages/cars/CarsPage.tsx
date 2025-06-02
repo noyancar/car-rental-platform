@@ -8,18 +8,7 @@ import { Select } from '../../components/ui/Select';
 import { useCarStore } from '../../stores/carStore';
 
 const CarsPage: React.FC = () => {
-  const { 
-    cars, 
-    loading, 
-    error, 
-    filters, 
-    setFilters, 
-    clearFilters, 
-    fetchCars,
-    fetchAvailableCars,
-    isCheckingAvailability
-  } = useCarStore();
-  
+  const { cars, loading, error, filters, setFilters, clearFilters, fetchCars } = useCarStore();
   const [isFilterOpen, setIsFilterOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [searchParams] = useSearchParams();
@@ -50,12 +39,8 @@ const CarsPage: React.FC = () => {
   });
   
   useEffect(() => {
-    if (pickupDate && returnDate) {
-      fetchAvailableCars(pickupDate, pickupTime, returnDate, returnTime);
-    } else {
-      fetchCars();
-    }
-  }, [pickupDate, returnDate, pickupTime, returnTime, fetchCars, fetchAvailableCars]);
+    fetchCars();
+  }, [fetchCars]);
   
   const applyFilters = () => {
     const newFilters: any = {};
@@ -87,7 +72,7 @@ const CarsPage: React.FC = () => {
   
   // Available makes for filter
   const makes = [...new Set(cars.map(car => car.make))].sort();
-
+  
   return (
     <div className="py-16 bg-secondary-50 min-h-screen">
       <div className="container-custom">
@@ -171,16 +156,6 @@ const CarsPage: React.FC = () => {
               <p className="text-gray-600 mt-2">
                 Showing cars available for your selected dates and times
               </p>
-            </div>
-          )}
-
-          {/* Loading indicator for availability check */}
-          {pickupDate && returnDate && isCheckingAvailability && (
-            <div className="mt-4 bg-yellow-50 border border-yellow-200 rounded-lg p-4">
-              <div className="flex items-center">
-                <div className="animate-spin rounded-full h-5 w-5 border-t-2 border-b-2 border-yellow-600 mr-3"></div>
-                <span className="text-yellow-800">Checking car availability for your selected dates...</span>
-              </div>
             </div>
           )}
           
@@ -349,25 +324,13 @@ const CarsPage: React.FC = () => {
         ) : filteredCars.length === 0 ? (
           <div className="bg-white rounded-lg shadow-md p-8 text-center">
             <CarIcon size={48} className="mx-auto text-secondary-400 mb-4" />
-            <h2 className="text-2xl font-display mb-2">
-              {pickupDate && returnDate ? 'No cars available' : 'No cars found'}
-            </h2>
+            <h2 className="text-2xl font-display mb-2">No cars found</h2>
             <p className="text-secondary-600 mb-4">
-              {pickupDate && returnDate 
-                ? 'No cars are available for your selected dates. Try different dates or clear your selection.'
-                : 'No cars match your current search or filter criteria.'
-              }
+              No cars match your current search or filter criteria.
             </p>
-            <div className="flex gap-2 justify-center">
-              {pickupDate && returnDate && (
-                <Button variant="outline\" onClick={() => navigate('/cars')}>
-                  Clear Dates
-                </Button>
-              )}
-              <Button variant="primary" onClick={resetFilters}>
-                Reset Filters
-              </Button>
-            </div>
+            <Button variant="primary" onClick={resetFilters}>
+              Reset Filters
+            </Button>
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
