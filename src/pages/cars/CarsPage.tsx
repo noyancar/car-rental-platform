@@ -360,7 +360,7 @@ const CarsPage: React.FC = () => {
             </p>
             <div className="flex gap-2 justify-center">
               {pickupDate && returnDate && (
-                <Button variant="outline" onClick={() => navigate('/cars')}>
+                <Button variant="outline\" onClick={() => navigate('/cars')}>
                   Clear Dates
                 </Button>
               )}
