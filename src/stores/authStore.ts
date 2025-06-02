@@ -178,12 +178,7 @@ supabase.auth.onAuthStateChange(async (event, session) => {
     if (event === 'SIGNED_IN' && session?.user) {
       await store.getProfile();
     } else if (event === 'SIGNED_OUT') {
-      useAuthStore.setState({ 
-    user: null, 
-    isAdmin: false, Add commentMore actions
-    loading: false, 
-    error: null 
-  });
+      store.signOut();
     }
-    };
+  }, 300);
 });
