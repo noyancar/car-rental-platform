@@ -43,14 +43,8 @@ const HomePage: React.FC = () => {
             {/* DatePickerCard Integration */}
             <div className="animate-fade-in" style={{ animationDelay: '0.3s' }}>
               <DatePickerCard 
-                onSearch={(pickupDate, pickupTime, returnDate, returnTime) => {
-                  const params = new URLSearchParams({
-                    pickup: pickupDate,
-                    pickupTime,
-                    return: returnDate,
-                    returnTime
-                  });
-                  navigate(`/cars?${params.toString()}`);
+                onSearch={(pickup, return_) => {
+                  navigate(`/cars?pickup=${pickup}&return=${return_}`);
                 }}
                 className="mb-8 max-w-3xl"
               />
@@ -58,8 +52,8 @@ const HomePage: React.FC = () => {
             
             <div className="flex flex-wrap gap-4 animate-fade-in" style={{ animationDelay: '0.4s' }}>
               <Link to="/cars">
-                <Button variant="outline" size="lg" className="border-white text-white hover:bg-white/10">
-                  Browse All Cars
+                <Button variant="primary" size="lg">
+                  Browse Cars
                 </Button>
               </Link>
               <Link to="/how-it-works">
