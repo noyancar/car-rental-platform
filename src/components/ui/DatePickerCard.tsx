@@ -29,15 +29,8 @@ const TimeSelector: React.FC<{
   label: string;
   disabled?: boolean;
 }> = ({ value, onChange, label, disabled }) => (
-  <div className="flex flex-col space-y-2">
-    <label className="
-      inline-flex items-center gap-2 px-3 py-1.5
-      bg-black/30 backdrop-blur-sm rounded-lg
-      text-sm font-bold text-white
-      shadow-sm
-      uppercase tracking-wide
-    ">
-      <Clock size={16} className="text-white" />
+  <div className="flex flex-col space-y-1">
+    <label className="text-sm font-semibold text-white/90 uppercase tracking-wide">
       {label}
     </label>
     <select
@@ -135,45 +128,8 @@ export const DatePickerCard: React.FC<DatePickerCardProps> = ({
     }
   };
 
-  const DateInput: React.FC<{
-    label: string;
-    value: string;
-    onChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
-    min: string;
-    disabled?: boolean;
-  }> = ({ label, value, onChange, min, disabled }) => (
-    <div className="space-y-2">
-      <label className="
-        inline-flex items-center gap-2 px-3 py-1.5
-        bg-black/30 backdrop-blur-sm rounded-lg
-        text-sm font-bold text-white
-        shadow-sm
-        uppercase tracking-wide
-      ">
-        <Calendar size={16} className="text-white" />
-        {label}
-      </label>
-      <input
-        type="date"
-        value={value}
-        onChange={onChange}
-        min={min}
-        disabled={disabled}
-        className="
-          w-full h-12 px-4 bg-white/95
-          rounded-xl border-2 border-white/20
-          text-secondary-900 text-sm font-medium
-          focus:border-primary-500 focus:ring focus:ring-primary-500/20
-          disabled:opacity-50 disabled:cursor-not-allowed
-          transition duration-200
-        "
-      />
-    </div>
-  );
-
   return (
     <div className={`
-      relative
       bg-white/15 backdrop-blur-[20px] 
       border border-white/30 rounded-[20px]
       p-6 md:p-8 shadow-xl
@@ -184,14 +140,21 @@ export const DatePickerCard: React.FC<DatePickerCardProps> = ({
         <div className="grid grid-cols-2 gap-6 mb-6">
           {/* Pickup Section */}
           <div className="space-y-4">
-            <DateInput
-              label="Pickup Date"
+            <Input
+              label="PICKUP DATE"
+              type="date"
               value={pickupDate}
               onChange={handlePickupDateChange}
               min={format(new Date(), 'yyyy-MM-dd')}
+              leftIcon={<Calendar className="text-primary-800\" size={20} />}
+              className="
+                h-12 bg-white/95 rounded-xl
+                border-2 border-white/20
+                focus:border-primary-500 focus:ring-primary-500/20
+              "
             />
             <TimeSelector
-              label="Pickup Time"
+              label="PICKUP TIME"
               value={pickupTime}
               onChange={handlePickupTimeChange}
             />
@@ -199,15 +162,22 @@ export const DatePickerCard: React.FC<DatePickerCardProps> = ({
 
           {/* Return Section */}
           <div className="space-y-4">
-            <DateInput
-              label="Return Date"
+            <Input
+              label="RETURN DATE"
+              type="date"
               value={returnDate}
               onChange={handleReturnDateChange}
               min={pickupDate}
+              leftIcon={<Calendar className="text-primary-800\" size={20} />}
+              className="
+                h-12 bg-white/95 rounded-xl
+                border-2 border-white/20
+                focus:border-primary-500 focus:ring-primary-500/20
+              "
               disabled={!pickupDate}
             />
             <TimeSelector
-              label="Return Time"
+              label="RETURN TIME"
               value={returnTime}
               onChange={setReturnTime}
               disabled={!returnDate}
@@ -219,29 +189,43 @@ export const DatePickerCard: React.FC<DatePickerCardProps> = ({
       {/* Mobile Layout */}
       <div className="md:hidden space-y-4">
         <div className="space-y-4">
-          <DateInput
-            label="Pickup Date"
+          <Input
+            label="PICKUP DATE"
+            type="date"
             value={pickupDate}
             onChange={handlePickupDateChange}
             min={format(new Date(), 'yyyy-MM-dd')}
+            leftIcon={<Calendar className="text-primary-800\" size={20} />}
+            className="
+              h-12 bg-white/95 rounded-xl
+              border-2 border-white/20
+              focus:border-primary-500 focus:ring-primary-500/20
+            "
           />
           <TimeSelector
-            label="Pickup Time"
+            label="PICKUP TIME"
             value={pickupTime}
             onChange={handlePickupTimeChange}
           />
         </div>
 
         <div className="space-y-4">
-          <DateInput
-            label="Return Date"
+          <Input
+            label="RETURN DATE"
+            type="date"
             value={returnDate}
             onChange={handleReturnDateChange}
             min={pickupDate}
+            leftIcon={<Calendar className="text-primary-800\" size={20} />}
+            className="
+              h-12 bg-white/95 rounded-xl
+              border-2 border-white/20
+              focus:border-primary-500 focus:ring-primary-500/20
+            "
             disabled={!pickupDate}
           />
           <TimeSelector
-            label="Return Time"
+            label="RETURN TIME"
             value={returnTime}
             onChange={setReturnTime}
             disabled={!returnDate}
