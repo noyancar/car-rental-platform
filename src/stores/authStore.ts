@@ -51,6 +51,8 @@ export const useAuthStore = create<AuthState>((set) => ({
       set({ error: (error as Error).message });
       throw error;
     } finally {
+      // Add a small delay before setting loading to false
+      await new Promise(resolve => setTimeout(resolve, 300));
       set({ loading: false });
     }
   },
@@ -82,6 +84,8 @@ export const useAuthStore = create<AuthState>((set) => ({
       set({ error: (error as Error).message });
       throw error;
     } finally {
+      // Add a small delay before setting loading to false
+      await new Promise(resolve => setTimeout(resolve, 300));
       set({ loading: false });
     }
   },
@@ -98,6 +102,8 @@ export const useAuthStore = create<AuthState>((set) => ({
       set({ error: (error as Error).message });
       throw error;
     } finally {
+      // Add a small delay before setting loading to false
+      await new Promise(resolve => setTimeout(resolve, 300));
       set({ loading: false });
     }
   },
@@ -123,6 +129,8 @@ export const useAuthStore = create<AuthState>((set) => ({
       set({ error: (error as Error).message });
       throw error;
     } finally {
+      // Add a small delay before setting loading to false
+      await new Promise(resolve => setTimeout(resolve, 300));
       set({ loading: false });
     }
   },
@@ -151,6 +159,8 @@ export const useAuthStore = create<AuthState>((set) => ({
     } catch (error) {
       set({ error: (error as Error).message });
     } finally {
+      // Add a small delay before setting loading to false
+      await new Promise(resolve => setTimeout(resolve, 300));
       set({ loading: false });
     }
   },
@@ -158,18 +168,17 @@ export const useAuthStore = create<AuthState>((set) => ({
   clearError: () => set({ error: null }),
 }));
 
-// Initialize auth state once on app load
-supabase.auth.onAuthStateChange((event, session) => {
+// Debounce auth state changes
+let authTimeout: NodeJS.Timeout;
+supabase.auth.onAuthStateChange(async (event, session) => {
   const store = useAuthStore.getState();
   
-  if (event === 'SIGNED_IN' && session?.user) {
-    store.getProfile();
-  } else if (event === 'SIGNED_OUT') {
-    useAuthStore.setState({ 
-    user: null, 
-    isAdmin: false, 
-    loading: false, 
-    error: null 
-  });
-  }
+  clearTimeout(authTimeout);
+  authTimeout = setTimeout(async () => {
+    if (event === 'SIGNED_IN' && session?.user) {
+      await store.getProfile();
+    } else if (event === 'SIGNED_OUT') {
+      store.signOut();
+    }
+  }, 300);
 });
