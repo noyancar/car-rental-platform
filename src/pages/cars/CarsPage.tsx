@@ -4,6 +4,7 @@ import { Search, Filter, Car as CarIcon, Calendar, Sliders, X } from 'lucide-rea
 import { Button } from '../../components/ui/Button';
 import { Input } from '../../components/ui/Input';
 import { Select } from '../../components/ui/Select';
+import { DatePickerCard } from '../../components/ui/DatePickerCard';
 import { useCarStore } from '../../stores/carStore';
 
 const CarsPage: React.FC = () => {
@@ -22,6 +23,14 @@ const CarsPage: React.FC = () => {
   useEffect(() => {
     fetchCars();
   }, [fetchCars]);
+
+  const handleDateSearch = (startDate: string, endDate: string) => {
+    setFilters({
+      ...filters,
+      startDate,
+      endDate
+    });
+  };
   
   const applyFilters = () => {
     const newFilters: any = {};
@@ -88,6 +97,11 @@ const CarsPage: React.FC = () => {
                 Filters
               </Button>
             </div>
+          </div>
+
+          {/* Date Picker */}
+          <div className="mt-6">
+            <DatePickerCard onSearch={handleDateSearch} />
           </div>
           
           {/* Filter panel */}
@@ -227,6 +241,23 @@ const CarsPage: React.FC = () => {
                       delete newFilters.priceMax;
                       setFilters(newFilters);
                       setLocalFilters({ ...localFilters, priceMax: '' });
+                    }}
+                  >
+                    <X size={14} />
+                  </button>
+                </div>
+              )}
+
+              {(filters.startDate && filters.endDate) && (
+                <div className="bg-primary-100 text-primary-800 px-3 py-1 rounded-full text-sm flex items-center">
+                  Dates: {filters.startDate} - {filters.endDate}
+                  <button 
+                    className="ml-2"
+                    onClick={() => {
+                      const newFilters = { ...filters };
+                      delete newFilters.startDate;
+                      delete newFilters.endDate;
+                      setFilters(newFilters);
                     }}
                   >
                     <X size={14} />
