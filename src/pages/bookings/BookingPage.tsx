@@ -8,6 +8,7 @@ import { Input } from '../../components/ui/Input';
 import { useCarStore } from '../../stores/carStore';
 import { useBookingStore } from '../../stores/bookingStore';
 import { useAuthStore } from '../../stores/authStore';
+import { useSearchStore } from '../../stores/searchStore';
 
 const BookingPage: React.FC = () => {
   const { carId } = useParams();
@@ -21,10 +22,11 @@ const BookingPage: React.FC = () => {
     loading: bookingLoading,
     isCheckingAvailability
   } = useBookingStore();
+  const { searchParams, isSearchPerformed } = useSearchStore();
   
-  // Initialize start date to today, but leave end date empty
-  const [startDate, setStartDate] = useState(format(new Date(), 'yyyy-MM-dd'));
-  const [endDate, setEndDate] = useState('');
+  // Initialize dates from searchParams if available, otherwise use default values
+  const [startDate, setStartDate] = useState(isSearchPerformed ? searchParams.pickupDate : format(new Date(), 'yyyy-MM-dd'));
+  const [endDate, setEndDate] = useState(isSearchPerformed ? searchParams.returnDate : '');
   const [totalPrice, setTotalPrice] = useState(0);
   const [discountCode, setDiscountCode] = useState('');
   const [isAvailable, setIsAvailable] = useState<boolean | null>(null);
@@ -35,7 +37,13 @@ const BookingPage: React.FC = () => {
     if (carId) {
       fetchCarById(parseInt(carId));
     }
-  }, [carId, fetchCarById]);
+    
+    // If user navigated here without search parameters, redirect to car details
+    if (!isSearchPerformed && carId) {
+      toast.info('Please select rental dates first');
+      navigate(`/cars/${carId}`);
+    }
+  }, [carId, fetchCarById, isSearchPerformed, navigate]);
   
   // Validate dates and return status
   const validateDates = useCallback(() => {
@@ -254,58 +262,66 @@ const BookingPage: React.FC = () => {
                   variant="primary"
                   fullWidth
                   size="lg"
-                  isLoading={bookingLoading || isCheckingAvailability}
-                  disabled={!startDate || !endDate || !isAvailable || bookingLoading || isCheckingAvailability}
-                  leftIcon={<CreditCard size={20} />}
+                  isLoading={bookingLoading}
+                  disabled={!isAvailable || bookingLoading || !startDate || !endDate}
                 >
-                  {!user ? 'Sign in to Book' :
-                   !startDate || !endDate ? 'Select Dates' :
-                   isCheckingAvailability ? 'Checking Availability...' :
-                   !isAvailable ? 'Car Not Available' :
-                   'Proceed to Payment'}
+                  Complete Booking
                 </Button>
               </form>
             </div>
           </div>
           
-          {/* Booking Summary */}
+          {/* Car Summary */}
           <div className="lg:col-span-1">
-            <div className="bg-white rounded-lg shadow-md p-6">
-              <h2 className="text-xl font-semibold mb-4">Booking Summary</h2>
-              
-              <div className="mb-4">
+            <div className="bg-white rounded-lg shadow-md overflow-hidden">
+              <div className="relative h-48">
                 <img 
                   src={currentCar.image_url} 
                   alt={`${currentCar.make} ${currentCar.model}`}
-                  className="w-full h-48 object-cover rounded-md"
+                  className="w-full h-full object-cover"
                 />
               </div>
               
-              <div className="space-y-4">
-                <div>
-                  <h3 className="font-semibold">
-                    {currentCar.year} {currentCar.make} {currentCar.model}
-                  </h3>
-                  <p className="text-secondary-600">{currentCar.category}</p>
-                </div>
+              <div className="p-6">
+                <h2 className="text-xl font-semibold mb-1">
+                  {currentCar.year} {currentCar.make} {currentCar.model}
+                </h2>
+                <p className="text-primary-800 font-semibold mb-4">
+                  ${currentCar.price_per_day}/day
+                </p>
                 
-                <div className="border-t border-b border-secondary-200 py-4">
+                <div className="border-t border-b border-secondary-200 py-4 my-4">
                   <div className="flex justify-between mb-2">
-                    <span>Daily Rate</span>
-                    <span>${currentCar.price_per_day}/day</span>
+                    <span className="text-secondary-600">Daily Rate:</span>
+                    <span>${currentCar.price_per_day}</span>
                   </div>
                   
-                  {discountCode && (
-                    <div className="flex justify-between mb-2 text-success-500">
-                      <span>Discount</span>
-                      <span>-$0.00</span>
-                    </div>
+                  {startDate && endDate && (
+                    <>
+                      <div className="flex justify-between mb-2">
+                        <span className="text-secondary-600">Rental Duration:</span>
+                        <span>
+                          {Math.max(1, Math.ceil((new Date(endDate).getTime() - new Date(startDate).getTime()) / (1000 * 60 * 60 * 24)))} days
+                        </span>
+                      </div>
+                      
+                      <div className="flex justify-between font-semibold text-lg mt-4">
+                        <span>Total:</span>
+                        <span>${totalPrice}</span>
+                      </div>
+                    </>
                   )}
                 </div>
                 
-                <div className="flex justify-between items-center text-lg font-semibold">
-                  <span>Total</span>
-                  <span>${totalPrice.toFixed(2)}</span>
+                <div className="text-sm text-secondary-600">
+                  <p className="mb-2">
+                    <span className="font-medium">Pickup Location:</span> {isSearchPerformed ? searchParams.location.replace('-', ' ').toUpperCase() : 'Not specified'}
+                  </p>
+                  
+                  <p>
+                    <CreditCard size={16} className="inline mr-1" />
+                    <span className="text-secondary-800">Payment collected at pickup</span>
+                  </p>
                 </div>
               </div>
             </div>

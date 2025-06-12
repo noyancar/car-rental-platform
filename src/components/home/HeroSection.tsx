@@ -1,8 +1,10 @@
 import React from 'react';
+import { useNavigate } from 'react-router-dom';
 import { CalendarDays, Search } from 'lucide-react';
 import { Button } from '../ui/Button';
 import { Input } from '../ui/Input';
 import { Select } from '../ui/Select';
+import { useSearchStore } from '../../stores/searchStore';
 
 const LOCATIONS = [
   { value: 'istanbul-airport', label: 'Istanbul Airport' },
@@ -23,33 +25,25 @@ const HOURS = Array.from({ length: 24 }, (_, i) => {
   return { value: `${hour}:00`, label: `${hour}:00` };
 });
 
-interface HeroSectionProps {
-  location: string;
-  pickupDate: string;
-  pickupTime: string;
-  returnDate: string;
-  returnTime: string;
-  onLocationChange: (value: string) => void;
-  onPickupDateChange: (value: string) => void;
-  onPickupTimeChange: (value: string) => void;
-  onReturnDateChange: (value: string) => void;
-  onReturnTimeChange: (value: string) => void;
-  onSearch: (e: React.FormEvent) => void;
-}
+const HeroSection: React.FC = () => {
+  const navigate = useNavigate();
+  const { 
+    searchParams, 
+    updateSearchParams,
+    setSearchParams,
+    searchCars
+  } = useSearchStore();
+  
+  const handleSearch = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    // Search for available cars with current parameters
+    await searchCars();
+    
+    // Navigate to cars page
+    navigate('/cars');
+  };
 
-const HeroSection: React.FC<HeroSectionProps> = ({
-  location,
-  pickupDate,
-  pickupTime,
-  returnDate,
-  returnTime,
-  onLocationChange,
-  onPickupDateChange,
-  onPickupTimeChange,
-  onReturnDateChange,
-  onReturnTimeChange,
-  onSearch
-}) => {
   return (
     <section className="relative min-h-[80vh] flex items-center">
       {/* Background Image */}
@@ -78,15 +72,15 @@ const HeroSection: React.FC<HeroSectionProps> = ({
         
         {/* Search Form */}
         <div className="bg-white/10 backdrop-blur-md rounded-xl p-6 shadow-xl border border-white/20 animate-fade-in" style={{ animationDelay: '0.4s' }}>
-          <form onSubmit={onSearch} className="space-y-6">
+          <form onSubmit={handleSearch} className="space-y-6">
             {/* Location */}
             <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
               <div className="md:col-span-4 lg:col-span-1">
                 <Select
                   label="Pickup & Return Location"
                   options={LOCATIONS}
-                  value={location}
-                  onChange={(e) => onLocationChange(e.target.value)}
+                  value={searchParams.location}
+                  onChange={(e) => updateSearchParams({ location: e.target.value })}
                   className="bg-white/90 backdrop-blur-sm border-transparent focus:border-primary-500 text-secondary-800"
                 />
               </div>
@@ -96,8 +90,8 @@ const HeroSection: React.FC<HeroSectionProps> = ({
                 <Input
                   label="Pickup Date"
                   type="date"
-                  value={pickupDate}
-                  onChange={(e) => onPickupDateChange(e.target.value)}
+                  value={searchParams.pickupDate}
+                  onChange={(e) => updateSearchParams({ pickupDate: e.target.value })}
                   min={new Date().toISOString().split('T')[0]}
                   leftIcon={<CalendarDays className="text-primary-600" size={18} />}
                   className="bg-white/90 backdrop-blur-sm border-transparent focus:border-primary-500 text-secondary-800"
@@ -107,8 +101,8 @@ const HeroSection: React.FC<HeroSectionProps> = ({
                 <Select
                   label="Pickup Time"
                   options={HOURS}
-                  value={pickupTime}
-                  onChange={(e) => onPickupTimeChange(e.target.value)}
+                  value={searchParams.pickupTime}
+                  onChange={(e) => updateSearchParams({ pickupTime: e.target.value })}
                   className="bg-white/90 backdrop-blur-sm border-transparent focus:border-primary-500 text-secondary-800"
                 />
               </div>
@@ -118,9 +112,9 @@ const HeroSection: React.FC<HeroSectionProps> = ({
                 <Input
                   label="Return Date"
                   type="date"
-                  value={returnDate}
-                  onChange={(e) => onReturnDateChange(e.target.value)}
-                  min={pickupDate}
+                  value={searchParams.returnDate}
+                  onChange={(e) => updateSearchParams({ returnDate: e.target.value })}
+                  min={searchParams.pickupDate}
                   leftIcon={<CalendarDays className="text-primary-600" size={18} />}
                   className="bg-white/90 backdrop-blur-sm border-transparent focus:border-primary-500 text-secondary-800"
                 />
@@ -129,8 +123,8 @@ const HeroSection: React.FC<HeroSectionProps> = ({
                 <Select
                   label="Return Time"
                   options={HOURS}
-                  value={returnTime}
-                  onChange={(e) => onReturnTimeChange(e.target.value)}
+                  value={searchParams.returnTime}
+                  onChange={(e) => updateSearchParams({ returnTime: e.target.value })}
                   className="bg-white/90 backdrop-blur-sm border-transparent focus:border-primary-500 text-secondary-800"
                 />
               </div>

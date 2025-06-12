@@ -1,18 +1,34 @@
 import React, { useEffect } from 'react';
-import { useParams, Link } from 'react-router-dom';
+import { useParams, Link, useNavigate } from 'react-router-dom';
 import { ArrowLeft, Calendar, Clock, Users, Gauge, Car as CarIcon } from 'lucide-react';
 import { Button } from '../../components/ui/Button';
 import { useCarStore } from '../../stores/carStore';
+import { useSearchStore } from '../../stores/searchStore';
 
 const CarDetailsPage: React.FC = () => {
   const { id } = useParams();
+  const navigate = useNavigate();
   const { currentCar, loading, error, fetchCarById } = useCarStore();
+  const { searchParams, isSearchPerformed } = useSearchStore();
   
   useEffect(() => {
     if (id) {
       fetchCarById(parseInt(id));
     }
   }, [id, fetchCarById]);
+  
+  // Function to proceed to booking
+  const handleBookNow = () => {
+    // If search has been performed, we already have date parameters
+    // If not, redirect to home page to set search parameters
+    if (!isSearchPerformed) {
+      navigate('/');
+      return;
+    }
+    
+    // Navigate to booking page with search parameters
+    navigate(`/booking/${id}`);
+  };
   
   if (loading) {
     return (
@@ -84,17 +100,13 @@ const CarDetailsPage: React.FC = () => {
                 </p>
               </div>
               
-              {currentCar.available ? (
-                <Link to={`/booking/${currentCar.id}`}>
-                  <Button variant="primary" size="lg">
-                    Book Now
-                  </Button>
-                </Link>
-              ) : (
-                <Button variant="primary" size="lg" disabled>
-                  Currently Unavailable
-                </Button>
-              )}
+              <Button 
+                variant="primary" 
+                size="lg"
+                onClick={handleBookNow}
+              >
+                {isSearchPerformed ? 'Book Now' : 'Set Rental Dates'}
+              </Button>
             </div>
             
             {/* Features */}

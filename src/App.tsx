@@ -12,7 +12,7 @@ import Register from './pages/auth/Register';
 import ForgotPassword from './pages/auth/ForgotPassword';
 
 // Main pages
-import HomePage from './pages/HomePage';
+import { HomePage } from './pages/HomePage';
 import CarsPage from './pages/cars/CarsPage';
 import CarDetailsPage from './pages/cars/CarDetailsPage';
 import BookingPage from './pages/bookings/BookingPage';
