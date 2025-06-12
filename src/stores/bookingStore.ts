@@ -140,9 +140,26 @@ export const useBookingStore = create<BookingState>((set, get) => ({
         throw new Error('Car is not available for the selected dates');
       }
       
+      // Make sure all booking fields are included, yeni alanlar null olabilir
+      const bookingData = {
+        car_id: booking.car_id,
+        user_id: booking.user_id,
+        start_date: booking.start_date,
+        end_date: booking.end_date,
+        total_price: booking.total_price,
+        status: booking.status,
+        // Yeni eklenen alanlar için null check yapıyoruz
+        pickup_location: booking.pickup_location || null,
+        return_location: booking.return_location || null,
+        pickup_time: booking.pickup_time || null,
+        return_time: booking.return_time || null,
+        discount_code_id: booking.discount_code_id || null,
+        payment_intent_id: booking.payment_intent_id || null
+      };
+      
       const { data, error } = await supabase
         .from('bookings')
-        .insert([booking])
+        .insert([bookingData])
         .select(`
           *,
           cars (*)

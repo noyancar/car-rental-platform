@@ -17,12 +17,15 @@ export type Car = {
   price_per_day: number;
   category: string;
   image_url: string;
+  image_urls?: string[];
+  main_image_index?: number;
   available: boolean;
   features: string[];
   description: string;
   seats: number;
   transmission: string;
   mileage_type: string;
+  available_locations?: string[];
 }
 
 export type Booking = {
@@ -36,6 +39,10 @@ export type Booking = {
   status: 'pending' | 'confirmed' | 'cancelled' | 'completed';
   discount_code_id?: number;
   payment_intent_id?: string;
+  pickup_location?: string;
+  return_location?: string;
+  pickup_time?: string;
+  return_time?: string;
 }
 
 export type DiscountCode = {

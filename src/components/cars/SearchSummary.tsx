@@ -1,0 +1,185 @@
+import React, { useState } from 'react';
+import { CalendarClock, Clock, MapPin, Edit2, X, Check } from 'lucide-react';
+import { format } from 'date-fns';
+import { Button } from '../ui/Button';
+import { Input } from '../ui/Input';
+import { Select } from '../ui/Select';
+import { useSearchStore } from '../../stores/searchStore';
+
+// Location and time data
+const LOCATIONS = [
+  { value: 'istanbul-airport', label: 'Istanbul Airport' },
+  { value: 'istanbul-taksim', label: 'Istanbul Taksim' },
+  { value: 'istanbul-kadikoy', label: 'Istanbul Kadıköy' },
+  { value: 'ankara-airport', label: 'Ankara Airport' },
+  { value: 'ankara-center', label: 'Ankara City Center' },
+  { value: 'izmir-airport', label: 'Izmir Airport' },
+  { value: 'izmir-center', label: 'Izmir City Center' },
+  { value: 'antalya-airport', label: 'Antalya Airport' },
+  { value: 'antalya-center', label: 'Antalya City Center' },
+  { value: 'bodrum-airport', label: 'Bodrum Airport' },
+  { value: 'bodrum-center', label: 'Bodrum City Center' },
+];
+
+const HOURS = Array.from({ length: 24 }, (_, i) => {
+  const hour = i.toString().padStart(2, '0');
+  return { value: `${hour}:00`, label: `${hour}:00` };
+});
+
+// Helper function to get location label
+const getLocationLabel = (locationValue: string): string => {
+  const location = LOCATIONS.find(loc => loc.value === locationValue);
+  return location ? location.label : locationValue;
+};
+
+const SearchSummary: React.FC = () => {
+  const { searchParams, updateSearchParams, searchCars } = useSearchStore();
+  const [isEditing, setIsEditing] = useState(false);
+  const [tempParams, setTempParams] = useState(searchParams);
+  
+  const formatDate = (dateString: string): string => {
+    return format(new Date(dateString), 'MMM d, yyyy');
+  };
+  
+  const handleEditToggle = () => {
+    if (isEditing) {
+      // Reset temp params when canceling edit
+      setTempParams(searchParams);
+    }
+    setIsEditing(!isEditing);
+  };
+  
+  const handleTempParamUpdate = (key: keyof typeof tempParams, value: string) => {
+    setTempParams({
+      ...tempParams,
+      [key]: value
+    });
+  };
+  
+  const handleSaveChanges = async () => {
+    // Update the search parameters in the store
+    Object.entries(tempParams).forEach(([key, value]) => {
+      updateSearchParams({ [key]: value });
+    });
+    
+    // Search with the new parameters
+    await searchCars();
+    
+    // Exit edit mode
+    setIsEditing(false);
+  };
+  
+  return (
+    <div className="bg-white rounded-lg shadow-md p-4 mb-6">
+      {isEditing ? (
+        // Edit mode
+        <div className="space-y-4">
+          <div className="flex justify-between items-center">
+            <h3 className="text-lg font-semibold">Edit Search Parameters</h3>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleEditToggle}
+              leftIcon={<X size={16} />}
+            >
+              Cancel
+            </Button>
+          </div>
+          
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            {/* Location */}
+            <div>
+              <Select
+                label="Location"
+                options={LOCATIONS}
+                value={tempParams.location}
+                onChange={(e) => handleTempParamUpdate('location', e.target.value)}
+              />
+            </div>
+            
+            {/* Pickup Date and Time */}
+            <div>
+              <Input
+                label="Pickup Date"
+                type="date"
+                value={tempParams.pickupDate}
+                onChange={(e) => handleTempParamUpdate('pickupDate', e.target.value)}
+                min={new Date().toISOString().split('T')[0]}
+              />
+            </div>
+            <div>
+              <Select
+                label="Pickup Time"
+                options={HOURS}
+                value={tempParams.pickupTime}
+                onChange={(e) => handleTempParamUpdate('pickupTime', e.target.value)}
+              />
+            </div>
+            
+            {/* Return Date and Time */}
+            <div>
+              <Input
+                label="Return Date"
+                type="date"
+                value={tempParams.returnDate}
+                onChange={(e) => handleTempParamUpdate('returnDate', e.target.value)}
+                min={tempParams.pickupDate}
+              />
+            </div>
+            <div>
+              <Select
+                label="Return Time"
+                options={HOURS}
+                value={tempParams.returnTime}
+                onChange={(e) => handleTempParamUpdate('returnTime', e.target.value)}
+              />
+            </div>
+            
+            {/* Save Button */}
+            <div className="flex items-end">
+              <Button
+                variant="primary"
+                onClick={handleSaveChanges}
+                leftIcon={<Check size={16} />}
+                className="w-full"
+              >
+                Update Search
+              </Button>
+            </div>
+          </div>
+        </div>
+      ) : (
+        // View mode
+        <div className="flex flex-col md:flex-row justify-between items-start md:items-center">
+          <div className="space-y-2 mb-4 md:mb-0">
+            <h3 className="text-lg font-semibold">Your Search</h3>
+            
+            <div className="flex items-center text-secondary-600">
+              <MapPin size={16} className="mr-2" />
+              <span>{getLocationLabel(searchParams.location)}</span>
+            </div>
+            
+            <div className="flex items-center text-secondary-600">
+              <CalendarClock size={16} className="mr-2" />
+              <span>
+                {formatDate(searchParams.pickupDate)} at {searchParams.pickupTime} - 
+                {formatDate(searchParams.returnDate)} at {searchParams.returnTime}
+              </span>
+            </div>
+          </div>
+          
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handleEditToggle}
+            leftIcon={<Edit2 size={16} />}
+          >
+            Edit Search
+          </Button>
+        </div>
+      )}
+    </div>
+  );
+};
+
+export default SearchSummary; 

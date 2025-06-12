@@ -112,7 +112,11 @@ const BookingDetailsPage: React.FC = () => {
             <div className="flex items-start">
               <div className="w-32 h-24 rounded-md overflow-hidden">
                 <img 
-                  src={currentBooking.car?.image_url} 
+                  src={
+                    currentBooking.car?.image_urls && currentBooking.car.image_urls.length > 0
+                      ? currentBooking.car.image_urls[currentBooking.car.main_image_index || 0]
+                      : currentBooking.car?.image_url
+                  } 
                   alt={`${currentBooking.car?.make} ${currentBooking.car?.model}`}
                   className="w-full h-full object-cover"
                 />

@@ -22,3 +22,46 @@ export const supabase = createClient<Database>(supabaseUrl, supabaseAnonKey, {
     },
   },
 });
+
+// Helper function to ensure storage buckets exist
+export const ensureStorageBucket = async (bucketName: string, isPublic = true) => {
+  try {
+    // Sadece bucket'ın varlığını kontrol et, oluşturmaya ÇALIŞMA
+    const { data: buckets } = await supabase.storage.listBuckets();
+    const bucketExists = buckets?.some(bucket => bucket.name === bucketName);
+    
+    if (!bucketExists) {
+      console.warn(`Bucket "${bucketName}" bulunamadı. Lütfen Supabase dashboard üzerinden oluşturun.`);
+    } else {
+      console.log(`Bucket "${bucketName}" mevcut, kullanıma hazır.`);
+    }
+  } catch (error) {
+    console.error('Bucket kontrolü sırasında hata:', error);
+  }
+};
+
+// Helper function to safely handle auth session
+export const safelySignOut = async () => {
+  try {
+    // Önce local kapsamda çıkış yapmayı dene
+    const { error: localError } = await supabase.auth.signOut({ scope: 'local' });
+    
+    if (!localError) {
+      return { success: true };
+    }
+    
+    // Local kapsamda hata varsa, global kapsamda çıkış yapmayı dene
+    const { error: globalError } = await supabase.auth.signOut();
+    
+    if (globalError) {
+      // Her iki yöntem de başarısız olursa, sadece token'ları temizle
+      localStorage.removeItem('supabase.auth.token');
+      sessionStorage.removeItem('supabase.auth.token');
+    }
+    
+    return { success: true, error: localError || globalError };
+  } catch (error) {
+    console.error('Safe sign out error:', error);
+    return { success: false, error };
+  }
+};

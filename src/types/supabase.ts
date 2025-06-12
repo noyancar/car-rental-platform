@@ -19,12 +19,15 @@ export interface Database {
           price_per_day: number
           category: string
           image_url: string
+          image_urls: string[]
+          main_image_index: number
           available: boolean
           features: Json
           description: string
           seats: number
           transmission: string
           mileage_type: string
+          available_locations: string[]
         }
         Insert: {
           id?: number
@@ -34,13 +37,16 @@ export interface Database {
           year: number
           price_per_day: number
           category: string
-          image_url: string
+          image_url?: string
+          image_urls?: string[]
+          main_image_index?: number
           available?: boolean
           features?: Json
           description: string
           seats?: number
           transmission?: string
           mileage_type?: string
+          available_locations?: string[]
         }
         Update: {
           id?: number
@@ -51,12 +57,15 @@ export interface Database {
           price_per_day?: number
           category?: string
           image_url?: string
+          image_urls?: string[]
+          main_image_index?: number
           available?: boolean
           features?: Json
           description?: string
           seats?: number
           transmission?: string
           mileage_type?: string
+          available_locations?: string[]
         }
       }
       bookings: {
@@ -71,6 +80,10 @@ export interface Database {
           status: string
           discount_code_id: number | null
           payment_intent_id: string | null
+          pickup_location: string
+          return_location: string
+          pickup_time: string
+          return_time: string
         }
         Insert: {
           id?: number
@@ -83,6 +96,10 @@ export interface Database {
           status?: string
           discount_code_id?: number | null
           payment_intent_id?: string | null
+          pickup_location?: string
+          return_location?: string
+          pickup_time?: string
+          return_time?: string
         }
         Update: {
           id?: number
@@ -95,6 +112,10 @@ export interface Database {
           status?: string
           discount_code_id?: number | null
           payment_intent_id?: string | null
+          pickup_location?: string
+          return_location?: string
+          pickup_time?: string
+          return_time?: string
         }
       }
       discount_codes: {

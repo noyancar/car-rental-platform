@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import { supabase } from '../lib/supabase';
+import { supabase, safelySignOut } from '../lib/supabase';
 import type { User } from '../types';
 
 interface AuthState {
@@ -94,16 +94,17 @@ export const useAuthStore = create<AuthState>((set) => ({
     try {
       set({ loading: true, error: null });
       
-      const { error } = await supabase.auth.signOut();
-      if (error) throw error;
-      
+      // Önce yerel durumu temizle, böylece kullanıcı deneyimi daha hızlı olur
       set({ user: null, isAdmin: false });
+      
+      // Güvenli çıkış fonksiyonunu kullan
+      await safelySignOut();
+        
     } catch (error) {
-      set({ error: (error as Error).message });
-      throw error;
+      // Hata olsa bile kullanıcıyı çıkış yapmış olarak kabul et
+      console.warn('Sign out had an error, but user was still signed out locally:', error);
+      set({ user: null, isAdmin: false });
     } finally {
-      // Add a small delay before setting loading to false
-      await new Promise(resolve => setTimeout(resolve, 300));
       set({ loading: false });
     }
   },
@@ -175,9 +176,16 @@ supabase.auth.onAuthStateChange(async (event, session) => {
   
   clearTimeout(authTimeout);
   authTimeout = setTimeout(async () => {
+    console.log('Auth state change:', event, session?.user?.email);
+    
     if (event === 'SIGNED_IN' && session?.user) {
-      await store.getProfile();
-    } else if (event === 'SIGNED_OUT') {
+      try {
+        await store.getProfile();
+      } catch (error) {
+        console.error('Error getting profile after sign in:', error);
+      }
+    } else if (event === 'SIGNED_OUT' || event === 'TOKEN_REFRESHED' && !session) {
+      // Either explicit sign out or token expired/invalid
       useAuthStore.setState({ 
         user: null,
         isAdmin: false, 
@@ -187,3 +195,16 @@ supabase.auth.onAuthStateChange(async (event, session) => {
     }
   }, 300);
 });
+
+// Başlangıçta mevcut oturum durumunu kontrol et
+(async () => {
+  try {
+    const { data: { session } } = await supabase.auth.getSession();
+    if (session?.user) {
+      const store = useAuthStore.getState();
+      await store.getProfile();
+    }
+  } catch (error) {
+    console.error('Error checking initial session:', error);
+  }
+})();

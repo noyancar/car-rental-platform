@@ -1,11 +1,35 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { Calendar, Tag, Clock, ArrowRight } from 'lucide-react';
 import { Button } from '../components/ui/Button';
-import { mockCampaigns } from '../lib/mockData';
+import { useAdminStore } from '../stores/adminStore';
 
 const DealsPage: React.FC = () => {
-  const activeCampaigns = mockCampaigns.filter(campaign => campaign.active);
+  const { campaigns, loading, error, fetchCampaigns } = useAdminStore();
+  
+  useEffect(() => {
+    fetchCampaigns();
+  }, [fetchCampaigns]);
+  
+  const activeCampaigns = campaigns.filter(campaign => campaign.active);
+
+  if (loading) {
+    return (
+      <div className="min-h-screen pt-16 pb-12 flex items-center justify-center bg-secondary-50">
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary-800"></div>
+      </div>
+    );
+  }
+  
+  if (error) {
+    return (
+      <div className="min-h-screen pt-16 pb-12 flex items-center justify-center bg-secondary-50">
+        <div className="bg-error-50 text-error-500 p-4 rounded-md">
+          Error loading campaigns: {error}
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen pt-16 pb-12 bg-secondary-50">
