@@ -64,12 +64,22 @@ export const useCarStore = create<CarState>((set, get) => ({
       }
       
       const { data, error } = await query
-        .order('created_at', { ascending: false })
-        .abortSignal(new AbortController().signal);
+        .order('created_at', { ascending: false });
       
       if (error) throw error;
       
-      set({ cars: data as Car[] });
+      // Process the data to ensure image_urls is always an array
+      const processedData = data.map(car => {
+        // If image_urls is not an array or is empty, create an array with image_url
+        if (!Array.isArray(car.image_urls) || car.image_urls.length === 0) {
+          car.image_urls = car.image_url ? [car.image_url] : [];
+          car.main_image_index = 0;
+        }
+        
+        return car;
+      });
+      
+      set({ cars: processedData as Car[] });
     } catch (error) {
       set({ error: (error as Error).message });
     } finally {
@@ -86,12 +96,22 @@ export const useCarStore = create<CarState>((set, get) => ({
         .select('*')
         .eq('available', true)
         .order('created_at', { ascending: false })
-        .limit(4)
-        .abortSignal(new AbortController().signal);
+        .limit(4);
       
       if (error) throw error;
       
-      set({ featuredCars: data as Car[] });
+      // Process the data to ensure image_urls is always an array
+      const processedData = data.map(car => {
+        // If image_urls is not an array or is empty, create an array with image_url
+        if (!Array.isArray(car.image_urls) || car.image_urls.length === 0) {
+          car.image_urls = car.image_url ? [car.image_url] : [];
+          car.main_image_index = 0;
+        }
+        
+        return car;
+      });
+      
+      set({ featuredCars: processedData as Car[] });
     } catch (error) {
       set({ error: (error as Error).message });
     } finally {
@@ -107,13 +127,47 @@ export const useCarStore = create<CarState>((set, get) => ({
         .from('cars')
         .select('*')
         .eq('id', id)
-        .single()
-        .abortSignal(new AbortController().signal);
+        .single();
       
       if (error) throw error;
       
+      // Process the data to ensure valid image data
+      if (data) {
+        // If image_urls is not an array or is empty, create an array with image_url
+        if (!Array.isArray(data.image_urls) || data.image_urls.length === 0) {
+          data.image_urls = data.image_url ? [data.image_url] : [];
+          data.main_image_index = 0;
+        } else {
+          // Filter out invalid URLs
+          data.image_urls = data.image_urls.filter((url: any) => 
+            url && typeof url === 'string' && url.trim() !== ''
+          );
+        }
+        
+        // Make sure main_image_index is valid
+        if (data.main_image_index === null || 
+            data.main_image_index === undefined || 
+            data.main_image_index >= data.image_urls.length) {
+          data.main_image_index = 0;
+        }
+        
+        // If we still have no images but we have an image_url, use it
+        if (data.image_urls.length === 0 && data.image_url) {
+          data.image_urls = [data.image_url];
+          data.main_image_index = 0;
+        }
+        
+        // Ensure legacy image_url is set to main image
+        if (data.image_urls.length > 0) {
+          data.image_url = data.image_urls[data.main_image_index];
+        }
+      }
+      
+      // Set processed data
+      
       set({ currentCar: data as Car });
     } catch (error) {
+      console.error('Error fetching car by ID:', error);
       set({ error: (error as Error).message });
       set({ currentCar: null });
     } finally {

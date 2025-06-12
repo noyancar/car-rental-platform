@@ -141,6 +141,11 @@ const BookingPage: React.FC = () => {
     }
     
     try {
+      // Eğer searchParams boş veya tanımsızsa, varsayılan değerler kullanalım
+      const locationValue = isSearchPerformed && searchParams.location ? searchParams.location : 'default-location';
+      const pickupTimeValue = isSearchPerformed && searchParams.pickupTime ? searchParams.pickupTime : '10:00';
+      const returnTimeValue = isSearchPerformed && searchParams.returnTime ? searchParams.returnTime : '10:00';
+      
       const booking = await createBooking({
         car_id: currentCar!.id,
         user_id: user.id,
@@ -148,6 +153,10 @@ const BookingPage: React.FC = () => {
         end_date: endDate,
         total_price: totalPrice,
         status: 'pending',
+        pickup_location: locationValue,
+        return_location: locationValue,
+        pickup_time: pickupTimeValue,
+        return_time: returnTimeValue
       });
       
       if (booking) {

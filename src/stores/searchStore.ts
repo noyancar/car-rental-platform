@@ -99,16 +99,16 @@ export const useSearchStore = create<SearchState>((set, get) => ({
       const pickupDateTime = `${searchParams.pickupDate}T${searchParams.pickupTime}:00`;
       const returnDateTime = `${searchParams.returnDate}T${searchParams.returnTime}:00`;
       
-      // Query for available cars - simplified to reduce complexity
+      // Query for available cars - daha esnek sorgu yapısı
       const { data, error } = await supabase
         .from('cars')
         .select('*')
         .eq('available', true);
+      // Henüz available_locations ile filtreleme yapmıyoruz, çünkü bu alan boş olabilir
       
       if (error) throw error;
       
       // Filter out cars with overlapping bookings
-      // This is now done client-side to avoid complex query syntax
       const availableCars = data ? data as Car[] : [];
       
       // Get bookings for these cars

@@ -2,6 +2,7 @@ import React, { useEffect } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { ArrowLeft, Calendar, Clock, Users, Gauge, Car as CarIcon } from 'lucide-react';
 import { Button } from '../../components/ui/Button';
+import { SimpleImageViewer } from '../../components/ui/SimpleImageViewer';
 import { useCarStore } from '../../stores/carStore';
 import { useSearchStore } from '../../stores/searchStore';
 
@@ -16,6 +17,11 @@ const CarDetailsPage: React.FC = () => {
       fetchCarById(parseInt(id));
     }
   }, [id, fetchCarById]);
+  
+  // Check car data and images
+  useEffect(() => {
+    // Removed excessive logging
+  }, [currentCar]);
   
   // Function to proceed to booking
   const handleBookNow = () => {
@@ -63,6 +69,11 @@ const CarDetailsPage: React.FC = () => {
     );
   }
   
+  // Prepare image array for slider, ensuring it's valid
+  const sliderImages = (currentCar.image_urls && currentCar.image_urls.length > 0) 
+    ? [...currentCar.image_urls] // Create a new array to avoid mutations
+    : [currentCar.image_url];
+  
   return (
     <div className="min-h-screen pt-16 pb-12 bg-secondary-50">
       <div className="container-custom">
@@ -74,14 +85,14 @@ const CarDetailsPage: React.FC = () => {
         </div>
         
         <div className="bg-white rounded-lg shadow-md overflow-hidden">
-          {/* Car Image */}
-          <div className="relative h-96">
-            <img 
-              src={currentCar.image_url} 
+          {/* Car Image Slider */}
+          <div className="relative">
+            <SimpleImageViewer 
+              images={sliderImages}
               alt={`${currentCar.make} ${currentCar.model}`}
-              className="w-full h-full object-cover"
+              className="w-full h-96"
             />
-            <div className="absolute top-4 left-4">
+            <div className="absolute top-4 left-4 z-10">
               <span className="bg-primary-800 text-white px-4 py-2 rounded-full text-sm">
                 {currentCar.category}
               </span>

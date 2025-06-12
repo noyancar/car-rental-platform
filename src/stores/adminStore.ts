@@ -70,9 +70,20 @@ export const useAdminStore = create<AdminState>((set, get) => ({
     try {
       set({ loading: true, error: null });
       
+      // Ensure image_urls array exists
+      const carData = {
+        ...car,
+        // If image_urls is not provided, create it from image_url
+        image_urls: car.image_urls?.length > 0 
+          ? car.image_urls 
+          : car.image_url ? [car.image_url] : [],
+        // Set main_image_index to 0 if not provided
+        main_image_index: car.main_image_index || 0
+      };
+      
       const { error } = await supabase
         .from('cars')
-        .insert([car]);
+        .insert([carData]);
       
       if (error) throw error;
       
@@ -88,9 +99,47 @@ export const useAdminStore = create<AdminState>((set, get) => ({
     try {
       set({ loading: true, error: null });
       
+      // Prepare update data with image_urls handling
+      let updateData = { ...car };
+      
+      // Handle image_urls if provided
+      if (car.image_urls && Array.isArray(car.image_urls)) {
+        updateData.image_urls = car.image_urls;
+        
+        // Update main_image_index if not provided but we have image_urls
+        if (car.main_image_index === undefined && car.image_urls.length > 0) {
+          updateData.main_image_index = 0;
+        }
+        
+        // Also update the legacy image_url field to be the main image
+        if (car.image_urls.length > 0) {
+          const mainIndex = car.main_image_index || 0;
+          updateData.image_url = car.image_urls[mainIndex];
+        }
+      } 
+      // If only image_url is updated but not image_urls
+      else if (car.image_url && !car.image_urls) {
+        // Get current car data to check existing image_urls
+        const { data: currentCar } = await supabase
+          .from('cars')
+          .select('image_urls')
+          .eq('id', id)
+          .single();
+          
+        if (currentCar && currentCar.image_urls) {
+          // Update image_urls with the new image_url as main
+          updateData.image_urls = [car.image_url, ...(currentCar.image_urls || [])];
+          updateData.main_image_index = 0;
+        } else {
+          // No existing image_urls, create new array
+          updateData.image_urls = [car.image_url];
+          updateData.main_image_index = 0;
+        }
+      }
+      
       const { error } = await supabase
         .from('cars')
-        .update(car)
+        .update(updateData)
         .eq('id', id);
       
       if (error) throw error;

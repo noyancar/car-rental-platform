@@ -4,6 +4,7 @@ import { toast } from 'sonner';
 import { Button } from '../../components/ui/Button';
 import { Input } from '../../components/ui/Input';
 import { Select } from '../../components/ui/Select';
+import { SimpleImageUploader } from '../../components/ui/SimpleImageUploader';
 import { useAdminStore } from '../../stores/adminStore';
 import type { Car } from '../../types';
 
@@ -46,11 +47,15 @@ const AdminCars: React.FC = () => {
     price_per_day: 0,
     category: '',
     image_url: '',
+    image_urls: [] as string[],
+    main_image_index: 0,
     description: '',
     features: [] as string[],
     seats: 5,
     transmission: 'Automatic',
     mileage_type: 'Unlimited',
+    available: true,
+    available_locations: [] as string[],
   });
   
   useEffect(() => {
@@ -116,11 +121,15 @@ const AdminCars: React.FC = () => {
         price_per_day: 0,
         category: '',
         image_url: '',
+        image_urls: [],
+        main_image_index: 0,
         description: '',
         features: [],
         seats: 5,
         transmission: 'Automatic',
         mileage_type: 'Unlimited',
+        available: true,
+        available_locations: [],
       });
       toast.success('Car added successfully');
     } catch (error) {
@@ -134,6 +143,8 @@ const AdminCars: React.FC = () => {
         toast.error('Please add at least one feature');
         return;
       }
+      
+      // Updating car with image data
       
       await updateCar(car.id, car);
       setEditingCar(null);
@@ -243,7 +254,7 @@ const AdminCars: React.FC = () => {
                     <td className="px-6 py-4">
                       <div className="flex items-center">
                         <img 
-                          src={car.image_url} 
+                          src={car.image_urls?.length ? car.image_urls[car.main_image_index || 0] : car.image_url} 
                           alt={`${car.make} ${car.model}`}
                           className="h-12 w-16 object-cover rounded"
                         />
@@ -281,8 +292,9 @@ const AdminCars: React.FC = () => {
                           Edit
                         </Button>
                         <Button
-                          variant={car.available ? 'error' : 'success'}
+                          variant={car.available ? 'outline' : 'primary'}
                           size="sm"
+                          className={car.available ? "text-error-500 border-error-500 hover:bg-error-50" : "bg-primary-600"}
                           onClick={() => handleToggleAvailability(car.id, !car.available)}
                           leftIcon={car.available ? <X size={16} /> : <Check size={16} />}
                         >
@@ -363,13 +375,33 @@ const AdminCars: React.FC = () => {
                   }
                 />
                 
-                <Input
-                  label="Image URL"
-                  value={editingCar?.image_url || newCar.image_url}
-                  onChange={(e) => editingCar
-                    ? setEditingCar({ ...editingCar, image_url: e.target.value })
-                    : setNewCar({ ...newCar, image_url: e.target.value })
-                  }
+                <SimpleImageUploader
+                  label="Araç Fotoğrafları"
+                  initialImages={editingCar?.image_urls || (editingCar?.image_url ? [editingCar.image_url] : [])}
+                  initialMainIndex={editingCar?.main_image_index || 0}
+                  onImagesChange={(urls: string[], mainIndex: number) => {
+                    if (editingCar) {
+                      setEditingCar({ 
+                        ...editingCar, 
+                        image_urls: urls,
+                        main_image_index: mainIndex,
+                        // Legacy desteği
+                        image_url: urls.length > 0 ? urls[mainIndex] : editingCar.image_url
+                      });
+                    } else {
+                      setNewCar({ 
+                        ...newCar, 
+                        image_urls: urls,
+                        main_image_index: mainIndex,
+                        // Legacy desteği
+                        image_url: urls.length > 0 ? urls[mainIndex] : ''
+                      });
+                    }
+                  }}
+                  bucketName="car-images"
+                  folderPath="cars"
+                  itemId={editingCar?.id}
+                  maxFiles={5}
                 />
 
                 <Input

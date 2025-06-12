@@ -56,7 +56,9 @@ const CarGrid: React.FC = () => {
         <div key={car.id} className="bg-white rounded-lg shadow-md overflow-hidden group">
           <div className="relative h-48 overflow-hidden">
             <img 
-              src={car.image_url} 
+              src={car.image_urls && car.image_urls.length > 0 
+                ? car.image_urls[car.main_image_index || 0] 
+                : car.image_url} 
               alt={`${car.make} ${car.model}`}
               className="w-full h-full object-cover transform group-hover:scale-105 transition-transform duration-300"
             />
