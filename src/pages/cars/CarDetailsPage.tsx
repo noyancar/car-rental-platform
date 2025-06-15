@@ -21,7 +21,7 @@ const CarDetailsPage: React.FC = () => {
   const navigate = useNavigate();
   const { currentCar, loading, error, fetchCarById } = useCarStore();
   const { searchParams, isSearchPerformed, updateSearchParams, searchCars } = useSearchStore();
-  const { checkAvailability, isCheckingAvailability } = useBookingStore();
+  const { checkAvailability, isCheckingAvailability, calculatePrice } = useBookingStore();
   
   // Local state for date selection
   const [showDateSelector, setShowDateSelector] = useState(!isSearchPerformed);
@@ -36,6 +36,7 @@ const CarDetailsPage: React.FC = () => {
   const [isAvailable, setIsAvailable] = useState<boolean | null>(null);
   const [validationMessage, setValidationMessage] = useState('');
   const [rentalDuration, setRentalDuration] = useState(1);
+  const [totalPrice, setTotalPrice] = useState(0);
   
   useEffect(() => {
     if (id) {
@@ -67,15 +68,34 @@ const CarDetailsPage: React.FC = () => {
     return true;
   };
   
-  // Calculate rental duration when dates change
+  // Calculate rental duration and price when dates change
   useEffect(() => {
-    if (localPickupDate && localReturnDate) {
-      const start = new Date(localPickupDate);
-      const end = new Date(localReturnDate);
-      const days = Math.max(1, Math.ceil((end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24)));
-      setRentalDuration(days);
-    }
-  }, [localPickupDate, localReturnDate]);
+    const updateDurationAndPrice = async () => {
+      if (localPickupDate && localReturnDate && currentCar && validateDates()) {
+        // Tarih ve saat bilgilerini birleştirerek tam tarih oluştur
+        const startDateTime = new Date(`${localPickupDate}T${localPickupTime}`);
+        const endDateTime = new Date(`${localReturnDate}T${localReturnTime}`);
+        
+        // Milisaniye cinsinden farkı hesapla
+        const diffMs = endDateTime.getTime() - startDateTime.getTime();
+        
+        // Gün sayısını hesapla (yukarı yuvarlayarak)
+        const days = Math.ceil(diffMs / (1000 * 60 * 60 * 24));
+        setRentalDuration(days);
+        
+        // Fiyat hesaplama (eğer calculatePrice fonksiyonu kullanılabilirse)
+        if (id && calculatePrice) {
+          const price = await calculatePrice(parseInt(id), localPickupDate, localReturnDate, localPickupTime, localReturnTime);
+          setTotalPrice(price);
+        } else if (currentCar.price_per_day) {
+          // Fallback olarak basit hesaplama
+          setTotalPrice(currentCar.price_per_day * days);
+        }
+      }
+    };
+    
+    updateDurationAndPrice();
+  }, [localPickupDate, localReturnDate, localPickupTime, localReturnTime, currentCar, id, calculatePrice]);
   
   // Check availability when dates change
   useEffect(() => {
@@ -85,7 +105,7 @@ const CarDetailsPage: React.FC = () => {
         return;
       }
       
-      const available = await checkAvailability(parseInt(id), localPickupDate, localReturnDate);
+      const available = await checkAvailability(parseInt(id), localPickupDate, localReturnDate, localPickupTime, localReturnTime);
       setIsAvailable(available);
     };
     
@@ -93,7 +113,7 @@ const CarDetailsPage: React.FC = () => {
       const timeoutId = setTimeout(checkCarAvailability, 500);
       return () => clearTimeout(timeoutId);
     }
-  }, [id, localPickupDate, localReturnDate, showDateSelector, checkAvailability]);
+  }, [id, localPickupDate, localReturnDate, localPickupTime, localReturnTime, showDateSelector, checkAvailability]);
   
   // Function to proceed to booking
   const handleBookNow = () => {
@@ -340,7 +360,7 @@ const CarDetailsPage: React.FC = () => {
                   <div className="text-lg font-semibold">
                     {localPickupDate && localReturnDate && (
                       <div className="flex items-center">
-                        <span>Total: ${currentCar.price_per_day * rentalDuration}</span>
+                        <span>Total: ${totalPrice}</span>
                       </div>
                     )}
                   </div>

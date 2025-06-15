@@ -105,10 +105,12 @@ export const useSearchStore = create<SearchState>((set, get) => ({
       // Kullanıcı tarafından seçilen tarihler
       const startDate = searchParams.pickupDate;
       const endDate = searchParams.returnDate;
+      const pickupTime = searchParams.pickupTime;
+      const returnTime = searchParams.returnTime;
       
       // Edge Function'ı çağır (şimdi tüm müsait araçları getirecek şekilde güncellendi)
       const response = await fetch(
-        `https://lwhqqhlvmtbcugzasamf.supabase.co/functions/v1/check-car-availability?start_date=${encodeURIComponent(startDate)}&end_date=${encodeURIComponent(endDate)}&include_details=true`,
+        `https://lwhqqhlvmtbcugzasamf.supabase.co/functions/v1/check-car-availability?start_date=${encodeURIComponent(startDate)}&end_date=${encodeURIComponent(endDate)}&pickup_time=${encodeURIComponent(pickupTime)}&return_time=${encodeURIComponent(returnTime)}&include_details=true`,
         {
           method: 'GET',
           headers: {

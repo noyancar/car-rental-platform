@@ -20,17 +20,20 @@ serve(async (req) => {
     const carId = url.searchParams.get("car_id");
     const startDate = url.searchParams.get("start_date");
     const endDate = url.searchParams.get("end_date");
+    const pickupTime = url.searchParams.get("pickup_time") || "10:00";
+    const returnTime = url.searchParams.get("return_time") || "10:00";
     const includeDetails = url.searchParams.get("include_details") === "true";
 
     if (!startDate || !endDate) {
       throw new Error("Start date and end date are required");
     }
 
-    const requestStart = new Date(`${startDate}T00:00:00`);
-    const requestEnd = new Date(`${endDate}T23:59:59`);
+    // Tam tarih ve saat bilgilerini oluştur
+    const requestStart = new Date(`${startDate}T${pickupTime}:00`);
+    const requestEnd = new Date(`${endDate}T${returnTime}:00`);
     
     if (requestStart >= requestEnd) {
-      throw new Error("Start date must be before end date");
+      throw new Error("Start date and time must be before end date and time");
     }
 
     const supabaseUrl = Deno.env.get("SUPABASE_URL") || "";
@@ -65,16 +68,22 @@ serve(async (req) => {
       // Sadece aktif rezervasyonları kontrol et (confirmed veya pending)
       const { data: bookings, error: bookingsError } = await supabase
         .from("bookings")
-        .select("start_date, end_date, status")
+        .select("start_date, end_date, pickup_time, return_time, status")
         .eq("car_id", carId)
         .in("status", ["confirmed", "pending"]);
 
       if (bookingsError) throw new Error(bookingsError.message);
 
+      // Rezervasyonlarla çakışma kontrolü - saat bilgilerini de dikkate alarak
       const isOverlapping = bookings.some((booking) => {
-        const bookingStart = new Date(`${booking.start_date}T00:00:00`);
-        const bookingEnd = new Date(`${booking.end_date}T23:59:59`);
-        return bookingStart <= requestEnd && bookingEnd >= requestStart;
+        // Booking'in başlangıç ve bitiş zamanlarını oluştur
+        const bookingStart = new Date(`${booking.start_date}T${booking.pickup_time || "10:00"}:00`);
+        const bookingEnd = new Date(`${booking.end_date}T${booking.return_time || "10:00"}:00`);
+        
+        // Çakışma kontrolü: 
+        // İki rezervasyonun çakışmaması için, biri diğerinin bitmesinden sonra başlamalı
+        // veya biri diğerinin başlamasından önce bitmeli
+        return !(bookingEnd <= requestStart || bookingStart >= requestEnd);
       });
 
       const available = !isOverlapping;
@@ -82,7 +91,7 @@ serve(async (req) => {
       return new Response(JSON.stringify({
         available,
         message: available 
-          ? `Car is available between ${startDate} and ${endDate}` 
+          ? `Car is available between ${startDate} ${pickupTime} and ${endDate} ${returnTime}` 
           : "Car is already booked during the requested period"
       }), {
         headers: {
@@ -119,7 +128,7 @@ serve(async (req) => {
       const carIds = availableCars.map(car => car.id);
       const { data: bookings, error: bookingsError } = await supabase
         .from("bookings")
-        .select("car_id, start_date, end_date")
+        .select("car_id, start_date, end_date, pickup_time, return_time")
         .in("car_id", carIds)
         .in("status", ["confirmed", "pending"]);
 
@@ -130,10 +139,12 @@ serve(async (req) => {
       
       if (bookings && bookings.length > 0) {
         bookings.forEach(booking => {
-          const bookingStart = new Date(`${booking.start_date}T00:00:00`);
-          const bookingEnd = new Date(`${booking.end_date}T23:59:59`);
+          // Booking'in başlangıç ve bitiş zamanlarını oluştur
+          const bookingStart = new Date(`${booking.start_date}T${booking.pickup_time || "10:00"}:00`);
+          const bookingEnd = new Date(`${booking.end_date}T${booking.return_time || "10:00"}:00`);
           
-          if (bookingStart <= requestEnd && bookingEnd >= requestStart) {
+          // Çakışma kontrolü
+          if (!(bookingEnd <= requestStart || bookingStart >= requestEnd)) {
             unavailableCarIds.add(booking.car_id);
           }
         });
@@ -147,7 +158,7 @@ serve(async (req) => {
       return new Response(JSON.stringify({
         cars: availableCarIds,
         count: availableCarIds.length,
-        message: `Found ${availableCarIds.length} available cars for the selected dates`
+        message: `Found ${availableCarIds.length} available cars for the selected dates and times`
       }), {
         headers: {
           ...corsHeaders,

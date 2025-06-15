@@ -112,14 +112,14 @@ const BookingPage: React.FC = () => {
         return;
       }
       
-      const price = await calculatePrice(parseInt(carId), startDate, endDate);
+      const price = await calculatePrice(parseInt(carId), startDate, endDate, pickupTime, returnTime);
       setTotalPrice(price);
       setShowPriceSummary(true);
     };
     
     const timeoutId = setTimeout(updatePrice, 300);
     return () => clearTimeout(timeoutId);
-  }, [carId, startDate, endDate, calculatePrice, validateDates]);
+  }, [carId, startDate, endDate, pickupTime, returnTime, calculatePrice, validateDates]);
   
   // Check availability with debouncing
   useEffect(() => {
@@ -129,13 +129,13 @@ const BookingPage: React.FC = () => {
         return;
       }
       
-      const available = await checkAvailability(parseInt(carId), startDate, endDate);
+      const available = await checkAvailability(parseInt(carId), startDate, endDate, pickupTime, returnTime);
       setIsAvailable(available);
     };
     
     const timeoutId = setTimeout(checkCarAvailability, 500);
     return () => clearTimeout(timeoutId);
-  }, [carId, startDate, endDate, checkAvailability, validateDates]);
+  }, [carId, startDate, endDate, pickupTime, returnTime, checkAvailability, validateDates]);
 
   // Toggle date editing mode
   const toggleEditDates = () => {
