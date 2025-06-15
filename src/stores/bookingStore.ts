@@ -147,7 +147,7 @@ export const useBookingStore = create<BookingState>((set, get) => ({
         start_date: booking.start_date,
         end_date: booking.end_date,
         total_price: booking.total_price,
-        status: booking.status,
+        status: booking.status || 'pending', // Default status is pending
         // Yeni eklenen alanlar için null check yapıyoruz
         pickup_location: booking.pickup_location || null,
         return_location: booking.return_location || null,

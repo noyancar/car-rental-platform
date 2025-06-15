@@ -95,68 +95,44 @@ export const useSearchStore = create<SearchState>((set, get) => ({
       const { searchParams } = get();
       set({ loading: true, error: null });
       
-      // Format dates for query
-      const pickupDateTime = `${searchParams.pickupDate}T${searchParams.pickupTime}:00`;
-      const returnDateTime = `${searchParams.returnDate}T${searchParams.returnTime}:00`;
+      // Get current session for authentication
+      const { data: { session } } = await supabase.auth.getSession();
       
-      // Query for available cars - daha esnek sorgu yapısı
-      const { data, error } = await supabase
-        .from('cars')
-        .select('*')
-        .eq('available', true);
-      // Henüz available_locations ile filtreleme yapmıyoruz, çünkü bu alan boş olabilir
-      
-      if (error) throw error;
-      
-      // Filter out cars with overlapping bookings
-      const availableCars = data ? data as Car[] : [];
-      
-      // Get bookings for these cars
-      const carIds = availableCars.map(car => car.id);
-      
-      if (carIds.length > 0) {
-        const { data: bookings } = await supabase
-          .from('bookings')
-          .select('*')
-          .in('car_id', carIds)
-          .neq('status', 'cancelled');
-        
-        // Filter out cars with overlapping bookings
-        const unavailableCarIds = new Set();
-        
-        if (bookings) {
-          bookings.forEach(booking => {
-            const bookingStart = new Date(booking.start_date);
-            const bookingEnd = new Date(booking.end_date);
-            const requestStart = new Date(pickupDateTime);
-            const requestEnd = new Date(returnDateTime);
-            
-            // Check if booking overlaps with requested period
-            if (
-              (bookingStart <= requestEnd && bookingEnd >= requestStart) &&
-              booking.status === 'confirmed'
-            ) {
-              unavailableCarIds.add(booking.car_id);
-            }
-          });
-        }
-        
-        // Filter out unavailable cars
-        const filteredCars = availableCars.filter(car => !unavailableCarIds.has(car.id));
-        
-        set({ 
-          searchResults: filteredCars,
-          filteredResults: filteredCars,
-          isSearchPerformed: true,
-        });
-      } else {
-        set({
-          searchResults: [],
-          filteredResults: [],
-          isSearchPerformed: true,
-        });
+      if (!session?.access_token) {
+        throw new Error('Authentication required to search for cars');
       }
       
+      // Kullanıcı tarafından seçilen tarihler
+      const startDate = searchParams.pickupDate;
+      const endDate = searchParams.returnDate;
+      
+      // Edge Function'ı çağır (şimdi tüm müsait araçları getirecek şekilde güncellendi)
+      const response = await fetch(
+        `https://lwhqqhlvmtbcugzasamf.supabase.co/functions/v1/check-car-availability?start_date=${encodeURIComponent(startDate)}&end_date=${encodeURIComponent(endDate)}&include_details=true`,
+        {
+          method: 'GET',
+          headers: {
+            'Authorization': `Bearer ${session.access_token}`,
+            'Content-Type': 'application/json',
+          },
+        }
+      );
+      
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(`Error searching for cars: ${errorText}`);
+      }
+      
+      const result = await response.json();
+      
+      // Edge function'dan gelen araçları kullan
+      const availableCars = result.cars || [];
+      
+      set({ 
+        searchResults: availableCars,
+        filteredResults: availableCars,
+        isSearchPerformed: true,
+      });
     } catch (error) {
       set({ error: (error as Error).message });
     } finally {
