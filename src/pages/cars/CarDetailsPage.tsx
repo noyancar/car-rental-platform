@@ -1,16 +1,36 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
-import { ArrowLeft, Calendar, Clock, Users, Gauge, Car as CarIcon } from 'lucide-react';
+import { ArrowLeft, Calendar, Clock, Users, Gauge, Car as CarIcon, CalendarDays } from 'lucide-react';
+import { format } from 'date-fns';
 import { Button } from '../../components/ui/Button';
 import { SimpleImageViewer } from '../../components/ui/SimpleImageViewer';
 import { useCarStore } from '../../stores/carStore';
 import { useSearchStore } from '../../stores/searchStore';
+import { Input } from '../../components/ui/Input';
+import { Select } from '../../components/ui/Select';
+import { toast } from 'sonner';
+
+const HOURS = Array.from({ length: 24 }, (_, i) => {
+  const hour = i.toString().padStart(2, '0');
+  return { value: `${hour}:00`, label: `${hour}:00` };
+});
 
 const CarDetailsPage: React.FC = () => {
   const { id } = useParams();
   const navigate = useNavigate();
   const { currentCar, loading, error, fetchCarById } = useCarStore();
-  const { searchParams, isSearchPerformed } = useSearchStore();
+  const { searchParams, isSearchPerformed, updateSearchParams, searchCars } = useSearchStore();
+  
+  // Local state for date selection
+  const [showDateSelector, setShowDateSelector] = useState(!isSearchPerformed);
+  const [localPickupDate, setLocalPickupDate] = useState(
+    searchParams.pickupDate || format(new Date(), 'yyyy-MM-dd')
+  );
+  const [localReturnDate, setLocalReturnDate] = useState(
+    searchParams.returnDate || format(new Date(Date.now() + 24 * 60 * 60 * 1000), 'yyyy-MM-dd')
+  );
+  const [localPickupTime, setLocalPickupTime] = useState(searchParams.pickupTime || '10:00');
+  const [localReturnTime, setLocalReturnTime] = useState(searchParams.returnTime || '10:00');
   
   useEffect(() => {
     if (id) {
@@ -18,22 +38,30 @@ const CarDetailsPage: React.FC = () => {
     }
   }, [id, fetchCarById]);
   
-  // Check car data and images
-  useEffect(() => {
-    // Removed excessive logging
-  }, [currentCar]);
-  
   // Function to proceed to booking
   const handleBookNow = () => {
     // If search has been performed, we already have date parameters
-    // If not, redirect to home page to set search parameters
-    if (!isSearchPerformed) {
-      navigate('/');
+    if (isSearchPerformed && !showDateSelector) {
+      // Navigate to booking page with search parameters
+      navigate(`/booking/${id}`);
       return;
     }
     
-    // Navigate to booking page with search parameters
+    // Otherwise, update search parameters with local values and proceed
+    updateSearchParams({
+      pickupDate: localPickupDate,
+      returnDate: localReturnDate,
+      pickupTime: localPickupTime,
+      returnTime: localReturnTime
+    });
+    
+    // Navigate to booking page
     navigate(`/booking/${id}`);
+  };
+  
+  // Function to toggle date selector
+  const toggleDateSelector = () => {
+    setShowDateSelector(!showDateSelector);
   };
   
   if (loading) {
@@ -111,14 +139,96 @@ const CarDetailsPage: React.FC = () => {
                 </p>
               </div>
               
-              <Button 
-                variant="primary" 
-                size="lg"
-                onClick={handleBookNow}
-              >
-                {isSearchPerformed ? 'Book Now' : 'Set Rental Dates'}
-              </Button>
+              <div className="flex flex-col gap-2">
+                {isSearchPerformed && !showDateSelector && (
+                  <div className="text-right mb-2">
+                    <p className="text-sm text-secondary-600">Your Dates:</p>
+                    <p className="font-medium">
+                      {format(new Date(searchParams.pickupDate), 'MMM d')} - {format(new Date(searchParams.returnDate), 'MMM d, yyyy')}
+                    </p>
+                    <button 
+                      onClick={toggleDateSelector} 
+                      className="text-xs text-primary-600 hover:text-primary-800 underline"
+                    >
+                      Change Dates
+                    </button>
+                  </div>
+                )}
+                
+                <Button 
+                  variant="primary" 
+                  size="lg"
+                  onClick={handleBookNow}
+                >
+                  {showDateSelector ? 'Continue to Booking' : 'Book Now'}
+                </Button>
+              </div>
             </div>
+            
+            {/* Date Selector */}
+            {showDateSelector && (
+              <div className="mt-6 p-4 bg-secondary-50 rounded-lg">
+                <h3 className="text-lg font-semibold mb-4">Select Your Rental Dates</h3>
+                <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                  <div className="md:col-span-2">
+                    <Input
+                      label="Pickup Date"
+                      type="date"
+                      value={localPickupDate}
+                      onChange={(e) => setLocalPickupDate(e.target.value)}
+                      min={format(new Date(), 'yyyy-MM-dd')}
+                      leftIcon={<CalendarDays size={18} />}
+                    />
+                  </div>
+                  <div>
+                    <Select
+                      label="Pickup Time"
+                      options={HOURS}
+                      value={localPickupTime}
+                      onChange={(e) => setLocalPickupTime(e.target.value)}
+                    />
+                  </div>
+                  <div>
+                    <Button 
+                      variant="outline" 
+                      size="sm"
+                      className="mt-8"
+                      onClick={toggleDateSelector}
+                    >
+                      Cancel
+                    </Button>
+                  </div>
+                  <div className="md:col-span-2">
+                    <Input
+                      label="Return Date"
+                      type="date"
+                      value={localReturnDate}
+                      onChange={(e) => setLocalReturnDate(e.target.value)}
+                      min={localPickupDate}
+                      leftIcon={<CalendarDays size={18} />}
+                    />
+                  </div>
+                  <div>
+                    <Select
+                      label="Return Time"
+                      options={HOURS}
+                      value={localReturnTime}
+                      onChange={(e) => setLocalReturnTime(e.target.value)}
+                    />
+                  </div>
+                  <div>
+                    <Button 
+                      variant="primary" 
+                      size="sm"
+                      className="mt-8 w-full"
+                      onClick={handleBookNow}
+                    >
+                      Continue
+                    </Button>
+                  </div>
+                </div>
+              </div>
+            )}
             
             {/* Features */}
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-8">

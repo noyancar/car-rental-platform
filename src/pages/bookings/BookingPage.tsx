@@ -31,6 +31,7 @@ const BookingPage: React.FC = () => {
   const [discountCode, setDiscountCode] = useState('');
   const [isAvailable, setIsAvailable] = useState<boolean | null>(null);
   const [validationMessage, setValidationMessage] = useState('');
+  const [isEditingDates, setIsEditingDates] = useState(!isSearchPerformed);
   
   // Fetch car details on mount
   useEffect(() => {
@@ -121,6 +122,11 @@ const BookingPage: React.FC = () => {
     return () => clearTimeout(timeoutId);
   }, [carId, startDate, endDate, checkAvailability, validateDates]);
 
+  // Toggle date editing mode
+  const toggleEditDates = () => {
+    setIsEditingDates(!isEditingDates);
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
@@ -191,6 +197,11 @@ const BookingPage: React.FC = () => {
     );
   }
   
+  // Calculate rental duration
+  const rentalDuration = startDate && endDate 
+    ? Math.max(1, Math.ceil((new Date(endDate).getTime() - new Date(startDate).getTime()) / (1000 * 60 * 60 * 24)))
+    : 0;
+  
   return (
     <div className="min-h-screen pt-16 pb-12 bg-secondary-50">
       <div className="container-custom">
@@ -208,25 +219,60 @@ const BookingPage: React.FC = () => {
               <h1 className="text-2xl font-semibold mb-6">Book Your Rental</h1>
               
               <form onSubmit={handleSubmit} className="space-y-6">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <Input
-                    label="Start Date"
-                    type="date"
-                    value={startDate}
-                    onChange={handleStartDateChange}
-                    min={format(new Date(), 'yyyy-MM-dd')}
-                    leftIcon={<Calendar size={20} />}
-                  />
+                {/* Rental Dates Section with Edit Toggle */}
+                <div className="bg-secondary-50 p-4 rounded-lg">
+                  <div className="flex justify-between items-center mb-4">
+                    <h3 className="font-semibold">Rental Dates</h3>
+                    {isSearchPerformed && (
+                      <Button 
+                        variant="ghost" 
+                        size="sm"
+                        onClick={toggleEditDates}
+                      >
+                        {isEditingDates ? 'Cancel' : 'Edit Dates'}
+                      </Button>
+                    )}
+                  </div>
                   
-                  <Input
-                    label="End Date"
-                    type="date"
-                    value={endDate}
-                    onChange={handleEndDateChange}
-                    min={startDate}
-                    leftIcon={<Calendar size={20} />}
-                    disabled={!startDate}
-                  />
+                  {isEditingDates ? (
+                    // Date Edit Form
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <Input
+                        label="Start Date"
+                        type="date"
+                        value={startDate}
+                        onChange={handleStartDateChange}
+                        min={format(new Date(), 'yyyy-MM-dd')}
+                        leftIcon={<Calendar size={20} />}
+                      />
+                      
+                      <Input
+                        label="End Date"
+                        type="date"
+                        value={endDate}
+                        onChange={handleEndDateChange}
+                        min={startDate}
+                        leftIcon={<Calendar size={20} />}
+                        disabled={!startDate}
+                      />
+                    </div>
+                  ) : (
+                    // Date Summary
+                    <div className="flex flex-col md:flex-row justify-between">
+                      <div className="mb-2 md:mb-0">
+                        <div className="text-sm text-secondary-600">Pickup Date</div>
+                        <div className="font-medium">{format(new Date(startDate), 'MMM d, yyyy')} at {searchParams.pickupTime}</div>
+                      </div>
+                      <div>
+                        <div className="text-sm text-secondary-600">Return Date</div>
+                        <div className="font-medium">{format(new Date(endDate), 'MMM d, yyyy')} at {searchParams.returnTime}</div>
+                      </div>
+                      <div>
+                        <div className="text-sm text-secondary-600">Duration</div>
+                        <div className="font-medium">{rentalDuration} days</div>
+                      </div>
+                    </div>
+                  )}
                 </div>
                 
                 {validationMessage && (
@@ -309,9 +355,7 @@ const BookingPage: React.FC = () => {
                     <>
                       <div className="flex justify-between mb-2">
                         <span className="text-secondary-600">Rental Duration:</span>
-                        <span>
-                          {Math.max(1, Math.ceil((new Date(endDate).getTime() - new Date(startDate).getTime()) / (1000 * 60 * 60 * 24)))} days
-                        </span>
+                        <span>{rentalDuration} days</span>
                       </div>
                       
                       <div className="flex justify-between font-semibold text-lg mt-4">
