@@ -1,11 +1,12 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
-import { ArrowLeft, Calendar, Clock, Users, Gauge, Car as CarIcon, CalendarDays } from 'lucide-react';
-import { format } from 'date-fns';
+import { ArrowLeft, Calendar, Clock, Users, Gauge, Car as CarIcon, CalendarDays, CheckCircle, AlertCircle } from 'lucide-react';
+import { format, addDays, isBefore, isValid, parseISO } from 'date-fns';
 import { Button } from '../../components/ui/Button';
 import { SimpleImageViewer } from '../../components/ui/SimpleImageViewer';
 import { useCarStore } from '../../stores/carStore';
 import { useSearchStore } from '../../stores/searchStore';
+import { useBookingStore } from '../../stores/bookingStore';
 import { Input } from '../../components/ui/Input';
 import { Select } from '../../components/ui/Select';
 import { toast } from 'sonner';
@@ -20,6 +21,7 @@ const CarDetailsPage: React.FC = () => {
   const navigate = useNavigate();
   const { currentCar, loading, error, fetchCarById } = useCarStore();
   const { searchParams, isSearchPerformed, updateSearchParams, searchCars } = useSearchStore();
+  const { checkAvailability, isCheckingAvailability } = useBookingStore();
   
   // Local state for date selection
   const [showDateSelector, setShowDateSelector] = useState(!isSearchPerformed);
@@ -31,6 +33,9 @@ const CarDetailsPage: React.FC = () => {
   );
   const [localPickupTime, setLocalPickupTime] = useState(searchParams.pickupTime || '10:00');
   const [localReturnTime, setLocalReturnTime] = useState(searchParams.returnTime || '10:00');
+  const [isAvailable, setIsAvailable] = useState<boolean | null>(null);
+  const [validationMessage, setValidationMessage] = useState('');
+  const [rentalDuration, setRentalDuration] = useState(1);
   
   useEffect(() => {
     if (id) {
@@ -38,12 +43,76 @@ const CarDetailsPage: React.FC = () => {
     }
   }, [id, fetchCarById]);
   
+  // Validate dates
+  const validateDates = () => {
+    if (!localPickupDate || !localReturnDate) {
+      setValidationMessage('Please select both dates');
+      return false;
+    }
+
+    const start = parseISO(localPickupDate);
+    const end = parseISO(localReturnDate);
+    
+    if (!isValid(start) || !isValid(end)) {
+      setValidationMessage('Invalid date format');
+      return false;
+    }
+
+    if (isBefore(end, start)) {
+      setValidationMessage('Return date must be after pickup date');
+      return false;
+    }
+
+    setValidationMessage('');
+    return true;
+  };
+  
+  // Calculate rental duration when dates change
+  useEffect(() => {
+    if (localPickupDate && localReturnDate) {
+      const start = new Date(localPickupDate);
+      const end = new Date(localReturnDate);
+      const days = Math.max(1, Math.ceil((end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24)));
+      setRentalDuration(days);
+    }
+  }, [localPickupDate, localReturnDate]);
+  
+  // Check availability when dates change
+  useEffect(() => {
+    const checkCarAvailability = async () => {
+      if (!id || !localPickupDate || !localReturnDate || !validateDates()) {
+        setIsAvailable(null);
+        return;
+      }
+      
+      const available = await checkAvailability(parseInt(id), localPickupDate, localReturnDate);
+      setIsAvailable(available);
+    };
+    
+    if (showDateSelector && localPickupDate && localReturnDate) {
+      const timeoutId = setTimeout(checkCarAvailability, 500);
+      return () => clearTimeout(timeoutId);
+    }
+  }, [id, localPickupDate, localReturnDate, showDateSelector, checkAvailability]);
+  
   // Function to proceed to booking
   const handleBookNow = () => {
     // If search has been performed, we already have date parameters
     if (isSearchPerformed && !showDateSelector) {
       // Navigate to booking page with search parameters
       navigate(`/booking/${id}`);
+      return;
+    }
+    
+    // Validate dates first
+    if (!validateDates()) {
+      toast.error(validationMessage);
+      return;
+    }
+    
+    // Check if car is available
+    if (isAvailable === false) {
+      toast.error('Car is not available for selected dates. Please choose different dates.');
       return;
     }
     
@@ -62,6 +131,27 @@ const CarDetailsPage: React.FC = () => {
   // Function to toggle date selector
   const toggleDateSelector = () => {
     setShowDateSelector(!showDateSelector);
+    // Reset availability when toggling
+    setIsAvailable(null);
+  };
+  
+  // Handle date changes
+  const handlePickupDateChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const newDate = e.target.value;
+    setLocalPickupDate(newDate);
+    
+    // Reset availability
+    setIsAvailable(null);
+    
+    // Clear return date if it's before new pickup date
+    if (localReturnDate && isBefore(parseISO(localReturnDate), parseISO(newDate))) {
+      setLocalReturnDate('');
+    }
+  };
+  
+  const handleReturnDateChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setLocalReturnDate(e.target.value);
+    setIsAvailable(null);
   };
   
   if (loading) {
@@ -159,6 +249,7 @@ const CarDetailsPage: React.FC = () => {
                   variant="primary" 
                   size="lg"
                   onClick={handleBookNow}
+                  disabled={showDateSelector && isAvailable === false}
                 >
                   {showDateSelector ? 'Continue to Booking' : 'Book Now'}
                 </Button>
@@ -175,7 +266,7 @@ const CarDetailsPage: React.FC = () => {
                       label="Pickup Date"
                       type="date"
                       value={localPickupDate}
-                      onChange={(e) => setLocalPickupDate(e.target.value)}
+                      onChange={handlePickupDateChange}
                       min={format(new Date(), 'yyyy-MM-dd')}
                       leftIcon={<CalendarDays size={18} />}
                     />
@@ -188,22 +279,19 @@ const CarDetailsPage: React.FC = () => {
                       onChange={(e) => setLocalPickupTime(e.target.value)}
                     />
                   </div>
-                  <div>
-                    <Button 
-                      variant="outline" 
-                      size="sm"
-                      className="mt-8"
-                      onClick={toggleDateSelector}
-                    >
-                      Cancel
-                    </Button>
+                  <div className="md:flex md:items-end md:justify-end">
+                    {localPickupDate && localReturnDate && (
+                      <div className="text-sm bg-primary-50 text-primary-700 px-3 py-2 rounded-md">
+                        <span className="font-medium">{rentalDuration}</span> day{rentalDuration !== 1 ? 's' : ''}
+                      </div>
+                    )}
                   </div>
                   <div className="md:col-span-2">
                     <Input
                       label="Return Date"
                       type="date"
                       value={localReturnDate}
-                      onChange={(e) => setLocalReturnDate(e.target.value)}
+                      onChange={handleReturnDateChange}
                       min={localPickupDate}
                       leftIcon={<CalendarDays size={18} />}
                     />
@@ -216,12 +304,59 @@ const CarDetailsPage: React.FC = () => {
                       onChange={(e) => setLocalReturnTime(e.target.value)}
                     />
                   </div>
-                  <div>
+                  <div className="md:flex md:items-end">
+                    {isCheckingAvailability ? (
+                      <div className="flex items-center text-secondary-600">
+                        <div className="animate-spin rounded-full h-4 w-4 border-t-2 border-b-2 border-primary-800 mr-2"></div>
+                        Checking...
+                      </div>
+                    ) : isAvailable !== null && (
+                      <div className={`flex items-center ${
+                        isAvailable ? 'text-success-600' : 'text-error-600'
+                      }`}>
+                        {isAvailable ? (
+                          <>
+                            <CheckCircle size={18} className="mr-1" />
+                            Available
+                          </>
+                        ) : (
+                          <>
+                            <AlertCircle size={18} className="mr-1" />
+                            Not Available
+                          </>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                </div>
+                
+                {validationMessage && (
+                  <div className="mt-2 text-error-500 text-sm">
+                    {validationMessage}
+                  </div>
+                )}
+                
+                <div className="mt-4 flex justify-between items-center">
+                  <div className="text-lg font-semibold">
+                    {localPickupDate && localReturnDate && (
+                      <div className="flex items-center">
+                        <span>Total: ${currentCar.price_per_day * rentalDuration}</span>
+                      </div>
+                    )}
+                  </div>
+                  <div className="flex gap-2">
+                    <Button 
+                      variant="outline" 
+                      size="sm"
+                      onClick={toggleDateSelector}
+                    >
+                      Cancel
+                    </Button>
                     <Button 
                       variant="primary" 
                       size="sm"
-                      className="mt-8 w-full"
                       onClick={handleBookNow}
+                      disabled={!localPickupDate || !localReturnDate || isAvailable === false}
                     >
                       Continue
                     </Button>
