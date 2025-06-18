@@ -26,6 +26,12 @@ export type Car = {
   transmission: string;
   mileage_type: string;
   available_locations?: string[];
+  trim?: string;
+  color?: string;
+  license_plate?: string;
+  doors?: number;
+  fuel_type?: string;
+  gas_grade?: string;
 }
 
 export type Booking = {

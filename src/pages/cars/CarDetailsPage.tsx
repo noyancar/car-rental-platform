@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
-import { ArrowLeft, Calendar, Clock, Users, Gauge, Car as CarIcon, CalendarDays, CheckCircle, AlertCircle } from 'lucide-react';
+import { ArrowLeft, Calendar, Clock, Users, Gauge, Car as CarIcon, CalendarDays, CheckCircle, AlertCircle, Fuel, Palette, Car } from 'lucide-react';
 import { format, addDays, isBefore, isValid, parseISO } from 'date-fns';
 import { Button } from '../../components/ui/Button';
 import { SimpleImageViewer } from '../../components/ui/SimpleImageViewer';
@@ -242,8 +242,21 @@ const CarDetailsPage: React.FC = () => {
             <div className="flex justify-between items-start">
               <div>
                 <h1 className="text-3xl font-semibold mb-2">
-                  {currentCar.year} {currentCar.make} {currentCar.model}
+                  {currentCar.year} {currentCar.make} {currentCar.model} {currentCar.trim || ''}
                 </h1>
+                <div className="flex items-center gap-4 mb-2">
+                  {currentCar.color && (
+                    <span className="text-secondary-600 flex items-center">
+                      <Palette size={16} className="mr-1" />
+                      {currentCar.color}
+                    </span>
+                  )}
+                  {currentCar.license_plate && (
+                    <span className="font-mono text-sm bg-secondary-100 px-2 py-1 rounded">
+                      {currentCar.license_plate}
+                    </span>
+                  )}
+                </div>
                 <p className="text-2xl text-primary-800 font-semibold">
                   ${currentCar.price_per_day}/day
                 </p>
@@ -396,10 +409,18 @@ const CarDetailsPage: React.FC = () => {
               </div>
               
               <div className="flex items-center p-4 bg-secondary-50 rounded-lg">
-                <Gauge className="h-6 w-6 text-primary-700 mr-3" />
+                <Car className="h-6 w-6 text-primary-700 mr-3" />
                 <div>
-                  <p className="text-sm text-secondary-600">Mileage</p>
-                  <p className="font-semibold">{currentCar.mileage_type || 'Unlimited'}</p>
+                  <p className="text-sm text-secondary-600">Doors</p>
+                  <p className="font-semibold">{currentCar.doors || 4} Doors</p>
+                </div>
+              </div>
+              
+              <div className="flex items-center p-4 bg-secondary-50 rounded-lg">
+                <Fuel className="h-6 w-6 text-primary-700 mr-3" />
+                <div>
+                  <p className="text-sm text-secondary-600">Fuel Type</p>
+                  <p className="font-semibold">{currentCar.fuel_type || 'Gas'} • {currentCar.gas_grade || 'Regular'}</p>
                 </div>
               </div>
               
@@ -408,6 +429,14 @@ const CarDetailsPage: React.FC = () => {
                 <div>
                   <p className="text-sm text-secondary-600">Transmission</p>
                   <p className="font-semibold">{currentCar.transmission || 'Automatic'}</p>
+                </div>
+              </div>
+              
+              <div className="flex items-center p-4 bg-secondary-50 rounded-lg">
+                <Gauge className="h-6 w-6 text-primary-700 mr-3" />
+                <div>
+                  <p className="text-sm text-secondary-600">Mileage</p>
+                  <p className="font-semibold">{currentCar.mileage_type || 'Unlimited'}</p>
                 </div>
               </div>
               
