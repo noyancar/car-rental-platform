@@ -70,12 +70,12 @@ const SearchSummary: React.FC = () => {
   };
   
   return (
-    <div className="bg-white rounded-lg shadow-md p-4 mb-6">
+    <div className="bg-white rounded-xl shadow-hawaii p-6 mb-8 animate-fade-in">
       {isEditing ? (
         // Edit mode
-        <div className="space-y-4">
+        <div className="space-y-6">
           <div className="flex justify-between items-center">
-            <h3 className="text-lg font-semibold">Edit Search Parameters</h3>
+            <h3 className="text-xl font-display font-semibold text-volcanic-900">Edit Search Parameters</h3>
             <Button
               variant="outline"
               size="sm"
@@ -151,17 +151,17 @@ const SearchSummary: React.FC = () => {
       ) : (
         // View mode
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center">
-          <div className="space-y-2 mb-4 md:mb-0">
-            <h3 className="text-lg font-semibold">Your Search</h3>
+          <div className="space-y-3 mb-4 md:mb-0">
+            <h3 className="text-xl font-display font-semibold text-volcanic-900">Your Search</h3>
             
-            <div className="flex items-center text-secondary-600">
-              <MapPin size={16} className="mr-2" />
-              <span>{getLocationLabel(searchParams.location)}</span>
+            <div className="flex items-center text-volcanic-600">
+              <MapPin size={18} className="mr-2 text-primary-600" />
+              <span className="font-medium">{getLocationLabel(searchParams.location)}</span>
             </div>
             
-            <div className="flex items-center text-secondary-600">
-              <CalendarClock size={16} className="mr-2" />
-              <span>
+            <div className="flex items-center text-volcanic-600">
+              <CalendarClock size={18} className="mr-2 text-primary-600" />
+              <span className="font-medium">
                 {formatDate(searchParams.pickupDate)} at {searchParams.pickupTime} - 
                 {formatDate(searchParams.returnDate)} at {searchParams.returnTime}
               </span>

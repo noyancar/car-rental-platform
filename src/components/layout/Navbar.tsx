@@ -35,7 +35,7 @@ export const Navbar: React.FC = () => {
       <div className="container-custom mx-auto flex justify-between items-center">
         <Link to="/" className="flex items-center">
           <Car className="h-8 w-8 text-primary-800" />
-          <span className="ml-2 text-xl font-bold text-primary-800">DriveLuxe</span>
+          <span className="ml-2 text-xl font-bold text-primary-800">NoyanCar</span>
         </Link>
         
         <nav className="hidden md:flex items-center space-x-8">
