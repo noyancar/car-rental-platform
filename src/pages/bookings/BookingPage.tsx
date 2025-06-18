@@ -9,6 +9,8 @@ import { useCarStore } from '../../stores/carStore';
 import { useBookingStore } from '../../stores/bookingStore';
 import { useAuthStore } from '../../stores/authStore';
 import { useSearchStore } from '../../stores/searchStore';
+import { useExtrasStore } from '../../stores/extrasStore';
+import ExtrasModal from '../../components/booking/ExtrasModal';
 
 const BookingPage: React.FC = () => {
   const { carId } = useParams();
@@ -23,6 +25,7 @@ const BookingPage: React.FC = () => {
     isCheckingAvailability
   } = useBookingStore();
   const { searchParams, isSearchPerformed, updateSearchParams } = useSearchStore();
+  const { saveBookingExtras, calculateTotal } = useExtrasStore();
   
   // Initialize dates from searchParams if available, otherwise use default values
   const [startDate, setStartDate] = useState(isSearchPerformed ? searchParams.pickupDate : format(new Date(), 'yyyy-MM-dd'));
@@ -35,6 +38,7 @@ const BookingPage: React.FC = () => {
   const [validationMessage, setValidationMessage] = useState('');
   const [isEditingDates, setIsEditingDates] = useState(false);
   const [showPriceSummary, setShowPriceSummary] = useState(false);
+  const [showExtrasModal, setShowExtrasModal] = useState(false);
   
   // Fetch car details on mount
   useEffect(() => {
@@ -143,11 +147,12 @@ const BookingPage: React.FC = () => {
     // Don't reset availability when just viewing dates
     if (!isEditingDates) {
       setIsAvailable(null);
+      setValidationMessage('');
     }
   };
 
   // Save date changes
-  const saveDateChanges = () => {
+  const saveDateChanges = async () => {
     // First validate the dates
     if (!validateDates()) {
       toast.error(validationMessage);
@@ -168,7 +173,9 @@ const BookingPage: React.FC = () => {
     // Show success message
     toast.success("Dates updated successfully");
     
-    // Availability will be checked automatically by the useEffect
+    // Check availability immediately after saving
+    const available = await checkAvailability(parseInt(carId!), startDate, endDate, pickupTime, returnTime);
+    setIsAvailable(available);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -192,17 +199,26 @@ const BookingPage: React.FC = () => {
       return;
     }
     
+    // Open extras modal instead of creating booking directly
+    setShowExtrasModal(true);
+  };
+
+  const handleExtrasModalContinue = async () => {
     try {
-      // Eğer searchParams boş veya tanımsızsa, varsayılan değerler kullanalım
       const locationValue = isSearchPerformed && searchParams.location ? searchParams.location : 'default-location';
       
+      // Calculate extras total
+      const { extrasTotal } = calculateTotal(rentalDuration);
+      const grandTotal = totalPrice + extrasTotal;
+      
+      // Create booking with draft status
       const booking = await createBooking({
         car_id: currentCar!.id,
-        user_id: user.id,
+        user_id: user!.id,
         start_date: startDate,
         end_date: endDate,
-        total_price: totalPrice,
-        status: 'pending',
+        total_price: grandTotal,
+        status: 'draft',
         pickup_location: locationValue,
         return_location: locationValue,
         pickup_time: pickupTime,
@@ -210,11 +226,17 @@ const BookingPage: React.FC = () => {
       });
       
       if (booking) {
+        // Save selected extras to the booking
+        await saveBookingExtras(booking.id, rentalDuration);
+        
+        // Navigate to payment page
         toast.success('Booking created successfully');
-        navigate(`/bookings/${booking.id}`);
+        navigate(`/payment/${booking.id}`);
       }
     } catch (error) {
       toast.error((error as Error).message || 'Failed to create booking');
+    } finally {
+      setShowExtrasModal(false);
     }
   };
   
@@ -523,6 +545,17 @@ const BookingPage: React.FC = () => {
           </div>
         </div>
       </div>
+      {showExtrasModal && (
+        <ExtrasModal
+          isOpen={showExtrasModal}
+          onClose={() => setShowExtrasModal(false)}
+          onContinue={handleExtrasModalContinue}
+          pickupDate={startDate}
+          returnDate={endDate}
+          rentalDays={rentalDuration}
+          carTotal={totalPrice}
+        />
+      )}
     </div>
   );
 };

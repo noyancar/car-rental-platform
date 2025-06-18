@@ -18,6 +18,7 @@ import CarDetailsPage from './pages/cars/CarDetailsPage';
 import BookingPage from './pages/bookings/BookingPage';
 import BookingsListPage from './pages/bookings/BookingsListPage';
 import BookingDetailsPage from './pages/bookings/BookingDetailsPage';
+import PaymentPage from './pages/PaymentPage';
 import HowItWorksPage from './pages/HowItWorksPage';
 import DealsPage from './pages/DealsPage';
 import ProfilePage from './pages/ProfilePage';
@@ -28,6 +29,7 @@ import AdminCars from './pages/admin/AdminCars';
 import AdminBookings from './pages/admin/AdminBookings';
 import AdminDiscountCodes from './pages/admin/AdminDiscountCodes';
 import AdminCampaigns from './pages/admin/AdminCampaigns';
+import AdminExtras from './pages/admin/AdminExtras';
 
 // Auth store
 import { useAuthStore } from './stores/authStore';
@@ -81,6 +83,9 @@ function App() {
             <Route path="/booking/:carId" element={
               <ProtectedRoute element={<BookingPage />} />
             } />
+            <Route path="/payment/:bookingId" element={
+              <ProtectedRoute element={<PaymentPage />} />
+            } />
             <Route path="/bookings" element={
               <ProtectedRoute element={<BookingsListPage />} />
             } />
@@ -100,6 +105,9 @@ function App() {
             } />
             <Route path="/admin/bookings" element={
               <ProtectedRoute element={<AdminBookings />} adminOnly />
+            } />
+            <Route path="/admin/extras" element={
+              <ProtectedRoute element={<AdminExtras />} adminOnly />
             } />
             <Route path="/admin/discount-codes" element={
               <ProtectedRoute element={<AdminDiscountCodes />} adminOnly />

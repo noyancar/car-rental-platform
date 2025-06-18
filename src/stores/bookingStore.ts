@@ -11,7 +11,7 @@ interface BookingState {
   
   fetchUserBookings: () => Promise<void>;
   fetchBookingById: (id: number) => Promise<void>;
-  createBooking: (booking: Omit<Booking, 'id'>) => Promise<Booking | null>;
+  createBooking: (booking: Pick<Booking, 'car_id' | 'user_id' | 'start_date' | 'end_date' | 'total_price' | 'status' | 'pickup_location' | 'return_location' | 'pickup_time' | 'return_time'> & { discount_code_id?: number; payment_intent_id?: string }) => Promise<Booking | null>;
   updateBookingStatus: (id: number, status: Booking['status']) => Promise<void>;
   calculatePrice: (carId: number, startDate: string, endDate: string, pickupTime?: string, returnTime?: string, discountCodeId?: number) => Promise<number>;
   checkAvailability: (carId: number, startDate: string, endDate: string, pickupTime?: string, returnTime?: string) => Promise<boolean>;
