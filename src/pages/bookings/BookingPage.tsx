@@ -148,6 +148,12 @@ const BookingPage: React.FC = () => {
 
   // Save date changes
   const saveDateChanges = () => {
+    // First validate the dates
+    if (!validateDates()) {
+      toast.error(validationMessage);
+      return;
+    }
+    
     // Update search params with new dates
     updateSearchParams({
       pickupDate: startDate,
@@ -156,7 +162,13 @@ const BookingPage: React.FC = () => {
       returnTime: returnTime
     });
     
+    // Exit edit mode
     setIsEditingDates(false);
+    
+    // Show success message
+    toast.success("Dates updated successfully");
+    
+    // Availability will be checked automatically by the useEffect
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -174,7 +186,9 @@ const BookingPage: React.FC = () => {
     }
     
     if (!isAvailable) {
-      toast.error('Car is not available for selected dates');
+      toast.info('Please select dates when the car is available');
+      // Scroll to the availability message for better visibility
+      document.querySelector('.bg-secondary-50.text-secondary-700')?.scrollIntoView({ behavior: 'smooth' });
       return;
     }
     
@@ -371,7 +385,7 @@ const BookingPage: React.FC = () => {
                   <div className={`flex items-center justify-center p-3 rounded-md ${
                     isAvailable 
                       ? 'bg-success-50 text-success-700' 
-                      : 'bg-error-50 text-error-700'
+                      : 'bg-secondary-50 text-secondary-700'
                   }`}>
                     {isAvailable ? (
                       <>
@@ -381,7 +395,7 @@ const BookingPage: React.FC = () => {
                     ) : (
                       <>
                         <AlertCircle size={20} className="mr-2" />
-                        Car is not available for these dates. Please try different dates.
+                        Car is not available for these dates. Please select different dates.
                       </>
                     )}
                   </div>
