@@ -62,8 +62,8 @@ const HeroSection: React.FC = () => {
       {/* Hero Content */}
       <div className="container-custom relative z-10 text-white pt-20 pb-32">
         <div className="max-w-4xl mb-12 text-center mx-auto">
-          <h1 className="text-5xl md:text-7xl font-display font-bold mb-6 animate-slide-down text-shadow-lg">
-            Aloha Adventure <span className="gradient-text">Awaits You</span>
+          <h1 className="text-5xl md:text-7xl font-display font-bold mb-6 animate-slide-down whitespace-nowrap">
+            <span className="bg-gradient-to-r from-accent-400 to-accent-200 bg-clip-text text-transparent drop-shadow-[3px_3px_6px_rgba(0,0,0,0.8)]"> Adventure Awaits You</span>
           </h1>
           <p className="text-xl md:text-2xl mb-8 text-white/90 animate-slide-up text-shadow" style={{ animationDelay: '0.2s' }}>
             Discover Hawaii's hidden gems with our premium 4x4 vehicles. From beaches to volcanoes, your island journey starts here.
