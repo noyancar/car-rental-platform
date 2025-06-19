@@ -45,7 +45,7 @@ interface SearchState {
 
 // Default search parameters
 const defaultSearchParams: SearchParams = {
-  location: 'istanbul-airport',
+  location: 'daniel-k-inouye-airport',
   pickupDate: new Date().toISOString().split('T')[0],
   pickupTime: '10:00',
   returnDate: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString().split('T')[0],

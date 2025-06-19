@@ -8,17 +8,25 @@ import { useSearchStore } from '../../stores/searchStore';
 
 // Location and time data
 const LOCATIONS = [
-  { value: 'istanbul-airport', label: 'Istanbul Airport' },
-  { value: 'istanbul-taksim', label: 'Istanbul Taksim' },
-  { value: 'istanbul-kadikoy', label: 'Istanbul Kadıköy' },
-  { value: 'ankara-airport', label: 'Ankara Airport' },
-  { value: 'ankara-center', label: 'Ankara City Center' },
-  { value: 'izmir-airport', label: 'Izmir Airport' },
-  { value: 'izmir-center', label: 'Izmir City Center' },
-  { value: 'antalya-airport', label: 'Antalya Airport' },
-  { value: 'antalya-center', label: 'Antalya City Center' },
-  { value: 'bodrum-airport', label: 'Bodrum Airport' },
-  { value: 'bodrum-center', label: 'Bodrum City Center' },
+  // $70 Delivery Fee
+  { value: 'daniel-k-inouye-airport', label: 'Daniel K. Inouye International Airport' },
+  
+  // $50 Delivery Fee - Waikiki Hotels
+  { value: 'alohilani-resort', label: 'Alohilani Resort Waikiki Beach' },
+  { value: 'hyatt-regency-waikiki', label: 'Hyatt Regency Waikiki Beach Resort & Spa' },
+  { value: 'ilikai-hotel', label: 'Ilikai Hotel & Luxury Suites' },
+  { value: 'hale-koa-hotel', label: 'Hale Koa Hotel' },
+  { value: 'hilton-hawaiian-village', label: 'Hilton Hawaiian Village Waikiki Beach Resort' },
+  { value: 'sheraton-waikiki', label: 'Sheraton Waikiki' },
+  { value: 'royal-hawaiian', label: 'The Royal Hawaiian, a Luxury Collection Resort' },
+  { value: 'waikiki-beach-marriott', label: 'Waikiki Beach Marriott Resort & Spa' },
+  { value: 'waikiki-grand-hotel', label: 'Waikiki Grand Hotel' },
+  
+  // $70 Delivery Fee
+  // { value: 'custom-location-10mi', label: 'Custom Location - Within 10mi radius' },
+  
+  // Ask for Quote
+  // { value: 'custom-location-outside', label: 'Any other location outside 10mi radius' },
 ];
 
 const HOURS = Array.from({ length: 24 }, (_, i) => {
