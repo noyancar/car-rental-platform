@@ -1,14 +1,17 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
-import { ArrowLeft, Calendar, CreditCard, AlertCircle, CheckCircle } from 'lucide-react';
+import { ArrowLeft, Calendar, CreditCard, AlertCircle, CheckCircle, Clock, Users, Gauge } from 'lucide-react';
 import { format, addDays, isBefore, isValid, parseISO } from 'date-fns';
 import { toast } from 'sonner';
 import { Button } from '../../components/ui/Button';
 import { Input } from '../../components/ui/Input';
+import { PageHeader } from '../../components/ui/PageHeader';
 import { useCarStore } from '../../stores/carStore';
 import { useBookingStore } from '../../stores/bookingStore';
 import { useAuthStore } from '../../stores/authStore';
 import { useSearchStore } from '../../stores/searchStore';
+import { useExtrasStore } from '../../stores/extrasStore';
+import ExtrasModal from '../../components/booking/ExtrasModal';
 
 const BookingPage: React.FC = () => {
   const { carId } = useParams();
@@ -22,15 +25,21 @@ const BookingPage: React.FC = () => {
     loading: bookingLoading,
     isCheckingAvailability
   } = useBookingStore();
-  const { searchParams, isSearchPerformed } = useSearchStore();
+  const { searchParams, isSearchPerformed, updateSearchParams } = useSearchStore();
+  const { saveBookingExtras, calculateTotal } = useExtrasStore();
   
   // Initialize dates from searchParams if available, otherwise use default values
   const [startDate, setStartDate] = useState(isSearchPerformed ? searchParams.pickupDate : format(new Date(), 'yyyy-MM-dd'));
   const [endDate, setEndDate] = useState(isSearchPerformed ? searchParams.returnDate : '');
+  const [pickupTime, setPickupTime] = useState(isSearchPerformed ? searchParams.pickupTime : '10:00');
+  const [returnTime, setReturnTime] = useState(isSearchPerformed ? searchParams.returnTime : '10:00');
   const [totalPrice, setTotalPrice] = useState(0);
   const [discountCode, setDiscountCode] = useState('');
   const [isAvailable, setIsAvailable] = useState<boolean | null>(null);
   const [validationMessage, setValidationMessage] = useState('');
+  const [isEditingDates, setIsEditingDates] = useState(false);
+  const [showPriceSummary, setShowPriceSummary] = useState(false);
+  const [showExtrasModal, setShowExtrasModal] = useState(false);
   
   // Fetch car details on mount
   useEffect(() => {
@@ -81,12 +90,23 @@ const BookingPage: React.FC = () => {
     
     // Reset availability status
     setIsAvailable(null);
+    setShowPriceSummary(false);
   };
 
   // Handle end date change
   const handleEndDateChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setEndDate(e.target.value);
     setIsAvailable(null);
+    setShowPriceSummary(false);
+  };
+
+  // Handle time changes
+  const handlePickupTimeChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    setPickupTime(e.target.value);
+  };
+
+  const handleReturnTimeChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    setReturnTime(e.target.value);
   };
   
   // Update price when dates change
@@ -97,13 +117,14 @@ const BookingPage: React.FC = () => {
         return;
       }
       
-      const price = await calculatePrice(parseInt(carId), startDate, endDate);
+      const price = await calculatePrice(parseInt(carId), startDate, endDate, pickupTime, returnTime);
       setTotalPrice(price);
+      setShowPriceSummary(true);
     };
     
     const timeoutId = setTimeout(updatePrice, 300);
     return () => clearTimeout(timeoutId);
-  }, [carId, startDate, endDate, calculatePrice, validateDates]);
+  }, [carId, startDate, endDate, pickupTime, returnTime, calculatePrice, validateDates]);
   
   // Check availability with debouncing
   useEffect(() => {
@@ -113,13 +134,50 @@ const BookingPage: React.FC = () => {
         return;
       }
       
-      const available = await checkAvailability(parseInt(carId), startDate, endDate);
+      const available = await checkAvailability(parseInt(carId), startDate, endDate, pickupTime, returnTime);
       setIsAvailable(available);
     };
     
     const timeoutId = setTimeout(checkCarAvailability, 500);
     return () => clearTimeout(timeoutId);
-  }, [carId, startDate, endDate, checkAvailability, validateDates]);
+  }, [carId, startDate, endDate, pickupTime, returnTime, checkAvailability, validateDates]);
+
+  // Toggle date editing mode
+  const toggleEditDates = () => {
+    setIsEditingDates(!isEditingDates);
+    // Don't reset availability when just viewing dates
+    if (!isEditingDates) {
+      setIsAvailable(null);
+      setValidationMessage('');
+    }
+  };
+
+  // Save date changes
+  const saveDateChanges = async () => {
+    // First validate the dates
+    if (!validateDates()) {
+      toast.error(validationMessage);
+      return;
+    }
+    
+    // Update search params with new dates
+    updateSearchParams({
+      pickupDate: startDate,
+      returnDate: endDate,
+      pickupTime: pickupTime,
+      returnTime: returnTime
+    });
+    
+    // Exit edit mode
+    setIsEditingDates(false);
+    
+    // Show success message
+    toast.success("Dates updated successfully");
+    
+    // Check availability immediately after saving
+    const available = await checkAvailability(parseInt(carId!), startDate, endDate, pickupTime, returnTime);
+    setIsAvailable(available);
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -136,35 +194,50 @@ const BookingPage: React.FC = () => {
     }
     
     if (!isAvailable) {
-      toast.error('Car is not available for selected dates');
+      toast.info('Please select dates when the car is available');
+      // Scroll to the availability message for better visibility
+      document.querySelector('.bg-secondary-50.text-secondary-700')?.scrollIntoView({ behavior: 'smooth' });
       return;
     }
     
+    // Open extras modal instead of creating booking directly
+    setShowExtrasModal(true);
+  };
+
+  const handleExtrasModalContinue = async () => {
     try {
-      // Eğer searchParams boş veya tanımsızsa, varsayılan değerler kullanalım
       const locationValue = isSearchPerformed && searchParams.location ? searchParams.location : 'default-location';
-      const pickupTimeValue = isSearchPerformed && searchParams.pickupTime ? searchParams.pickupTime : '10:00';
-      const returnTimeValue = isSearchPerformed && searchParams.returnTime ? searchParams.returnTime : '10:00';
       
+      // Calculate extras total
+      const { extrasTotal } = calculateTotal(rentalDuration);
+      const grandTotal = totalPrice + extrasTotal;
+      
+      // Create booking with draft status
       const booking = await createBooking({
         car_id: currentCar!.id,
-        user_id: user.id,
+        user_id: user!.id,
         start_date: startDate,
         end_date: endDate,
-        total_price: totalPrice,
-        status: 'pending',
+        total_price: grandTotal,
+        status: 'draft',
         pickup_location: locationValue,
         return_location: locationValue,
-        pickup_time: pickupTimeValue,
-        return_time: returnTimeValue
+        pickup_time: pickupTime,
+        return_time: returnTime
       });
       
       if (booking) {
+        // Save selected extras to the booking
+        await saveBookingExtras(booking.id, rentalDuration);
+        
+        // Navigate to payment page
         toast.success('Booking created successfully');
-        navigate(`/bookings/${booking.id}`);
+        navigate(`/payment/${booking.id}`);
       }
     } catch (error) {
       toast.error((error as Error).message || 'Failed to create booking');
+    } finally {
+      setShowExtrasModal(false);
     }
   };
   
@@ -191,15 +264,27 @@ const BookingPage: React.FC = () => {
     );
   }
   
+  // Calculate rental duration
+  const rentalDuration = startDate && endDate 
+    ? Math.max(1, Math.ceil((new Date(endDate).getTime() - new Date(startDate).getTime()) / (1000 * 60 * 60 * 24)))
+    : 0;
+  
+  // Generate breadcrumb items
+  const breadcrumbItems = currentCar ? [
+    { label: 'Cars', path: '/cars' },
+    { label: `${currentCar.year} ${currentCar.make} ${currentCar.model}`, path: `/cars/${carId}` },
+    { label: 'Book Now', path: `/booking/${carId}` }
+  ] : [];
+
   return (
     <div className="min-h-screen pt-16 pb-12 bg-secondary-50">
       <div className="container-custom">
-        <div className="mb-6">
-          <Link to={`/cars/${carId}`} className="inline-flex items-center text-primary-700 hover:text-primary-800">
-            <ArrowLeft size={20} className="mr-2" />
-            Back to Car Details
-          </Link>
-        </div>
+        <PageHeader
+          title="Complete Your Booking"
+          subtitle={currentCar ? `${currentCar.year} ${currentCar.make} ${currentCar.model}` : ''}
+          breadcrumbItems={breadcrumbItems}
+          fallbackPath={`/cars/${carId}`}
+        />
         
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           {/* Booking Form */}
@@ -208,27 +293,145 @@ const BookingPage: React.FC = () => {
               <h1 className="text-2xl font-semibold mb-6">Book Your Rental</h1>
               
               <form onSubmit={handleSubmit} className="space-y-6">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <Input
-                    label="Start Date"
-                    type="date"
-                    value={startDate}
-                    onChange={handleStartDateChange}
-                    min={format(new Date(), 'yyyy-MM-dd')}
-                    leftIcon={<Calendar size={20} />}
-                  />
+                {/* Rental Dates Section with Edit Toggle */}
+                <div className="bg-secondary-50 p-4 rounded-lg">
+                  <div className="flex justify-between items-center mb-4">
+                    <h3 className="font-semibold">Rental Dates</h3>
+                    <Button 
+                      variant="ghost" 
+                      size="sm"
+                      onClick={toggleEditDates}
+                    >
+                      {isEditingDates ? 'Cancel' : 'Edit Dates'}
+                    </Button>
+                  </div>
                   
-                  <Input
-                    label="End Date"
-                    type="date"
-                    value={endDate}
-                    onChange={handleEndDateChange}
-                    min={startDate}
-                    leftIcon={<Calendar size={20} />}
-                    disabled={!startDate}
-                  />
+                  {isEditingDates ? (
+                    // Date Edit Form
+                    <div className="space-y-4">
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                          <Input
+                            label="Start Date"
+                            type="date"
+                            value={startDate}
+                            onChange={handleStartDateChange}
+                            min={format(new Date(), 'yyyy-MM-dd')}
+                            leftIcon={<Calendar size={20} />}
+                          />
+                        </div>
+                        
+                        <div>
+                          <Input
+                            label="End Date"
+                            type="date"
+                            value={endDate}
+                            onChange={handleEndDateChange}
+                            min={startDate}
+                            leftIcon={<Calendar size={20} />}
+                            disabled={!startDate}
+                          />
+                        </div>
+                        
+                        <div>
+                          <label className="block text-sm font-medium text-secondary-700 mb-1">
+                            Pickup Time
+                          </label>
+                          <div className="relative">
+                            <Clock size={20} className="absolute left-3 top-1/2 transform -translate-y-1/2 text-secondary-500" />
+                            <select
+                              value={pickupTime}
+                              onChange={handlePickupTimeChange}
+                              className="pl-10 pr-4 py-2 w-full border border-secondary-300 rounded-md focus:ring-primary-500 focus:border-primary-500"
+                            >
+                              {Array.from({ length: 24 }, (_, i) => {
+                                const hour = i.toString().padStart(2, '0');
+                                return (
+                                  <option key={hour} value={`${hour}:00`}>
+                                    {`${hour}:00`}
+                                  </option>
+                                );
+                              })}
+                            </select>
+                          </div>
+                        </div>
+                        
+                        <div>
+                          <label className="block text-sm font-medium text-secondary-700 mb-1">
+                            Return Time
+                          </label>
+                          <div className="relative">
+                            <Clock size={20} className="absolute left-3 top-1/2 transform -translate-y-1/2 text-secondary-500" />
+                            <select
+                              value={returnTime}
+                              onChange={handleReturnTimeChange}
+                              className="pl-10 pr-4 py-2 w-full border border-secondary-300 rounded-md focus:ring-primary-500 focus:border-primary-500"
+                            >
+                              {Array.from({ length: 24 }, (_, i) => {
+                                const hour = i.toString().padStart(2, '0');
+                                return (
+                                  <option key={hour} value={`${hour}:00`}>
+                                    {`${hour}:00`}
+                                  </option>
+                                );
+                              })}
+                            </select>
+                          </div>
+                        </div>
+                      </div>
+                      
+                      <div className="flex justify-end">
+                        <Button 
+                          variant="primary" 
+                          size="sm"
+                          onClick={saveDateChanges}
+                          disabled={!startDate || !endDate}
+                        >
+                          Save Changes
+                        </Button>
+                      </div>
+                    </div>
+                  ) : (
+                    // Date Summary
+                    <div className="flex flex-col md:flex-row justify-between">
+                      <div className="mb-2 md:mb-0">
+                        <div className="text-sm text-secondary-600">Pickup Date</div>
+                        <div className="font-medium">{format(new Date(startDate), 'MMM d, yyyy')} at {pickupTime}</div>
+                      </div>
+                      <div>
+                        <div className="text-sm text-secondary-600">Return Date</div>
+                        <div className="font-medium">{format(new Date(endDate), 'MMM d, yyyy')} at {returnTime}</div>
+                      </div>
+                      <div>
+                        <div className="text-sm text-secondary-600">Duration</div>
+                        <div className="font-medium">{rentalDuration} days</div>
+                      </div>
+                    </div>
+                  )}
                 </div>
                 
+                {/* Availability Status - Only show when not editing and after check */}
+                {!isEditingDates && isAvailable !== null && (
+                  <div className={`flex items-center justify-center p-3 rounded-md ${
+                    isAvailable 
+                      ? 'bg-success-50 text-success-700' 
+                      : 'bg-secondary-50 text-secondary-700'
+                  }`}>
+                    {isAvailable ? (
+                      <>
+                        <CheckCircle size={20} className="mr-2" />
+                        Car is available for your selected dates
+                      </>
+                    ) : (
+                      <>
+                        <AlertCircle size={20} className="mr-2" />
+                        Car is not available for these dates. Please select different dates.
+                      </>
+                    )}
+                  </div>
+                )}
+                
+                {/* Validation Message */}
                 {validationMessage && (
                   <div className="text-error-500 text-sm flex items-center">
                     <AlertCircle size={16} className="mr-1" />
@@ -236,43 +439,59 @@ const BookingPage: React.FC = () => {
                   </div>
                 )}
                 
-                {isCheckingAvailability ? (
+                {/* Loading Indicator */}
+                {isCheckingAvailability && (
                   <div className="flex items-center justify-center text-secondary-600">
                     <div className="animate-spin rounded-full h-5 w-5 border-t-2 border-b-2 border-primary-800 mr-2"></div>
                     Checking availability...
                   </div>
-                ) : startDate && endDate && isAvailable !== null && (
-                  <div className={`flex items-center ${isAvailable ? 'text-success-500' : 'text-error-500'}`}>
-                    {isAvailable ? (
-                      <>
-                        <CheckCircle size={20} className="mr-2" />
-                        Car is available for selected dates
-                      </>
-                    ) : (
-                      <>
-                        <AlertCircle size={20} className="mr-2" />
-                        Car is not available for selected dates
-                      </>
-                    )}
-                  </div>
                 )}
                 
+                {/* Discount Code */}
                 <div>
                   <Input
-                    label="Discount Code"
+                    label="Discount Code (Optional)"
                     value={discountCode}
                     onChange={(e) => setDiscountCode(e.target.value)}
                     placeholder="Enter discount code"
                   />
                 </div>
                 
+                {/* Price Summary - Show only when available */}
+                {showPriceSummary && isAvailable && !isEditingDates && (
+                  <div className="bg-secondary-50 p-4 rounded-lg">
+                    <h3 className="font-semibold mb-2">Price Summary</h3>
+                    <div className="space-y-2">
+                      <div className="flex justify-between">
+                        <span className="text-secondary-600">Daily Rate:</span>
+                        <span>${currentCar.price_per_day}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-secondary-600">Duration:</span>
+                        <span>{rentalDuration} days</span>
+                      </div>
+                      {discountCode && (
+                        <div className="flex justify-between text-success-600">
+                          <span>Discount:</span>
+                          <span>Applied</span>
+                        </div>
+                      )}
+                      <div className="flex justify-between font-semibold text-lg pt-2 border-t border-secondary-200">
+                        <span>Total:</span>
+                        <span>${totalPrice}</span>
+                      </div>
+                    </div>
+                  </div>
+                )}
+                
+                {/* Submit Button */}
                 <Button
                   type="submit"
                   variant="primary"
                   fullWidth
                   size="lg"
                   isLoading={bookingLoading}
-                  disabled={!isAvailable || bookingLoading || !startDate || !endDate}
+                  disabled={!isAvailable || bookingLoading || !startDate || !endDate || isEditingDates}
                 >
                   Complete Booking
                 </Button>
@@ -299,27 +518,24 @@ const BookingPage: React.FC = () => {
                   ${currentCar.price_per_day}/day
                 </p>
                 
-                <div className="border-t border-b border-secondary-200 py-4 my-4">
-                  <div className="flex justify-between mb-2">
-                    <span className="text-secondary-600">Daily Rate:</span>
-                    <span>${currentCar.price_per_day}</span>
+                <div className="border-t border-secondary-200 py-4 my-4">
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="flex items-center">
+                      <Users className="h-5 w-5 text-primary-700 mr-2" />
+                      <div>
+                        <p className="text-xs text-secondary-600">Seats</p>
+                        <p className="text-sm font-medium">{currentCar.seats || 5}</p>
+                      </div>
+                    </div>
+                    
+                    <div className="flex items-center">
+                      <Gauge className="h-5 w-5 text-primary-700 mr-2" />
+                      <div>
+                        <p className="text-xs text-secondary-600">Mileage</p>
+                        <p className="text-sm font-medium">{currentCar.mileage_type || 'Unlimited'}</p>
+                      </div>
+                    </div>
                   </div>
-                  
-                  {startDate && endDate && (
-                    <>
-                      <div className="flex justify-between mb-2">
-                        <span className="text-secondary-600">Rental Duration:</span>
-                        <span>
-                          {Math.max(1, Math.ceil((new Date(endDate).getTime() - new Date(startDate).getTime()) / (1000 * 60 * 60 * 24)))} days
-                        </span>
-                      </div>
-                      
-                      <div className="flex justify-between font-semibold text-lg mt-4">
-                        <span>Total:</span>
-                        <span>${totalPrice}</span>
-                      </div>
-                    </>
-                  )}
                 </div>
                 
                 <div className="text-sm text-secondary-600">
@@ -337,6 +553,17 @@ const BookingPage: React.FC = () => {
           </div>
         </div>
       </div>
+      {showExtrasModal && (
+        <ExtrasModal
+          isOpen={showExtrasModal}
+          onClose={() => setShowExtrasModal(false)}
+          onContinue={handleExtrasModalContinue}
+          pickupDate={startDate}
+          returnDate={endDate}
+          rentalDays={rentalDuration}
+          carTotal={totalPrice}
+        />
+      )}
     </div>
   );
 };

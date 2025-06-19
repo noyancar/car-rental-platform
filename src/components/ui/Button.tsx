@@ -6,55 +6,48 @@ type ButtonSize = 'sm' | 'md' | 'lg';
 interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
   variant?: ButtonVariant;
   size?: ButtonSize;
-  isLoading?: boolean;
   fullWidth?: boolean;
+  isLoading?: boolean;
   leftIcon?: React.ReactNode;
   rightIcon?: React.ReactNode;
 }
 
-const Button = memo(({
-  children,
+export const Button = memo<ButtonProps>(({ 
   variant = 'primary',
   size = 'md',
-  isLoading = false,
   fullWidth = false,
+  isLoading = false,
   leftIcon,
   rightIcon,
+  children,
   className = '',
   disabled,
   ...props
-}: ButtonProps) => {
-  // Base classes with fixed heights
-  const baseClasses = 'inline-flex items-center justify-center font-medium transition-colors duration-200 rounded-md focus:outline-none focus:ring-2 focus:ring-offset-2 relative';
+}) => {
+  // Base classes
+  const baseClasses = 'btn inline-flex items-center justify-center font-medium rounded-lg transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed';
   
   // Variant classes
   const variantClasses = {
-    primary: 'bg-primary-800 text-white hover:bg-primary-700 focus:ring-primary-500 disabled:bg-primary-800/70',
-    secondary: 'bg-secondary-100 text-primary-800 hover:bg-secondary-200 focus:ring-secondary-300 disabled:bg-secondary-100/70',
-    accent: 'bg-accent-500 text-white hover:bg-accent-600 focus:ring-accent-400 disabled:bg-accent-500/70',
+    primary: 'bg-primary-600 text-white hover:bg-primary-700 focus:ring-primary-500 shadow-lg hover:shadow-xl',
+    secondary: 'bg-volcanic-800 text-white hover:bg-volcanic-900 focus:ring-volcanic-500',
+    accent: 'bg-accent-500 text-white hover:bg-accent-600 focus:ring-accent-400 shadow-lg hover:shadow-xl',
     outline: 'border-2 border-primary-800 text-primary-800 hover:bg-primary-50 focus:ring-primary-500 disabled:border-primary-800/70 disabled:text-primary-800/70',
-    ghost: 'text-primary-800 hover:bg-secondary-100 focus:ring-primary-500 disabled:text-primary-800/70',
+    ghost: 'text-volcanic-700 hover:bg-sandy-200 focus:ring-sandy-400',
   };
   
-  // Fixed size classes to prevent layout shifts
+  // Size classes
   const sizeClasses = {
-    sm: 'h-9 px-3 text-sm min-w-[90px]',
-    md: 'h-11 px-6 min-w-[110px]',
-    lg: 'h-12 px-8 text-lg min-w-[130px]',
+    sm: 'text-sm px-3 py-1.5',
+    md: 'text-base px-4 py-2',
+    lg: 'text-lg px-6 py-3',
   };
   
   // Width classes
   const widthClasses = fullWidth ? 'w-full' : '';
   
-  // Disabled and loading classes
-  const stateClasses = (disabled || isLoading) ? 'cursor-not-allowed' : '';
-
-  // Loading spinner with fixed dimensions
-  const LoadingSpinner = () => (
-    <div className="absolute inset-0 flex items-center justify-center bg-inherit rounded-md">
-      <div className="w-5 h-5 border-2 border-current border-t-transparent rounded-full animate-spin" />
-    </div>
-  );
+  // Loading state classes
+  const stateClasses = isLoading ? 'cursor-wait' : '';
   
   return (
     <button
@@ -69,16 +62,39 @@ const Button = memo(({
       disabled={disabled || isLoading}
       {...props}
     >
-      <span className={`inline-flex items-center justify-center gap-2 ${isLoading ? 'invisible' : 'visible'}`}>
-        {leftIcon}
-        <span>{children}</span>
-        {rightIcon}
-      </span>
-      {isLoading && <LoadingSpinner />}
+      {isLoading ? (
+        <>
+          <svg
+            className="animate-spin -ml-1 mr-2 h-4 w-4"
+            xmlns="http://www.w3.org/2000/svg"
+            fill="none"
+            viewBox="0 0 24 24"
+          >
+            <circle
+              className="opacity-25"
+              cx="12"
+              cy="12"
+              r="10"
+              stroke="currentColor"
+              strokeWidth="4"
+            ></circle>
+            <path
+              className="opacity-75"
+              fill="currentColor"
+              d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+            ></path>
+          </svg>
+          Loading...
+        </>
+      ) : (
+        <>
+          {leftIcon && <span className="mr-2 inline-flex">{leftIcon}</span>}
+          {children}
+          {rightIcon && <span className="ml-2 inline-flex">{rightIcon}</span>}
+        </>
+      )}
     </button>
   );
 });
 
 Button.displayName = 'Button';
-
-export { Button };

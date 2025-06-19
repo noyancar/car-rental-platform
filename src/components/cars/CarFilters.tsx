@@ -80,10 +80,10 @@ const CarFilters: React.FC = () => {
   };
   
   return (
-    <div className="bg-white rounded-lg shadow-md p-4 mb-6">
-      <div className="flex items-center justify-between mb-4">
-        <h3 className="text-lg font-semibold flex items-center">
-          <Sliders size={20} className="mr-2" />
+    <div className="bg-white rounded-xl shadow-hawaii p-6">
+      <div className="flex items-center justify-between mb-6">
+        <h3 className="text-xl font-display font-semibold text-volcanic-900 flex items-center">
+          <Sliders size={20} className="mr-2 text-primary-600" />
           Filter Cars
         </h3>
         
@@ -143,7 +143,7 @@ const CarFilters: React.FC = () => {
         
         {/* Price Range Filter */}
         <div>
-          <label className="block text-sm font-medium text-secondary-700 mb-1">
+          <label className="block text-sm font-semibold text-volcanic-700 mb-2">
             Price Range (per day)
           </label>
           

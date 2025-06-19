@@ -26,23 +26,33 @@ export type Car = {
   transmission: string;
   mileage_type: string;
   available_locations?: string[];
+  trim?: string;
+  color?: string;
+  license_plate?: string;
+  doors?: number;
+  fuel_type?: string;
+  gas_grade?: string;
 }
 
-export type Booking = {
+export type BookingStatus = 'draft' | 'pending' | 'confirmed' | 'cancelled' | 'completed';
+
+export interface Booking {
   id: number;
-  user_id: string;
   car_id: number;
-  car?: Car;
+  user_id: string;
   start_date: string;
   end_date: string;
   total_price: number;
-  status: 'pending' | 'confirmed' | 'cancelled' | 'completed';
-  discount_code_id?: number;
-  payment_intent_id?: string;
+  status: BookingStatus;
+  created_at: string;
+  updated_at: string;
+  car?: Car;
   pickup_location?: string;
   return_location?: string;
   pickup_time?: string;
   return_time?: string;
+  discount_code_id?: number;
+  payment_intent_id?: string;
 }
 
 export type DiscountCode = {
@@ -65,4 +75,57 @@ export type Campaign = {
   valid_to: string;
   featured_image_url: string;
   active: boolean;
+}
+
+export type CampaignStatus = 'active' | 'scheduled' | 'expired' | 'paused';
+
+export type ExtraCategory = 'services' | 'safety' | 'beach' | 'tech' | 'camping';
+export type ExtraPriceType = 'per_day' | 'one_time';
+
+export interface Extra {
+  id: string;
+  name: string;
+  slug: string;
+  description?: string;
+  price: number;
+  price_type: ExtraPriceType;
+  category: ExtraCategory;
+  stock_quantity?: number | null;
+  max_per_booking: number;
+  icon_name?: string;
+  image_url?: string;
+  sort_order: number;
+  active: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface ExtraInventory {
+  id: string;
+  extra_id: string;
+  date: string;
+  total_stock: number;
+  reserved_count: number;
+  available_count: number;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface BookingExtra {
+  id: string;
+  booking_id: number;
+  extra_id: string;
+  quantity: number;
+  unit_price: number;
+  total_price: number;
+  notes?: string;
+  created_at: string;
+  updated_at: string;
+  extra?: Extra; // For joins
+}
+
+export interface BookingWithExtras extends Booking {
+  extras_total?: number;
+  grand_total?: number;
+  booking_extras?: BookingExtra[];
 }
