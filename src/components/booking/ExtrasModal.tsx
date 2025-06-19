@@ -96,9 +96,10 @@ export default function ExtrasModal({
           </div>
           <button
             onClick={onClose}
-            className="p-2 hover:bg-white/20 rounded-lg transition-all duration-200"
+            className="p-2 hover:bg-white/20 rounded-lg transition-all duration-200 group"
+            aria-label="Close modal"
           >
-            <X className="w-6 h-6" />
+            <X className="w-6 h-6 group-hover:rotate-90 transition-transform duration-200" />
           </button>
         </div>
 

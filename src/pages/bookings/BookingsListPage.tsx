@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { Calendar, Clock, CheckCircle, XCircle, AlertCircle } from 'lucide-react';
 import { format } from 'date-fns';
 import { Button } from '../../components/ui/Button';
+import { PageHeader } from '../../components/ui/PageHeader';
 import { useBookingStore } from '../../stores/bookingStore';
 
 const BookingsListPage: React.FC = () => {
@@ -59,8 +60,13 @@ const BookingsListPage: React.FC = () => {
   return (
     <div className="min-h-screen pt-16 pb-12 bg-secondary-50">
       <div className="container-custom">
+        <PageHeader
+          title="My Bookings"
+          subtitle="View and manage your car rental bookings"
+          showBackButton={false}
+        />
+        
         <div className="bg-white rounded-lg shadow-md p-6">
-          <h1 className="text-2xl font-semibold mb-6">My Bookings</h1>
           
           {bookings.length === 0 ? (
             <div className="text-center py-12">

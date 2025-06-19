@@ -1,11 +1,13 @@
 import React, { useState, useEffect } from 'react';
-import { Plus, Edit, Trash2, Check, X, Search, Tag } from 'lucide-react';
+import { Plus, Edit, Trash2, Check, X, Search, Tag, Settings } from 'lucide-react';
 import { toast } from 'sonner';
 import { Button } from '../../components/ui/Button';
 import { Input } from '../../components/ui/Input';
 import { Select } from '../../components/ui/Select';
 import { SimpleImageUploader } from '../../components/ui/SimpleImageUploader';
+import { PageHeader } from '../../components/ui/PageHeader';
 import { useAdminStore } from '../../stores/adminStore';
+import { checkStorageSetup } from '../../utils/fixStorageSetup';
 import type { Car } from '../../types/index';
 
 const COMMON_FEATURES = [
@@ -212,21 +214,32 @@ const AdminCars: React.FC = () => {
     );
   }
   
+  // Generate breadcrumb items
+  const breadcrumbItems = [
+    { label: 'Admin', path: '/admin' },
+    { label: 'Cars', path: '/admin/cars' }
+  ];
+
   return (
     <div className="min-h-screen pt-16 pb-12 bg-secondary-50">
       <div className="container-custom">
-        <div className="flex justify-between items-center mb-8">
-          <h1 className="text-3xl font-display font-bold text-primary-800">
-            Manage Cars
-          </h1>
-          <Button 
-            variant="primary"
-            onClick={() => setIsAddingCar(true)}
-            leftIcon={<Plus size={20} />}
-          >
-            Add New Car
-          </Button>
-        </div>
+        <PageHeader
+          title="Manage Cars"
+          subtitle="Add, edit, and manage your car inventory"
+          breadcrumbItems={breadcrumbItems}
+          fallbackPath="/admin"
+          actions={
+            <div className="flex gap-2">
+              <Button 
+                variant="primary"
+                onClick={() => setIsAddingCar(true)}
+                leftIcon={<Plus size={20} />}
+              >
+                Add New Car
+              </Button>
+            </div>
+          }
+        />
         
         {/* Filters */}
         <div className="bg-white p-4 rounded-lg shadow-md mb-6">
@@ -343,11 +356,23 @@ const AdminCars: React.FC = () => {
       {/* Add/Edit Car Modal */}
       {(isAddingCar || editingCar) && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-          <div className="bg-white rounded-lg shadow-xl max-w-4xl w-full max-h-[90vh] overflow-y-auto">
-            <div className="p-6">
-              <h2 className="text-2xl font-semibold mb-6">
+          <div className="bg-white rounded-lg shadow-xl max-w-4xl w-full max-h-[90vh] overflow-hidden">
+            <div className="sticky top-0 bg-white border-b border-secondary-200 px-6 py-4 flex justify-between items-center z-10">
+              <h2 className="text-2xl font-semibold">
                 {isAddingCar ? 'Add New Car' : 'Edit Car'}
               </h2>
+              <button
+                onClick={() => {
+                  setIsAddingCar(false);
+                  setEditingCar(null);
+                }}
+                className="p-2 hover:bg-secondary-100 rounded-lg transition-all duration-200 group"
+                aria-label="Close modal"
+              >
+                <X className="w-6 h-6 text-secondary-600 group-hover:text-secondary-800" />
+              </button>
+            </div>
+            <div className="p-6 overflow-y-auto" style={{ maxHeight: 'calc(90vh - 80px)' }}>
               
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <Input

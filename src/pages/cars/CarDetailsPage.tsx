@@ -4,6 +4,7 @@ import { ArrowLeft, Calendar, Clock, Users, Gauge, Car as CarIcon, CalendarDays,
 import { format, addDays, isBefore, isValid, parseISO } from 'date-fns';
 import { Button } from '../../components/ui/Button';
 import { SimpleImageViewer } from '../../components/ui/SimpleImageViewer';
+import { PageHeader } from '../../components/ui/PageHeader';
 import { useCarStore } from '../../stores/carStore';
 import { useSearchStore } from '../../stores/searchStore';
 import { useBookingStore } from '../../stores/bookingStore';
@@ -212,15 +213,21 @@ const CarDetailsPage: React.FC = () => {
     ? [...currentCar.image_urls] // Create a new array to avoid mutations
     : [currentCar.image_url];
   
+  // Generate breadcrumb items
+  const breadcrumbItems = [
+    { label: 'Cars', path: '/cars' },
+    { label: `${currentCar.year} ${currentCar.make} ${currentCar.model}`, path: `/cars/${id}` }
+  ];
+  
   return (
     <div className="min-h-screen pt-16 pb-12 bg-secondary-50">
       <div className="container-custom">
-        <div className="mb-6">
-          <Link to="/cars" className="inline-flex items-center text-primary-700 hover:text-primary-800">
-            <ArrowLeft size={20} className="mr-2" />
-            Back to Cars
-          </Link>
-        </div>
+        <PageHeader
+          title={`${currentCar.year} ${currentCar.make} ${currentCar.model} ${currentCar.trim || ''}`}
+          subtitle={`${currentCar.category} • $${currentCar.price_per_day}/day`}
+          breadcrumbItems={breadcrumbItems}
+          fallbackPath="/cars"
+        />
         
         <div className="bg-white rounded-lg shadow-md overflow-hidden">
           {/* Car Image Slider */}
@@ -241,9 +248,6 @@ const CarDetailsPage: React.FC = () => {
           <div className="p-8">
             <div className="flex justify-between items-start">
               <div>
-                <h1 className="text-3xl font-semibold mb-2">
-                  {currentCar.year} {currentCar.make} {currentCar.model} {currentCar.trim || ''}
-                </h1>
                 <div className="flex items-center gap-4 mb-2">
                   {currentCar.color && (
                     <span className="text-secondary-600 flex items-center">
@@ -257,9 +261,6 @@ const CarDetailsPage: React.FC = () => {
                     </span>
                   )}
                 </div>
-                <p className="text-2xl text-primary-800 font-semibold">
-                  ${currentCar.price_per_day}/day
-                </p>
               </div>
               
               <div className="flex flex-col gap-2">

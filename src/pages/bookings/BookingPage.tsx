@@ -5,6 +5,7 @@ import { format, addDays, isBefore, isValid, parseISO } from 'date-fns';
 import { toast } from 'sonner';
 import { Button } from '../../components/ui/Button';
 import { Input } from '../../components/ui/Input';
+import { PageHeader } from '../../components/ui/PageHeader';
 import { useCarStore } from '../../stores/carStore';
 import { useBookingStore } from '../../stores/bookingStore';
 import { useAuthStore } from '../../stores/authStore';
@@ -268,15 +269,22 @@ const BookingPage: React.FC = () => {
     ? Math.max(1, Math.ceil((new Date(endDate).getTime() - new Date(startDate).getTime()) / (1000 * 60 * 60 * 24)))
     : 0;
   
+  // Generate breadcrumb items
+  const breadcrumbItems = currentCar ? [
+    { label: 'Cars', path: '/cars' },
+    { label: `${currentCar.year} ${currentCar.make} ${currentCar.model}`, path: `/cars/${carId}` },
+    { label: 'Book Now', path: `/booking/${carId}` }
+  ] : [];
+
   return (
     <div className="min-h-screen pt-16 pb-12 bg-secondary-50">
       <div className="container-custom">
-        <div className="mb-6">
-          <Link to={`/cars/${carId}`} className="inline-flex items-center text-primary-700 hover:text-primary-800">
-            <ArrowLeft size={20} className="mr-2" />
-            Back to Car Details
-          </Link>
-        </div>
+        <PageHeader
+          title="Complete Your Booking"
+          subtitle={currentCar ? `${currentCar.year} ${currentCar.make} ${currentCar.model}` : ''}
+          breadcrumbItems={breadcrumbItems}
+          fallbackPath={`/cars/${carId}`}
+        />
         
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           {/* Booking Form */}
