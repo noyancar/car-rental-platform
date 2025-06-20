@@ -6,13 +6,15 @@ interface ImageSliderProps {
   alt: string;
   className?: string;
   height?: string;
+  objectFit?: 'cover' | 'contain' | 'fill' | 'none' | 'scale-down';
 }
 
 export const ImageSlider: React.FC<ImageSliderProps> = ({ 
   images, 
   alt, 
   className = "w-full h-96", 
-  height = "h-96" 
+  height = "h-96",
+  objectFit = 'contain' // Varsayılan olarak contain kullanarak görüntülerin tamamını göster
 }) => {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isAnimating, setIsAnimating] = useState(false);
@@ -66,24 +68,24 @@ export const ImageSlider: React.FC<ImageSliderProps> = ({
   // If only one image, show it without controls
   if (imageCount === 1) {
     return (
-      <div className={`${className} relative overflow-hidden`}>
+      <div className={`${className} relative overflow-hidden bg-gray-50`}>
         <img 
           src={validImages[0]} 
           alt={alt} 
-          className="w-full h-full object-cover"
+          className={`w-full h-full object-${objectFit}`}
         />
       </div>
     );
   }
   
   return (
-    <div className={`${className} relative overflow-hidden group`}>
+    <div className={`${className} relative overflow-hidden group bg-gray-50`}>
       {/* Images with fade animation instead of transform */}
       <div className="h-full relative">
         {validImages.map((image, index) => (
           <div 
             key={index}
-            className="absolute inset-0 transition-opacity duration-500 ease-in-out"
+            className="absolute inset-0 transition-opacity duration-500 ease-in-out flex items-center justify-center"
             style={{
               opacity: index === currentIndex ? 1 : 0,
               zIndex: index === currentIndex ? 10 : 0
@@ -92,7 +94,7 @@ export const ImageSlider: React.FC<ImageSliderProps> = ({
             <img 
               src={image} 
               alt={`${alt} (${index + 1}/${imageCount})`} 
-              className="w-full h-full object-cover"
+              className={`max-w-full max-h-full ${objectFit === 'contain' ? 'object-contain' : `object-${objectFit}`}`}
             />
           </div>
         ))}

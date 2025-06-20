@@ -235,7 +235,8 @@ const CarDetailsPage: React.FC = () => {
             <SimpleImageViewer 
               images={sliderImages}
               alt={`${currentCar.make} ${currentCar.model}`}
-              className="w-full h-96"
+              className="w-full h-[500px]"
+              objectFit="contain"
             />
             <div className="absolute top-4 left-4 z-10">
               <span className="bg-primary-800 text-white px-4 py-2 rounded-full text-sm">

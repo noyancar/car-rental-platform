@@ -5,12 +5,14 @@ interface SimpleImageViewerProps {
   images: string[];
   alt: string;
   className?: string;
+  objectFit?: 'cover' | 'contain' | 'fill' | 'none' | 'scale-down';
 }
 
 export const SimpleImageViewer: React.FC<SimpleImageViewerProps> = ({ 
   images, 
   alt, 
-  className = "w-full h-96"
+  className = "w-full h-96",
+  objectFit = 'contain' // Varsayılan olarak contain kullanarak görüntülerin tamamını göster
 }) => {
   // Geçersiz görüntüleri filtrele
   const validImages = images?.filter(img => img && typeof img === 'string' && img.trim() !== '') || [];
@@ -31,11 +33,11 @@ export const SimpleImageViewer: React.FC<SimpleImageViewerProps> = ({
   // Sadece bir görüntü varsa, kontrolsüz göster
   if (validImages.length === 1) {
     return (
-      <div className={`${className} relative overflow-hidden`}>
+      <div className={`${className} relative overflow-hidden bg-gray-50`}>
         <img 
           src={validImages[0]} 
           alt={alt} 
-          className="w-full h-full object-cover"
+          className={`w-full h-full ${objectFit === 'contain' ? 'object-contain' : `object-${objectFit}`}`}
         />
       </div>
     );
@@ -56,13 +58,15 @@ export const SimpleImageViewer: React.FC<SimpleImageViewerProps> = ({
   };
   
   return (
-    <div className={`${className} relative overflow-hidden group`}>
+    <div className={`${className} relative overflow-hidden group bg-gray-50`}>
       {/* Ana görüntü */}
-      <img 
-        src={validImages[currentIndex]} 
-        alt={`${alt} (${currentIndex + 1}/${validImages.length})`} 
-        className="w-full h-full object-cover transition-all duration-300"
-      />
+      <div className="w-full h-full flex items-center justify-center">
+        <img 
+          src={validImages[currentIndex]} 
+          alt={`${alt} (${currentIndex + 1}/${validImages.length})`} 
+          className={`max-w-full max-h-full ${objectFit === 'contain' ? 'object-contain' : `object-${objectFit}`} transition-all duration-300`}
+        />
+      </div>
       
       {/* Önceki/Sonraki Düğmeleri */}
       <button 
@@ -79,7 +83,7 @@ export const SimpleImageViewer: React.FC<SimpleImageViewerProps> = ({
         <ChevronRight size={24} />
       </button>
       
-      {/* Küçük Resimler */}
+      {/* Küçük Resimler - bunlar object-cover kalabilir */}
       <div className="absolute bottom-0 left-0 right-0 p-2 bg-black bg-opacity-30 flex justify-center gap-2 overflow-x-auto">
         {validImages.map((image, index) => (
           <button
@@ -92,7 +96,7 @@ export const SimpleImageViewer: React.FC<SimpleImageViewerProps> = ({
             <img 
               src={image} 
               alt={`Küçük resim ${index + 1}`} 
-              className="w-full h-full object-cover"
+              className="w-full h-full object-cover" // Küçük resimler için cover kullanmaya devam et
             />
           </button>
         ))}
