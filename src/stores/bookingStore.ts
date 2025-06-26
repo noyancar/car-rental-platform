@@ -28,23 +28,28 @@ export const useBookingStore = create<BookingState>((set, get) => ({
     try {
       set({ isCheckingAvailability: true });
       
-      // Get current session for authentication
+      // Get current session but don't require it
       const { data: { session } } = await supabase.auth.getSession();
       
-      if (!session?.access_token) {
-        console.error('No active session for availability check');
-        return false;
+      // Prepare headers
+      const headers: Record<string, string> = {
+        'Content-Type': 'application/json',
+      };
+      
+      // Use session token if available, otherwise use anon key
+      if (session?.access_token) {
+        headers['Authorization'] = `Bearer ${session.access_token}`;
+      } else {
+        // Use the anon key for anonymous users
+        headers['apikey'] = import.meta.env.VITE_SUPABASE_ANON_KEY;
       }
       
       // Use secure fetch with proper authentication
       const response = await fetch(
-        `https://lwhqqhlvmtbcugzasamf.supabase.co/functions/v1/check-car-availability?car_id=${encodeURIComponent(carId)}&start_date=${encodeURIComponent(startDate)}&end_date=${encodeURIComponent(endDate)}&pickup_time=${encodeURIComponent(pickupTime)}&return_time=${encodeURIComponent(returnTime)}`,
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/check-car-availability?car_id=${encodeURIComponent(carId)}&start_date=${encodeURIComponent(startDate)}&end_date=${encodeURIComponent(endDate)}&pickup_time=${encodeURIComponent(pickupTime)}&return_time=${encodeURIComponent(returnTime)}`,
         {
           method: 'GET',
-          headers: {
-            'Authorization': `Bearer ${session.access_token}`,
-            'Content-Type': 'application/json',
-          },
+          headers,
         }
       );
       
@@ -128,19 +133,6 @@ export const useBookingStore = create<BookingState>((set, get) => ({
   createBooking: async (booking) => {
     try {
       set({ loading: true, error: null });
-      
-      // Check availability before creating booking
-      const isAvailable = await get().checkAvailability(
-        booking.car_id,
-        booking.start_date,
-        booking.end_date,
-        booking.pickup_time,
-        booking.return_time
-      );
-      
-      if (!isAvailable) {
-        throw new Error('Car is not available for the selected dates');
-      }
       
       // Make sure all booking fields are included, yeni alanlar null olabilir
       const bookingData = {
