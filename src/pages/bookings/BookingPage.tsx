@@ -182,11 +182,7 @@ const BookingPage: React.FC = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!user) {
-      toast.error('Please sign in to make a booking');
-      navigate('/login');
-      return;
-    }
+    // Remove login requirement here - allow anonymous users to proceed
     
     if (!validateDates()) {
       toast.error(validationMessage);
@@ -212,27 +208,54 @@ const BookingPage: React.FC = () => {
       const { extrasTotal } = calculateTotal(rentalDuration);
       const grandTotal = totalPrice + extrasTotal;
       
-      // Create booking with draft status
-      const booking = await createBooking({
-        car_id: currentCar!.id,
-        user_id: user!.id,
-        start_date: startDate,
-        end_date: endDate,
-        total_price: grandTotal,
-        status: 'draft',
-        pickup_location: locationValue,
-        return_location: locationValue,
-        pickup_time: pickupTime,
-        return_time: returnTime
-      });
-      
-      if (booking) {
-        // Save selected extras to the booking
-        await saveBookingExtras(booking.id, rentalDuration);
+      // Create booking with draft status - if no user, we'll store the booking data temporarily
+      if (user) {
+        const booking = await createBooking({
+          car_id: currentCar!.id,
+          user_id: user.id,
+          start_date: startDate,
+          end_date: endDate,
+          total_price: grandTotal,
+          status: 'pending',
+          pickup_location: locationValue,
+          return_location: locationValue,
+          pickup_time: pickupTime,
+          return_time: returnTime
+        });
         
-        // Navigate to payment page
-        toast.success('Booking created successfully');
-        navigate(`/payment/${booking.id}`);
+        if (booking) {
+          // Save selected extras to the booking
+          await saveBookingExtras(booking.id, rentalDuration);
+          
+          // Navigate to payment page
+          toast.success('Booking created successfully');
+          navigate(`/payment/${booking.id}`);
+        }
+      } else {
+        // Get selected extras from the store
+        const { selectedExtras } = useExtrasStore.getState();
+        
+        // Store booking data in localStorage for anonymous users
+        const bookingData = {
+          car_id: currentCar!.id,
+          start_date: startDate,
+          end_date: endDate,
+          total_price: grandTotal,
+          pickup_location: locationValue,
+          return_location: locationValue,
+          pickup_time: pickupTime,
+          return_time: returnTime,
+          extras: Array.from(selectedExtras.entries()).map(([id, { extra, quantity }]) => ({
+            id,
+            extra,
+            quantity
+          }))
+        };
+        
+        localStorage.setItem('pendingBooking', JSON.stringify(bookingData));
+        
+        // Navigate to payment page which will handle authentication
+        navigate('/payment/pending');
       }
     } catch (error) {
       toast.error((error as Error).message || 'Failed to create booking');

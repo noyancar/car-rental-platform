@@ -37,8 +37,10 @@ serve(async (req) => {
     }
 
     const supabaseUrl = Deno.env.get("SUPABASE_URL") || "";
-    const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") || "";
-    const supabase = createClient(supabaseUrl, supabaseKey);
+    const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") || "";
+    
+    // Always use service role key to bypass RLS
+    const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
     // Eğer belirli bir araç için kontrol yapılıyorsa
     if (carId) {

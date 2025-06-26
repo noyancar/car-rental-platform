@@ -95,12 +95,9 @@ export const useSearchStore = create<SearchState>((set, get) => ({
       const { searchParams } = get();
       set({ loading: true, error: null });
       
-      // Get current session for authentication
+      // Remove authentication requirement - users can search without login
+      // Get current session but don't require it
       const { data: { session } } = await supabase.auth.getSession();
-      
-      if (!session?.access_token) {
-        throw new Error('Authentication required to search for cars');
-      }
       
       // Kullanıcı tarafından seçilen tarihler
       const startDate = searchParams.pickupDate;
@@ -108,15 +105,24 @@ export const useSearchStore = create<SearchState>((set, get) => ({
       const pickupTime = searchParams.pickupTime;
       const returnTime = searchParams.returnTime;
       
-      // Edge Function'ı çağır (şimdi tüm müsait araçları getirecek şekilde güncellendi)
+      // Edge Function'ı çağır - use anon key if no session
+      const headers: Record<string, string> = {
+        'Content-Type': 'application/json',
+      };
+      
+      // Use session token if available, otherwise use anon key
+      if (session?.access_token) {
+        headers['Authorization'] = `Bearer ${session.access_token}`;
+      } else {
+        // Use the anon key from environment variable
+        headers['apikey'] = import.meta.env.VITE_SUPABASE_ANON_KEY;
+      }
+      
       const response = await fetch(
-        `https://lwhqqhlvmtbcugzasamf.supabase.co/functions/v1/check-car-availability?start_date=${encodeURIComponent(startDate)}&end_date=${encodeURIComponent(endDate)}&pickup_time=${encodeURIComponent(pickupTime)}&return_time=${encodeURIComponent(returnTime)}&include_details=true`,
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/check-car-availability?start_date=${encodeURIComponent(startDate)}&end_date=${encodeURIComponent(endDate)}&pickup_time=${encodeURIComponent(pickupTime)}&return_time=${encodeURIComponent(returnTime)}&include_details=true`,
         {
           method: 'GET',
-          headers: {
-            'Authorization': `Bearer ${session.access_token}`,
-            'Content-Type': 'application/json',
-          },
+          headers,
         }
       );
       

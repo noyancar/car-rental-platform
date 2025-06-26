@@ -10,6 +10,7 @@ import { Footer } from './components/layout/Footer';
 import Login from './pages/auth/Login';
 import Register from './pages/auth/Register';
 import ForgotPassword from './pages/auth/ForgotPassword';
+import AuthCallback from './pages/auth/AuthCallback';
 
 // Main pages
 import { HomePage } from './pages/HomePage';
@@ -19,6 +20,7 @@ import BookingPage from './pages/bookings/BookingPage';
 import BookingsListPage from './pages/bookings/BookingsListPage';
 import BookingDetailsPage from './pages/bookings/BookingDetailsPage';
 import PaymentPage from './pages/PaymentPage';
+import PendingPaymentPage from './pages/PendingPaymentPage';
 import HowItWorksPage from './pages/HowItWorksPage';
 import DealsPage from './pages/DealsPage';
 import ProfilePage from './pages/ProfilePage';
@@ -74,18 +76,18 @@ function App() {
             <Route path="/login" element={<Login />} />
             <Route path="/register" element={<Register />} />
             <Route path="/forgot-password" element={<ForgotPassword />} />
+            <Route path="/auth/callback" element={<AuthCallback />} />
             <Route path="/cars" element={<CarsPage />} />
             <Route path="/cars/:id" element={<CarDetailsPage />} />
             <Route path="/how-it-works" element={<HowItWorksPage />} />
             <Route path="/deals" element={<DealsPage />} />
             
+            {/* Semi-Protected routes - Allow anonymous but show auth modal at checkout */}
+            <Route path="/booking/:carId" element={<BookingPage />} />
+            <Route path="/payment/pending" element={<PendingPaymentPage />} />
+            <Route path="/payment/:bookingId" element={<PaymentPage />} />
+            
             {/* Protected routes */}
-            <Route path="/booking/:carId" element={
-              <ProtectedRoute element={<BookingPage />} />
-            } />
-            <Route path="/payment/:bookingId" element={
-              <ProtectedRoute element={<PaymentPage />} />
-            } />
             <Route path="/bookings" element={
               <ProtectedRoute element={<BookingsListPage />} />
             } />

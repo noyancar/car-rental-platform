@@ -3,6 +3,7 @@ import { Upload, X, Star, Trash } from 'lucide-react';
 import { toast } from 'sonner';
 import { supabase } from '../../lib/supabase';
 import { Button } from './Button';
+import { optimizeImage } from '../../utils/imageOptimizer';
 
 // Yüklenen resim tipini tanımlama
 interface UploadedImage {
@@ -122,10 +123,34 @@ export const SimpleImageUploader: React.FC<SimpleImageUploaderProps> = ({
             continue;
           }
 
-          // Dosya boyutu kontrolü (5MB)
-          if (file.size > 5 * 1024 * 1024) {
-            toast.error(`${file.name} 5MB'dan büyük.`);
+          // Dosya boyutu kontrolü - 10MB'a kadar izin ver (optimize edilecek)
+          if (file.size > 10 * 1024 * 1024) {
+            toast.error(`${file.name} 10MB'dan büyük. Lütfen daha küçük bir görüntü seçin.`);
             continue;
+          }
+
+          // Görüntüyü optimize et
+          let fileToUpload = file;
+          try {
+            const originalSizeMB = file.size / 1024 / 1024;
+            
+            // Eğer dosya 1MB'dan büyükse optimize et
+            if (originalSizeMB > 1) {
+              toast.info(`${file.name} optimize ediliyor...`);
+              fileToUpload = await optimizeImage(file, {
+                maxSizeMB: 1, // 1MB'a kadar sıkıştır
+                maxWidthOrHeight: 1920, // Maksimum 1920px
+                initialQuality: 0.85,
+              });
+              
+              const newSizeMB = fileToUpload.size / 1024 / 1024;
+              const savedPercent = ((1 - fileToUpload.size / file.size) * 100).toFixed(0);
+              
+              toast.success(`${file.name} optimize edildi: ${originalSizeMB.toFixed(1)}MB → ${newSizeMB.toFixed(1)}MB (%${savedPercent} tasarruf)`);
+            }
+          } catch (optimizeError) {
+            console.error('Görüntü optimizasyonu başarısız, orijinal dosya yüklenecek:', optimizeError);
+            // Optimizasyon başarısız olursa orijinal dosyayı kullan
           }
 
           // Dosya adı oluştur
@@ -137,7 +162,7 @@ export const SimpleImageUploader: React.FC<SimpleImageUploaderProps> = ({
           // Supabase'e yükle
           const { data, error } = await supabase.storage
             .from(bucketName)
-            .upload(fileName, file, {
+            .upload(fileName, fileToUpload, {
               cacheControl: '3600',
               upsert: true
             });
@@ -220,7 +245,7 @@ export const SimpleImageUploader: React.FC<SimpleImageUploaderProps> = ({
           Fotoğraf yüklemek için tıklayın
         </p>
         <p className="text-xs text-gray-400 mb-4">
-          PNG, JPG, WEBP &middot; Maksimum 5MB
+          PNG, JPG, WEBP &middot; Maksimum 10MB &middot; Otomatik optimize edilir
         </p>
         
         <Button
