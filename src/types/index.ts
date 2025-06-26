@@ -6,7 +6,11 @@ export type User = {
   phone?: string;
   address?: string;
   license_number?: string;
+  license_expiry?: string;
+  emergency_contact?: string;
+  emergency_phone?: string;
   avatar_url?: string;
+  created_at?: string;
 }
 
 export type Car = {

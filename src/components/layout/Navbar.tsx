@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Link, useLocation } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { Car, User, Menu, X, ShieldCheck, ChevronDown } from 'lucide-react';
 import { Button } from '../ui/Button';
 import { useAuthStore } from '../../stores/authStore';
@@ -11,6 +11,7 @@ export const Navbar: React.FC = () => {
   const [showAuthModal, setShowAuthModal] = useState(false);
   const [authModalMode, setAuthModalMode] = useState<'signin' | 'signup'>('signin');
   const location = useLocation();
+  const navigate = useNavigate();
   
   const { user, isAdmin, signOut } = useAuthStore();
   
@@ -35,6 +36,11 @@ export const Navbar: React.FC = () => {
   const handleSignUpClick = () => {
     setAuthModalMode('signup');
     setShowAuthModal(true);
+  };
+  
+  const handleSignOut = async () => {
+    await signOut();
+    navigate('/');
   };
   
   return (
@@ -108,7 +114,7 @@ export const Navbar: React.FC = () => {
                 <Button 
                   variant="outline" 
                   size="sm" 
-                  onClick={() => signOut()}
+                  onClick={handleSignOut}
                 >
                   Sign Out
                 </Button>
@@ -194,7 +200,7 @@ export const Navbar: React.FC = () => {
                   </Link>
                   <Button 
                     variant="outline" 
-                    onClick={() => signOut()}
+                    onClick={handleSignOut}
                     className="w-full mt-2"
                   >
                     Sign Out
