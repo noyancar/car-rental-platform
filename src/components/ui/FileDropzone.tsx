@@ -5,6 +5,7 @@ import { supabase, ensureStorageBucket } from '../../lib/supabase';
 import { DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, useSensors, DragEndEvent } from '@dnd-kit/core';
 import { arrayMove, SortableContext, sortableKeyboardCoordinates, useSortable, verticalListSortingStrategy } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
+import { optimizeImage } from '../../utils/imageOptimizer';
 
 export interface ImageFile {
   id: string;
@@ -108,7 +109,7 @@ export const FileDropzone: React.FC<FileDropzoneProps> = ({
   values = [],
   mainImageIndex = 0,
   label = 'Upload Images',
-  maxSizeMB = 5,
+  maxSizeMB = 10,
   maxFiles = 5,
   acceptedFileTypes = ['image/jpeg', 'image/png', 'image/webp'],
   bucketName = 'car-images',
@@ -277,16 +278,39 @@ export const FileDropzone: React.FC<FileDropzoneProps> = ({
         continue;
       }
       
+      // Optimize image if needed
+      let fileToUpload = file;
+      try {
+        const originalSizeMB = file.size / 1024 / 1024;
+        
+        // Optimize if file is larger than 1MB
+        if (originalSizeMB > 1) {
+          toast.info(`Optimizing ${file.name}...`);
+          fileToUpload = await optimizeImage(file, {
+            maxSizeMB: 1,
+            maxWidthOrHeight: 1920,
+            initialQuality: 0.85,
+          });
+          
+          const newSizeMB = fileToUpload.size / 1024 / 1024;
+          const savedPercent = ((1 - fileToUpload.size / file.size) * 100).toFixed(0);
+          
+          toast.success(`${file.name} optimized: ${originalSizeMB.toFixed(1)}MB → ${newSizeMB.toFixed(1)}MB (${savedPercent}% saved)`);
+        }
+      } catch (optimizeError) {
+        console.error('Image optimization failed, using original:', optimizeError);
+      }
+      
       // Create a unique ID for this image
       const imageId = `new-${Math.random().toString(36).substring(2, 15)}`;
       
       // Create a preview URL
-      const previewUrl = URL.createObjectURL(file);
+      const previewUrl = URL.createObjectURL(fileToUpload);
       
       // Add to images array
       newImages.push({
         id: imageId,
-        file,
+        file: fileToUpload,
         previewUrl,
         isUploading: true,
         isMain: images.length === 0 && newImages.length === 0 // First image is main by default
