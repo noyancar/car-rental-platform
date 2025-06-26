@@ -216,7 +216,7 @@ const BookingPage: React.FC = () => {
           start_date: startDate,
           end_date: endDate,
           total_price: grandTotal,
-          status: 'draft',
+          status: 'pending',
           pickup_location: locationValue,
           return_location: locationValue,
           pickup_time: pickupTime,

@@ -38,6 +38,16 @@ const AuthModal: React.FC<AuthModalProps> = ({
   const handleGoogleLogin = async () => {
     try {
       setLoading(true);
+      
+      // Store current URL for redirect after OAuth
+      const currentPath = window.location.pathname;
+      if (currentPath === '/payment/pending') {
+        // Already on pending payment page, OAuth will redirect back here
+      } else if (currentPath.includes('/payment/')) {
+        // On payment page, store it
+        localStorage.setItem('authRedirectUrl', currentPath);
+      }
+      
       const { error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {

@@ -12,7 +12,7 @@ import { useExtrasStore } from '../stores/extrasStore';
 
 const PendingPaymentPage: React.FC = () => {
   const navigate = useNavigate();
-  const { user } = useAuthStore();
+  const user = useAuthStore((state) => state.user);
   const { createBooking } = useBookingStore();
   const { fetchCarById } = useCarStore();
   const { saveBookingExtras } = useExtrasStore();
@@ -20,6 +20,7 @@ const PendingPaymentPage: React.FC = () => {
   const [pendingBooking, setPendingBooking] = useState<any>(null);
   const [car, setCar] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+  const [bookingCreated, setBookingCreated] = useState(false);
 
   useEffect(() => {
     // Load pending booking from localStorage
@@ -38,17 +39,21 @@ const PendingPaymentPage: React.FC = () => {
   }, []);
 
   useEffect(() => {
-    if (user && pendingBooking) {
+    if (user && pendingBooking && !bookingCreated) {
+      console.log('User authenticated, creating booking...', { user, pendingBooking });
       // User is now authenticated, create the actual booking
+      setBookingCreated(true); // Prevent duplicate creation
       createBookingForUser();
     }
-  }, [user, pendingBooking]);
+  }, [user, pendingBooking, bookingCreated]);
 
   const fetchCarDetails = async (carId: number) => {
     try {
+      console.log('Fetching car details for:', carId);
       await fetchCarById(carId);
       const { currentCar } = useCarStore.getState();
       setCar(currentCar);
+      console.log('Car details fetched:', currentCar);
     } catch (error) {
       console.error('Error fetching car:', error);
     } finally {
@@ -57,8 +62,21 @@ const PendingPaymentPage: React.FC = () => {
   };
 
   const createBookingForUser = async () => {
-    if (!user || !pendingBooking) return;
+    if (!user || !pendingBooking) {
+      console.error('Missing user or pendingBooking:', { user, pendingBooking });
+      return;
+    }
 
+    console.log('Creating booking for user:', user.id);
+    console.log('Pending booking data:', pendingBooking);
+    
+    // Validate required fields
+    if (!pendingBooking.car_id || !pendingBooking.start_date || !pendingBooking.end_date || !pendingBooking.total_price) {
+      console.error('Missing required booking fields:', pendingBooking);
+      toast.error('Invalid booking data. Please try again.');
+      return;
+    }
+    
     try {
       // Create the booking
       const booking = await createBooking({
@@ -67,16 +85,19 @@ const PendingPaymentPage: React.FC = () => {
         start_date: pendingBooking.start_date,
         end_date: pendingBooking.end_date,
         total_price: pendingBooking.total_price,
-        status: 'draft',
-        pickup_location: pendingBooking.pickup_location,
-        return_location: pendingBooking.return_location,
-        pickup_time: pendingBooking.pickup_time,
-        return_time: pendingBooking.return_time
+        status: 'pending',
+        pickup_location: pendingBooking.pickup_location || 'default-location',
+        return_location: pendingBooking.return_location || pendingBooking.pickup_location || 'default-location',
+        pickup_time: pendingBooking.pickup_time || '10:00',
+        return_time: pendingBooking.return_time || '10:00'
       });
+
+      console.log('Booking created:', booking);
 
       if (booking) {
         // Restore selected extras
         if (pendingBooking.extras && pendingBooking.extras.length > 0) {
+          console.log('Restoring extras:', pendingBooking.extras);
           // Restore extras to store
           const { addExtra } = useExtrasStore.getState();
           pendingBooking.extras.forEach((item: any) => {
@@ -97,8 +118,12 @@ const PendingPaymentPage: React.FC = () => {
         localStorage.removeItem('pendingBooking');
         
         // Navigate to payment page
+        console.log('Navigating to payment page:', `/payment/${booking.id}`);
         toast.success('Booking created successfully!');
         navigate(`/payment/${booking.id}`);
+      } else {
+        console.error('No booking returned from createBooking');
+        toast.error('Failed to create booking - no booking returned');
       }
     } catch (error) {
       console.error('Error creating booking:', error);
@@ -213,8 +238,8 @@ const PendingPaymentPage: React.FC = () => {
         isOpen={showAuthModal}
         onClose={() => {
           setShowAuthModal(false);
-          // If user closes modal, redirect back to cars
-          navigate('/cars');
+          // Don't redirect if user just closes modal - let them stay on the page
+          // Only redirect if they explicitly cancel the booking
         }}
         onSuccess={handleAuthSuccess}
       />

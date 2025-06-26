@@ -75,7 +75,7 @@ export const useBookingStore = create<BookingState>((set, get) => ({
       set({ loading: true, error: null });
       
       const { data: { user } } = await supabase.auth.getUser();
-      if (!user) throw new Error('No user logged in');
+      console.log('Current user:', user);
       
       const { data, error } = await supabase
         .from('bookings')
@@ -134,15 +134,14 @@ export const useBookingStore = create<BookingState>((set, get) => ({
     try {
       set({ loading: true, error: null });
       
-      // Make sure all booking fields are included, yeni alanlar null olabilir
+      // Make sure all booking fields are included
       const bookingData = {
         car_id: booking.car_id,
         user_id: booking.user_id,
         start_date: booking.start_date,
         end_date: booking.end_date,
         total_price: booking.total_price,
-        status: booking.status || 'pending', // Default status is pending
-        // Yeni eklenen alanlar için null check yapıyoruz
+        status: booking.status || 'pending',
         pickup_location: booking.pickup_location || null,
         return_location: booking.return_location || null,
         pickup_time: booking.pickup_time || null,
@@ -151,13 +150,28 @@ export const useBookingStore = create<BookingState>((set, get) => ({
         payment_intent_id: booking.payment_intent_id || null
       };
       
-      const { data, error } = await supabase
+      console.log('Creating booking with data:', bookingData);
+      
+      // First insert the booking
+      const { data: insertedBooking, error: insertError } = await supabase
         .from('bookings')
         .insert([bookingData])
+        .select()
+        .single();
+      
+      if (insertError) {
+        console.error('Insert error:', insertError);
+        throw insertError;
+      }
+      
+      // Then fetch it with relations
+      const { data, error } = await supabase
+        .from('bookings')
         .select(`
           *,
           cars (*)
         `)
+        .eq('id', insertedBooking.id)
         .single();
       
       if (error) throw error;
@@ -170,6 +184,7 @@ export const useBookingStore = create<BookingState>((set, get) => ({
       set(state => ({ bookings: [newBooking, ...state.bookings] }));
       return newBooking;
     } catch (error) {
+      console.error('Create booking error:', error);
       set({ error: (error as Error).message });
       return null;
     } finally {

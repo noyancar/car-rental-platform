@@ -38,7 +38,7 @@ export type Car = {
   gas_grade?: string;
 }
 
-export type BookingStatus = 'draft' | 'pending' | 'confirmed' | 'cancelled' | 'completed';
+export type BookingStatus = 'pending' | 'confirmed' | 'cancelled' | 'completed';
 
 export interface Booking {
   id: number;
