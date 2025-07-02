@@ -84,6 +84,8 @@ export interface Database {
           return_location: string
           pickup_time: string
           return_time: string
+          pickup_location_id: string | null
+          return_location_id: string | null
         }
         Insert: {
           id?: number
@@ -100,6 +102,8 @@ export interface Database {
           return_location?: string
           pickup_time?: string
           return_time?: string
+          pickup_location_id?: string | null
+          return_location_id?: string | null
         }
         Update: {
           id?: number
@@ -116,6 +120,8 @@ export interface Database {
           return_location?: string
           pickup_time?: string
           return_time?: string
+          pickup_location_id?: string | null
+          return_location_id?: string | null
         }
       }
       discount_codes: {
@@ -218,6 +224,76 @@ export interface Database {
           address?: string | null
           license_number?: string | null
           avatar_url?: string | null
+        }
+      }
+      locations: {
+        Row: {
+          id: string
+          created_at: string
+          updated_at: string
+          value: string
+          label: string
+          address: string
+          category: 'base' | 'airport' | 'hotel' | 'custom'
+          delivery_fee: number
+          is_active: boolean
+          sort_order: number
+          phone: string | null
+          email: string | null
+          coordinates: Json | null
+          operating_hours: Json | null
+          metadata: Json | null
+        }
+        Insert: {
+          id?: string
+          created_at?: string
+          updated_at?: string
+          value: string
+          label: string
+          address: string
+          category: 'base' | 'airport' | 'hotel' | 'custom'
+          delivery_fee?: number
+          is_active?: boolean
+          sort_order?: number
+          phone?: string | null
+          email?: string | null
+          coordinates?: Json | null
+          operating_hours?: Json | null
+          metadata?: Json | null
+        }
+        Update: {
+          id?: string
+          created_at?: string
+          updated_at?: string
+          value?: string
+          label?: string
+          address?: string
+          category?: 'base' | 'airport' | 'hotel' | 'custom'
+          delivery_fee?: number
+          is_active?: boolean
+          sort_order?: number
+          phone?: string | null
+          email?: string | null
+          coordinates?: Json | null
+          operating_hours?: Json | null
+          metadata?: Json | null
+        }
+      }
+      car_locations: {
+        Row: {
+          car_id: number
+          location_id: string
+          created_at: string
+        }
+        Insert: {
+          car_id: number
+          location_id: string
+          created_at?: string
+        }
+        Update: {
+          car_id?: number
+          location_id?: string
+          created_at?: string
         }
       }
     }

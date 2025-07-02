@@ -121,8 +121,25 @@ export const useSearchStore = create<SearchState>((set, get) => ({
         headers['apikey'] = import.meta.env.VITE_SUPABASE_ANON_KEY;
       }
       
+      // Build query parameters
+      const queryParams = new URLSearchParams({
+        start_date: startDate,
+        end_date: endDate,
+        pickup_time: pickupTime,
+        return_time: returnTime,
+        include_details: 'true'
+      });
+      
+      // Add location parameters if available
+      if (searchParams.pickupLocation) {
+        queryParams.append('pickup_location', searchParams.pickupLocation);
+      }
+      if (searchParams.returnLocation) {
+        queryParams.append('return_location', searchParams.returnLocation);
+      }
+      
       const response = await fetch(
-        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/check-car-availability?start_date=${encodeURIComponent(startDate)}&end_date=${encodeURIComponent(endDate)}&pickup_time=${encodeURIComponent(pickupTime)}&return_time=${encodeURIComponent(returnTime)}&include_details=true`,
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/check-car-availability?${queryParams.toString()}`,
         {
           method: 'GET',
           headers,

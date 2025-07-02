@@ -1,7 +1,7 @@
 import React from 'react';
 import { MapPin, Building2, Plane, HelpCircle } from 'lucide-react';
 import { cn } from '../../lib/utils';
-import { LOCATIONS, type Location, type LocationCategory } from '../../constants/locations';
+import { useLocations } from '../../hooks/useLocations';
 
 interface LocationSelectorProps {
   value: string;
@@ -14,6 +14,8 @@ interface LocationSelectorProps {
   hideFeesInOptions?: boolean;
 }
 
+type LocationCategory = 'base' | 'airport' | 'hotel' | 'custom';
+
 const categoryIcons: Record<LocationCategory, React.ReactNode> = {
   base: <Building2 className="w-4 h-4" />,
   airport: <Plane className="w-4 h-4" />,
@@ -23,9 +25,9 @@ const categoryIcons: Record<LocationCategory, React.ReactNode> = {
 
 const categoryLabels: Record<LocationCategory, string> = {
   base: 'Office (Free Pickup/Return)',
-  airport: 'Airport ($70)',
-  hotel: 'Premium Hotels ($50)',
-  custom: 'Custom Location (Quote Required)'
+  airport: 'Airport',
+  hotel: 'Premium Hotels',
+  custom: 'Custom Location'
 };
 
 export function LocationSelector({
@@ -38,9 +40,11 @@ export function LocationSelector({
   excludeCustom = false,
   hideFeesInOptions = false
 }: LocationSelectorProps) {
+  const { locations: allLocations, loading } = useLocations();
+  
   const locations = excludeCustom 
-    ? LOCATIONS.filter(loc => loc.category !== 'custom')
-    : LOCATIONS;
+    ? allLocations.filter(loc => loc.category !== 'custom')
+    : allLocations;
 
   const groupedLocations = locations.reduce((acc, location) => {
     if (!acc[location.category]) {
@@ -48,7 +52,7 @@ export function LocationSelector({
     }
     acc[location.category].push(location);
     return acc;
-  }, {} as Record<LocationCategory, Location[]>);
+  }, {} as Record<LocationCategory, typeof locations[0][]>);
 
   return (
     <div className="space-y-1">
@@ -117,7 +121,8 @@ export function LocationDisplay({
   showFee = false,
   className 
 }: LocationDisplayProps) {
-  const location = LOCATIONS.find(loc => loc.value === locationValue);
+  const { getLocationByValue } = useLocations();
+  const location = getLocationByValue(locationValue);
   
   if (!location) return null;
   
@@ -125,7 +130,7 @@ export function LocationDisplay({
     <div className={cn("flex items-center gap-2", className)}>
       {showIcon && (
         <span className="text-gray-500">
-          {categoryIcons[location.category]}
+          {categoryIcons[location.category as LocationCategory]}
         </span>
       )}
       <span>{location.label}</span>
