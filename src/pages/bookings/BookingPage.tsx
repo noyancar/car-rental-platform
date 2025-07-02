@@ -1,11 +1,15 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
-import { ArrowLeft, Calendar, CreditCard, AlertCircle, CheckCircle, Clock, Users, Gauge } from 'lucide-react';
+import { ArrowLeft, Calendar, CreditCard, AlertCircle, CheckCircle, Clock, Users, Gauge, MapPin, Info } from 'lucide-react';
 import { format, addDays, isBefore, isValid, parseISO } from 'date-fns';
 import { toast } from 'sonner';
 import { Button } from '../../components/ui/Button';
 import { Input } from '../../components/ui/Input';
 import { PageHeader } from '../../components/ui/PageHeader';
+import { LocationSelector } from '../../components/ui/LocationSelector';
+import { DEFAULT_LOCATION } from '../../constants/locations';
+import { useLocations } from '../../hooks/useLocations';
+import { QuoteRequestModal, type QuoteRequestData } from '../../components/ui/QuoteRequestModal';
 import { useCarStore } from '../../stores/carStore';
 import { useBookingStore } from '../../stores/bookingStore';
 import { useAuthStore } from '../../stores/authStore';
@@ -27,6 +31,7 @@ const BookingPage: React.FC = () => {
   } = useBookingStore();
   const { searchParams, isSearchPerformed, updateSearchParams } = useSearchStore();
   const { saveBookingExtras, calculateTotal } = useExtrasStore();
+  const { calculateDeliveryFee, getLocationByValue } = useLocations();
   
   // Initialize dates from searchParams if available, otherwise use default values
   const [startDate, setStartDate] = useState(isSearchPerformed ? searchParams.pickupDate : format(new Date(), 'yyyy-MM-dd'));
@@ -40,6 +45,48 @@ const BookingPage: React.FC = () => {
   const [isEditingDates, setIsEditingDates] = useState(false);
   const [showPriceSummary, setShowPriceSummary] = useState(false);
   const [showExtrasModal, setShowExtrasModal] = useState(false);
+  const [showQuoteModal, setShowQuoteModal] = useState(false);
+  
+  // Location states
+  const [pickupLocation, setPickupLocation] = useState(
+    searchParams.pickupLocation || DEFAULT_LOCATION.value
+  );
+  const [returnLocation, setReturnLocation] = useState(
+    searchParams.returnLocation || DEFAULT_LOCATION.value
+  );
+  const [sameReturnLocation, setSameReturnLocation] = useState(
+    pickupLocation === returnLocation
+  );
+  const [deliveryFees, setDeliveryFees] = useState({ 
+    pickupFee: 0, 
+    returnFee: 0, 
+    totalFee: 0, 
+    requiresQuote: false 
+  });
+  
+  // Calculate delivery fees when locations change
+  useEffect(() => {
+    const returnLoc = sameReturnLocation ? pickupLocation : returnLocation;
+    const fees = calculateDeliveryFee(pickupLocation, returnLoc);
+    
+    console.log('=== DELIVERY FEE DEBUG ===');
+    console.log('Pickup Location:', pickupLocation);
+    console.log('Return Location:', returnLoc);
+    console.log('Same Return Location:', sameReturnLocation);
+    console.log('Calculated Fees:', fees);
+    console.log('Pickup Location Details:', getLocationByValue(pickupLocation));
+    console.log('Return Location Details:', getLocationByValue(returnLoc));
+    console.log('========================');
+    
+    setDeliveryFees(fees);
+  }, [pickupLocation, returnLocation, sameReturnLocation]);
+  
+  // Update return location when pickup changes and same location is checked
+  useEffect(() => {
+    if (sameReturnLocation) {
+      setReturnLocation(pickupLocation);
+    }
+  }, [pickupLocation, sameReturnLocation]);
   
   // Fetch car details on mount
   useEffect(() => {
@@ -189,6 +236,12 @@ const BookingPage: React.FC = () => {
       return;
     }
     
+    // Check if quote is required
+    if (deliveryFees.requiresQuote) {
+      setShowQuoteModal(true);
+      return;
+    }
+    
     if (!isAvailable) {
       toast.info('Please select dates when the car is available');
       // Scroll to the availability message for better visibility
@@ -202,11 +255,10 @@ const BookingPage: React.FC = () => {
 
   const handleExtrasModalContinue = async () => {
     try {
-      const locationValue = isSearchPerformed && searchParams.location ? searchParams.location : 'default-location';
       
       // Calculate extras total
       const { extrasTotal } = calculateTotal(rentalDuration);
-      const grandTotal = totalPrice + extrasTotal;
+      const grandTotal = totalPrice + extrasTotal + (deliveryFees.requiresQuote ? 0 : deliveryFees.totalFee);
       
       // Create booking with draft status - if no user, we'll store the booking data temporarily
       if (user) {
@@ -217,8 +269,8 @@ const BookingPage: React.FC = () => {
           end_date: endDate,
           total_price: grandTotal,
           status: 'pending',
-          pickup_location: locationValue,
-          return_location: locationValue,
+          pickup_location: pickupLocation,
+          return_location: sameReturnLocation ? pickupLocation : returnLocation,
           pickup_time: pickupTime,
           return_time: returnTime
         });
@@ -241,8 +293,8 @@ const BookingPage: React.FC = () => {
           start_date: startDate,
           end_date: endDate,
           total_price: grandTotal,
-          pickup_location: locationValue,
-          return_location: locationValue,
+          pickup_location: pickupLocation,
+          return_location: sameReturnLocation ? pickupLocation : returnLocation,
           pickup_time: pickupTime,
           return_time: returnTime,
           extras: Array.from(selectedExtras.entries()).map(([id, { extra, quantity }]) => ({
@@ -262,6 +314,35 @@ const BookingPage: React.FC = () => {
     } finally {
       setShowExtrasModal(false);
     }
+  };
+  
+  const handleQuoteRequest = async (quoteData: QuoteRequestData) => {
+    // Here you would typically send the quote request to your backend
+    // For now, we'll just store it in localStorage as a placeholder
+    const quoteRequest = {
+      ...quoteData,
+      carId: currentCar?.id,
+      carDetails: currentCar ? {
+        make: currentCar.make,
+        model: currentCar.model,
+        year: currentCar.year
+      } : null,
+      pickupLocation,
+      returnLocation,
+      pickupDate: startDate,
+      returnDate: endDate,
+      pickupTime,
+      returnTime,
+      requestDate: new Date().toISOString()
+    };
+    
+    // Store in localStorage for demo purposes
+    const existingQuotes = JSON.parse(localStorage.getItem('quoteRequests') || '[]');
+    existingQuotes.push(quoteRequest);
+    localStorage.setItem('quoteRequests', JSON.stringify(existingQuotes));
+    
+    // In a real app, you would send this to your backend API
+    // await fetch('/api/quote-requests', { method: 'POST', body: JSON.stringify(quoteRequest) });
   };
   
   if (carLoading) {
@@ -433,6 +514,82 @@ const BookingPage: React.FC = () => {
                   )}
                 </div>
                 
+                {/* Pickup & Return Locations */}
+                <div className="space-y-4">
+                  <h3 className="font-semibold">Pickup & Return Locations</h3>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <LocationSelector
+                      label="Pickup Location"
+                      value={pickupLocation}
+                      onChange={setPickupLocation}
+                      showCategories={true}
+                      hideFeesInOptions={true}
+                    />
+                    
+                    <LocationSelector
+                      label="Return Location"
+                      value={returnLocation}
+                      onChange={setReturnLocation}
+                      showCategories={true}
+                      hideFeesInOptions={true}
+                    />
+                  </div>
+                  
+                  {/* Same Return Location Checkbox */}
+                  <div className="flex items-center gap-2">
+                    <input
+                      type="checkbox"
+                      id="same-return-booking"
+                      checked={sameReturnLocation}
+                      onChange={(e) => setSameReturnLocation(e.target.checked)}
+                      className="w-4 h-4 text-primary-600 bg-white border-gray-300 rounded focus:ring-primary-500"
+                    />
+                    <label htmlFor="same-return-booking" className="text-sm text-gray-700">
+                      Return to same location
+                    </label>
+                  </div>
+                  
+                  {/* Delivery Fee Display */}
+                  {(deliveryFees.totalFee > 0 || deliveryFees.requiresQuote) && (
+                    <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-xl p-4">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-3">
+                          <div className="bg-blue-100 p-2 rounded-lg">
+                            <Info className="w-5 h-5 text-blue-600" />
+                          </div>
+                          <div>
+                            {deliveryFees.requiresQuote ? (
+                              <>
+                                <p className="text-blue-900 font-semibold">Custom Location Quote</p>
+                                <p className="text-blue-700 text-sm">We'll contact you with delivery pricing</p>
+                              </>
+                            ) : (
+                              <>
+                                <p className="text-blue-900 font-semibold">
+                                  {sameReturnLocation ? 'Delivery Service' : 'Pickup & Return Service'}
+                                </p>
+                                <p className="text-blue-700 text-sm">
+                                  {sameReturnLocation 
+                                    ? `Same location pickup & return`
+                                    : `Split delivery: Pickup + Return`
+                                  }
+                                </p>
+                              </>
+                            )}
+                          </div>
+                        </div>
+                        <div className="text-right">
+                          {deliveryFees.requiresQuote ? (
+                            <span className="text-lg font-bold text-orange-600">Quote</span>
+                          ) : (
+                            <span className="text-2xl font-bold text-blue-900">${deliveryFees.totalFee}</span>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </div>
+                
                 {/* Availability Status - Only show when not editing and after check */}
                 {!isEditingDates && isAvailable !== null && (
                   <div className={`flex items-center justify-center p-3 rounded-md ${
@@ -499,9 +656,15 @@ const BookingPage: React.FC = () => {
                           <span>Applied</span>
                         </div>
                       )}
+                      {deliveryFees.totalFee > 0 && !deliveryFees.requiresQuote && (
+                        <div className="flex justify-between">
+                          <span className="text-secondary-600">Delivery Fee:</span>
+                          <span>${deliveryFees.totalFee}</span>
+                        </div>
+                      )}
                       <div className="flex justify-between font-semibold text-lg pt-2 border-t border-secondary-200">
                         <span>Total:</span>
-                        <span>${totalPrice}</span>
+                        <span>${totalPrice + (deliveryFees.requiresQuote ? 0 : deliveryFees.totalFee)}</span>
                       </div>
                     </div>
                   </div>
@@ -514,9 +677,9 @@ const BookingPage: React.FC = () => {
                   fullWidth
                   size="lg"
                   isLoading={bookingLoading}
-                  disabled={!isAvailable || bookingLoading || !startDate || !endDate || isEditingDates}
+                  disabled={(!isAvailable && !deliveryFees.requiresQuote) || bookingLoading || !startDate || !endDate || isEditingDates}
                 >
-                  Complete Booking
+                  {deliveryFees.requiresQuote ? 'Request Quote' : 'Complete Booking'}
                 </Button>
               </form>
             </div>
@@ -561,12 +724,31 @@ const BookingPage: React.FC = () => {
                   </div>
                 </div>
                 
-                <div className="text-sm text-secondary-600">
-                  <p className="mb-2">
-                    <span className="font-medium">Pickup Location:</span> {isSearchPerformed ? searchParams.location.replace('-', ' ').toUpperCase() : 'Not specified'}
-                  </p>
+                <div className="text-sm text-secondary-600 space-y-2">
+                  <div>
+                    <p className="font-medium text-secondary-800 mb-1">Pickup Location:</p>
+                    <div className="flex items-center gap-2">
+                      <MapPin size={16} className="text-primary-600" />
+                      <span>{getLocationByValue(pickupLocation)?.label || 'Not specified'}</span>
+                    </div>
+                  </div>
                   
-                  <p>
+                  <div>
+                    <p className="font-medium text-secondary-800 mb-1">Return Location:</p>
+                    <div className="flex items-center gap-2">
+                      <MapPin size={16} className="text-primary-600" />
+                      <span>{getLocationByValue(returnLocation)?.label || 'Not specified'}</span>
+                    </div>
+                  </div>
+                  
+                  {deliveryFees.totalFee > 0 && !deliveryFees.requiresQuote && (
+                    <div className="pt-2 border-t border-secondary-200">
+                      <span className="font-medium text-secondary-800">Delivery Fee: </span>
+                      <span className="text-green-600 font-medium">${deliveryFees.totalFee}</span>
+                    </div>
+                  )}
+                  
+                  <p className="pt-2">
                     <CreditCard size={16} className="inline mr-1" />
                     <span className="text-secondary-800">Payment collected at pickup</span>
                   </p>
@@ -585,6 +767,25 @@ const BookingPage: React.FC = () => {
           returnDate={endDate}
           rentalDays={rentalDuration}
           carTotal={totalPrice}
+          deliveryFee={deliveryFees.totalFee}
+          requiresQuote={deliveryFees.requiresQuote}
+        />
+      )}
+      
+      {showQuoteModal && (
+        <QuoteRequestModal
+          isOpen={showQuoteModal}
+          onClose={() => setShowQuoteModal(false)}
+          onSubmit={handleQuoteRequest}
+          pickupLocation={pickupLocation}
+          returnLocation={returnLocation}
+          pickupDate={startDate}
+          returnDate={endDate}
+          carDetails={currentCar ? {
+            make: currentCar.make,
+            model: currentCar.model,
+            year: currentCar.year
+          } : undefined}
         />
       )}
     </div>

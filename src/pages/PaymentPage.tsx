@@ -1,28 +1,33 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
-import { ArrowLeft, CreditCard, Shield, Car, Calendar, Package } from 'lucide-react';
+import { ArrowLeft, Shield, Car, Calendar, Package, MapPin, AlertCircle } from 'lucide-react';
 import { format } from 'date-fns';
 import { toast } from 'sonner';
 import { Button } from '../components/ui/Button';
-import { Input } from '../components/ui/Input';
 import { AuthModal } from '../components/auth';
+import StripeProvider from '../components/payment/StripeProvider';
+import StripePaymentForm from '../components/payment/StripePaymentForm';
 import { useBookingStore } from '../stores/bookingStore';
 import { useAuthStore } from '../stores/authStore';
 import { supabase } from '../lib/supabase';
 import { BookingWithExtras } from '../types';
+import { calculateDeliveryFee, getLocationByValue } from '../constants/locations';
 
 const PaymentPage: React.FC = () => {
   const { bookingId } = useParams();
   const navigate = useNavigate();
   const { user } = useAuthStore();
-  const { fetchBookingById, updateBookingStatus } = useBookingStore();
+  const { updateBookingStatus } = useBookingStore();
   const [booking, setBooking] = useState<BookingWithExtras | null>(null);
   const [loading, setLoading] = useState(true);
-  const [processing, setProcessing] = useState(false);
-  const [cardNumber, setCardNumber] = useState('');
-  const [expiryDate, setExpiryDate] = useState('');
-  const [cvv, setCvv] = useState('');
-  const [cardholderName, setCardholderName] = useState('');
+  const [paymentClientSecret, setPaymentClientSecret] = useState<string | null>(null);
+  const [paymentError, setPaymentError] = useState<string | null>(null);
+  const [deliveryFees, setDeliveryFees] = useState({ 
+    pickupFee: 0, 
+    returnFee: 0, 
+    totalFee: 0, 
+    requiresQuote: false 
+  });
   const [showAuthModal, setShowAuthModal] = useState(false);
 
   useEffect(() => {
@@ -69,6 +74,13 @@ const PaymentPage: React.FC = () => {
 
       if (bookingError) throw bookingError;
 
+      // Check if booking is already paid
+      if (bookingData.status === 'confirmed' && bookingData.stripe_payment_intent_id) {
+        toast.info('This booking has already been paid');
+        navigate(`/bookings/${bookingId}`);
+        return;
+      }
+
       // Format the data
       const formattedBooking = {
         ...bookingData,
@@ -80,6 +92,15 @@ const PaymentPage: React.FC = () => {
       };
 
       setBooking(formattedBooking);
+      
+      // Calculate delivery fees
+      if (formattedBooking.pickup_location && formattedBooking.return_location) {
+        const fees = calculateDeliveryFee(formattedBooking.pickup_location, formattedBooking.return_location);
+        setDeliveryFees(fees);
+      }
+
+      // Create payment intent
+      await createPaymentIntent(formattedBooking);
     } catch (error) {
       console.error('Error loading booking:', error);
       toast.error('Failed to load booking details');
@@ -89,39 +110,54 @@ const PaymentPage: React.FC = () => {
     }
   };
 
-  const handlePayment = async (e: React.FormEvent) => {
-    e.preventDefault();
-
-    if (!booking) return;
-
-    // Basic validation
-    if (!cardNumber || !expiryDate || !cvv || !cardholderName) {
-      toast.error('Please fill in all payment fields');
-      return;
-    }
-
-    setProcessing(true);
-
+  const createPaymentIntent = async (bookingData: BookingWithExtras) => {
     try {
-      // In a real application, you would:
-      // 1. Create a payment intent with Stripe
-      // 2. Process the payment
-      // 3. Update the booking status
+      // Call the Supabase Edge Function to create a payment intent
+      const { data, error } = await supabase.functions.invoke('create-payment-intent', {
+        body: { 
+          booking_id: bookingData.id,
+          metadata: {
+            user_email: user?.email,
+            car_info: `${bookingData.car?.make} ${bookingData.car?.model} ${bookingData.car?.year}`
+          }
+        }
+      });
 
-      // For now, we'll simulate a successful payment
-      await new Promise(resolve => setTimeout(resolve, 2000));
+      if (error) {
+        console.error('Edge Function error:', error);
+        throw error;
+      }
 
+      console.log('Edge Function response:', data);
+
+      if (data && data.success && data.client_secret) {
+        setPaymentClientSecret(data.client_secret);
+      } else {
+        throw new Error(data?.error || 'Failed to create payment intent');
+      }
+    } catch (error) {
+      console.error('Error creating payment intent:', error);
+      setPaymentError('Failed to initialize payment. Please try again.');
+      toast.error('Failed to initialize payment');
+    }
+  };
+
+  const handlePaymentSuccess = async (paymentIntentId: string) => {
+    try {
       // Update booking status to confirmed
       await updateBookingStatus(parseInt(bookingId!), 'confirmed');
-
+      
       toast.success('Payment successful! Your booking is confirmed.');
       navigate(`/bookings/${bookingId}`);
     } catch (error) {
-      console.error('Payment error:', error);
-      toast.error('Payment failed. Please try again.');
-    } finally {
-      setProcessing(false);
+      console.error('Error updating booking:', error);
+      toast.error('Payment was successful but we encountered an error. Please contact support.');
     }
+  };
+
+  const handlePaymentError = (error: string) => {
+    toast.error(error);
+    setPaymentError(error);
   };
 
   if (!user) {
@@ -190,8 +226,10 @@ const PaymentPage: React.FC = () => {
 
   const rentalDuration = Math.ceil((new Date(booking.end_date).getTime() - new Date(booking.start_date).getTime()) / (1000 * 60 * 60 * 24));
   const carTotal = booking.car ? booking.car.price_per_day * rentalDuration : 0;
-  const extrasTotal = booking.extras_total || 0;
-  const grandTotal = booking.grand_total || booking.total_price;
+  const extrasTotal = booking.booking_extras?.reduce((sum, be) => sum + be.total_price, 0) || 0;
+  const deliveryTotal = deliveryFees.requiresQuote ? 0 : deliveryFees.totalFee;
+  // Use the booking.total_price which already includes delivery fee from booking creation
+  const grandTotal = booking.total_price;
 
   return (
     <div className="min-h-screen pt-16 pb-12 bg-secondary-50">
@@ -212,78 +250,51 @@ const PaymentPage: React.FC = () => {
             <div className="bg-white rounded-lg shadow-md p-6">
               <h1 className="text-2xl font-semibold mb-6">Complete Your Payment</h1>
 
-              <form onSubmit={handlePayment} className="space-y-6">
-                {/* Security Notice */}
-                <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 flex items-start">
-                  <Shield className="w-5 h-5 text-blue-600 mr-3 mt-0.5" />
+              {paymentError && !paymentClientSecret && (
+                <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-6 flex items-start gap-3">
+                  <AlertCircle className="w-5 h-5 text-red-500 flex-shrink-0 mt-0.5" />
                   <div>
-                    <p className="text-sm font-medium text-blue-900">Secure Payment</p>
-                    <p className="text-sm text-blue-700 mt-1">
-                      Your payment information is encrypted and secure. We never store your card details.
-                    </p>
+                    <p className="text-sm font-medium text-red-700">Payment Initialization Failed</p>
+                    <p className="text-sm text-red-600 mt-1">{paymentError}</p>
+                    <Button
+                      variant="secondary"
+                      size="sm"
+                      onClick={() => window.location.reload()}
+                      className="mt-3"
+                    >
+                      Try Again
+                    </Button>
                   </div>
                 </div>
+              )}
 
-                {/* Card Details */}
-                <div className="space-y-4">
-                  <div>
-                    <Input
-                      label="Cardholder Name"
-                      value={cardholderName}
-                      onChange={(e) => setCardholderName(e.target.value)}
-                      placeholder="John Doe"
-                      required
-                    />
-                  </div>
-
-                  <div>
-                    <Input
-                      label="Card Number"
-                      value={cardNumber}
-                      onChange={(e) => setCardNumber(e.target.value.replace(/\s/g, '').slice(0, 16))}
-                      placeholder="1234 5678 9012 3456"
-                      maxLength={16}
-                      required
-                    />
-                  </div>
-
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <Input
-                        label="Expiry Date"
-                        value={expiryDate}
-                        onChange={(e) => setExpiryDate(e.target.value)}
-                        placeholder="MM/YY"
-                        maxLength={5}
-                        required
-                      />
-                    </div>
-                    <div>
-                      <Input
-                        label="CVV"
-                        value={cvv}
-                        onChange={(e) => setCvv(e.target.value.slice(0, 3))}
-                        placeholder="123"
-                        maxLength={3}
-                        required
-                      />
-                    </div>
-                  </div>
+              {/* Security Notice */}
+              <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 flex items-start mb-6">
+                <Shield className="w-5 h-5 text-blue-600 mr-3 mt-0.5" />
+                <div>
+                  <p className="text-sm font-medium text-blue-900">Secure Payment</p>
+                  <p className="text-sm text-blue-700 mt-1">
+                    Your payment information is encrypted and secure. We never store your card details.
+                  </p>
                 </div>
+              </div>
 
-                {/* Submit Button */}
-                <Button
-                  type="submit"
-                  variant="primary"
-                  fullWidth
-                  size="lg"
-                  isLoading={processing}
-                  disabled={processing}
-                  leftIcon={<CreditCard size={20} />}
-                >
-                  {processing ? 'Processing...' : `Pay $${grandTotal.toFixed(2)}`}
-                </Button>
-              </form>
+              {/* Stripe Payment Form */}
+              {paymentClientSecret ? (
+                <StripeProvider clientSecret={paymentClientSecret}>
+                  <StripePaymentForm
+                    amount={grandTotal}
+                    bookingId={parseInt(bookingId!)}
+                    onSuccess={handlePaymentSuccess}
+                    onError={handlePaymentError}
+                  />
+                </StripeProvider>
+              ) : (
+                <div className="text-center py-8">
+                  <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-primary-800 mx-auto mb-4"></div>
+                  <p className="text-gray-600">Initializing secure payment...</p>
+                </div>
+              )}
             </div>
           </div>
 
@@ -306,14 +317,31 @@ const PaymentPage: React.FC = () => {
                       {booking.car.year} {booking.car.make} {booking.car.model}
                     </h2>
                     
-                    <div className="flex items-center gap-4 text-sm text-gray-600 mb-4">
+                    <div className="space-y-2 text-sm text-gray-600 mb-4">
                       <div className="flex items-center">
-                        <Calendar className="w-4 h-4 mr-1" />
-                        {format(new Date(booking.start_date), 'MMM d')} - {format(new Date(booking.end_date), 'MMM d, yyyy')}
+                        <Calendar className="w-4 h-4 mr-2" />
+                        {format(new Date(booking.start_date), 'MMM d')} - {format(new Date(booking.end_date), 'MMM d, yyyy')} ({rentalDuration} days)
                       </div>
-                      <div>
-                        {rentalDuration} days
+                      
+                      {/* Pickup Location */}
+                      <div className="flex items-center">
+                        <MapPin className="w-4 h-4 mr-2 text-green-600" />
+                        <div>
+                          <span className="font-medium">Pickup: </span>
+                          {getLocationByValue(booking.pickup_location || '')?.label || booking.pickup_location || 'Not specified'}
+                        </div>
                       </div>
+                      
+                      {/* Return Location */}
+                      {booking.pickup_location !== booking.return_location && (
+                        <div className="flex items-center">
+                          <MapPin className="w-4 h-4 mr-2 text-blue-600" />
+                          <div>
+                            <span className="font-medium">Return: </span>
+                            {getLocationByValue(booking.return_location || '')?.label || booking.return_location || 'Not specified'}
+                          </div>
+                        </div>
+                      )}
                     </div>
 
                     {/* Price Breakdown */}
@@ -337,17 +365,23 @@ const PaymentPage: React.FC = () => {
                           ))}
                         </>
                       )}
-
-                      {extrasTotal > 0 && (
-                        <div className="flex justify-between pt-3 border-t">
-                          <span className="text-gray-600">Extras Total</span>
-                          <span>${extrasTotal.toFixed(2)}</span>
+                      
+                      {/* Delivery Fee - Always show if there's a difference between total and subtotal */}
+                      {(booking.total_price - carTotal - extrasTotal) > 0 && (
+                        <div className="flex justify-between">
+                          <span className="text-gray-600">Delivery Fee</span>
+                          <span>${(booking.total_price - carTotal - extrasTotal).toFixed(2)}</span>
                         </div>
                       )}
 
                       <div className="flex justify-between font-semibold text-lg pt-3 border-t">
                         <span>Total</span>
-                        <span className="text-primary-800">${grandTotal.toFixed(2)}</span>
+                        <span className="text-primary-800">
+                          ${booking.total_price.toFixed(2)}
+                          {deliveryFees.requiresQuote && (
+                            <span className="text-sm font-normal text-orange-600 block">Delivery included (quote pending)</span>
+                          )}
+                        </span>
                       </div>
                     </div>
                   </div>
@@ -361,4 +395,4 @@ const PaymentPage: React.FC = () => {
   );
 };
 
-export default PaymentPage; 
+export default PaymentPage;

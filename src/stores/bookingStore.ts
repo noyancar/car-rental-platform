@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import { supabase } from '../lib/supabase';
 import type { Booking } from '../types';
+import { useLocationStore } from './locationStore';
 
 interface BookingState {
   bookings: Booking[];
@@ -134,6 +135,31 @@ export const useBookingStore = create<BookingState>((set, get) => ({
     try {
       set({ loading: true, error: null });
       
+      // Get location IDs from location values
+      const locationStore = useLocationStore.getState();
+      let pickup_location_id = null;
+      let return_location_id = null;
+      
+      // Ensure locations are loaded
+      if (locationStore.locations.length === 0) {
+        await locationStore.fetchLocations();
+      }
+      
+      // Get location IDs from values
+      if (booking.pickup_location) {
+        const pickupLocation = locationStore.locations.find(loc => loc.value === booking.pickup_location);
+        if (pickupLocation) {
+          pickup_location_id = pickupLocation.id;
+        }
+      }
+      
+      if (booking.return_location) {
+        const returnLocation = locationStore.locations.find(loc => loc.value === booking.return_location);
+        if (returnLocation) {
+          return_location_id = returnLocation.id;
+        }
+      }
+      
       // Make sure all booking fields are included
       const bookingData = {
         car_id: booking.car_id,
@@ -144,6 +170,8 @@ export const useBookingStore = create<BookingState>((set, get) => ({
         status: booking.status || 'pending',
         pickup_location: booking.pickup_location || null,
         return_location: booking.return_location || null,
+        pickup_location_id: pickup_location_id,
+        return_location_id: return_location_id,
         pickup_time: booking.pickup_time || null,
         return_time: booking.return_time || null,
         discount_code_id: booking.discount_code_id || null,

@@ -1,32 +1,13 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { CalendarDays, Search } from 'lucide-react';
+import { CalendarDays, Search, Info } from 'lucide-react';
 import { Button } from '../ui/Button';
 import { Input } from '../ui/Input';
 import { Select } from '../ui/Select';
 import { useSearchStore } from '../../stores/searchStore';
-
-const LOCATIONS = [
-  // $70 Delivery Fee
-  { value: 'daniel-k-inouye-airport', label: 'Daniel K. Inouye International Airport' },
-  
-  // $50 Delivery Fee - Waikiki Hotels
-  { value: 'alohilani-resort', label: 'Alohilani Resort Waikiki Beach' },
-  { value: 'hyatt-regency-waikiki', label: 'Hyatt Regency Waikiki Beach Resort & Spa' },
-  { value: 'ilikai-hotel', label: 'Ilikai Hotel & Luxury Suites' },
-  { value: 'hale-koa-hotel', label: 'Hale Koa Hotel' },
-  { value: 'hilton-hawaiian-village', label: 'Hilton Hawaiian Village Waikiki Beach Resort' },
-  { value: 'sheraton-waikiki', label: 'Sheraton Waikiki' },
-  { value: 'royal-hawaiian', label: 'The Royal Hawaiian, a Luxury Collection Resort' },
-  { value: 'waikiki-beach-marriott', label: 'Waikiki Beach Marriott Resort & Spa' },
-  { value: 'waikiki-grand-hotel', label: 'Waikiki Grand Hotel' },
-  
-  // $70 Delivery Fee
-  //{ value: 'custom-location-10mi', label: 'Custom Location - Within 10mi radius' },
-  
-  // Ask for Quote
-  //{ value: 'custom-location-outside', label: 'Any other location outside 10mi radius' },
-];
+import { LocationSelector } from '../ui/LocationSelector';
+import { DEFAULT_LOCATION } from '../../constants/locations';
+import { useLocations } from '../../hooks/useLocations';
 
 const HOURS = Array.from({ length: 24 }, (_, i) => {
   const hour = i.toString().padStart(2, '0');
@@ -38,12 +19,49 @@ const HeroSection: React.FC = () => {
   const { 
     searchParams, 
     updateSearchParams,
-    setSearchParams,
     searchCars
   } = useSearchStore();
+  const { calculateDeliveryFee } = useLocations();
+  
+  const [pickupLocation, setPickupLocation] = useState(
+    searchParams.pickupLocation || DEFAULT_LOCATION.value
+  );
+  const [returnLocation, setReturnLocation] = useState(
+    searchParams.returnLocation || DEFAULT_LOCATION.value
+  );
+  const [sameReturnLocation, setSameReturnLocation] = useState(
+    pickupLocation === returnLocation
+  );
+  const [deliveryFees, setDeliveryFees] = useState({ 
+    pickupFee: 0, 
+    returnFee: 0, 
+    totalFee: 0, 
+    requiresQuote: false 
+  });
+  
+  // Calculate delivery fees when locations change
+  useEffect(() => {
+    const returnLoc = sameReturnLocation ? pickupLocation : returnLocation;
+    const fees = calculateDeliveryFee(pickupLocation, returnLoc);
+    setDeliveryFees(fees);
+  }, [pickupLocation, returnLocation, sameReturnLocation]);
+  
+  // Update return location when pickup changes and same location is checked
+  useEffect(() => {
+    if (sameReturnLocation) {
+      setReturnLocation(pickupLocation);
+    }
+  }, [pickupLocation, sameReturnLocation]);
   
   const handleSearch = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    // Update search params with selected locations
+    updateSearchParams({ 
+      location: pickupLocation,
+      pickupLocation,
+      returnLocation: sameReturnLocation ? pickupLocation : returnLocation
+    });
     
     // Search for available cars with current parameters
     await searchCars();
@@ -81,15 +99,79 @@ const HeroSection: React.FC = () => {
         {/* Search Form */}
         <div className="bg-white/95 backdrop-blur-sm rounded-2xl p-8 shadow-hawaii animate-slide-up max-w-5xl mx-auto" style={{ animationDelay: '0.4s' }}>
           <form onSubmit={handleSearch} className="space-y-6">
-            {/* Location - Full Width */}
-            <div className="mb-4">
-              <Select
-                label="Pickup & Return Location"
-                options={LOCATIONS}
-                value={searchParams.location}
-                onChange={(e) => updateSearchParams({ location: e.target.value })}
-                className="bg-white/90 backdrop-blur-sm border-transparent focus:border-primary-500 text-secondary-800"
-              />
+            {/* Pickup & Return Locations */}
+            <div className="space-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <LocationSelector
+                  label="Pickup Location"
+                  value={pickupLocation}
+                  onChange={setPickupLocation}
+                  showCategories={true}
+                  hideFeesInOptions={true}
+                />
+                
+                <LocationSelector
+                  label="Return Location"
+                  value={sameReturnLocation ? pickupLocation : returnLocation}
+                  onChange={setReturnLocation}
+                  showCategories={true}
+                  hideFeesInOptions={true}
+                />
+              </div>
+              
+              {/* Same Return Location Checkbox */}
+              <div className="flex items-center gap-2">
+                <input
+                  type="checkbox"
+                  id="same-return"
+                  checked={sameReturnLocation}
+                  onChange={(e) => setSameReturnLocation(e.target.checked)}
+                  className="w-4 h-4 text-primary-600 bg-white/90 border-gray-300 rounded focus:ring-primary-500"
+                />
+                <label htmlFor="same-return" className="text-sm text-gray-700">
+                  Return to same location
+                </label>
+              </div>
+              
+              {/* Delivery Fee Display */}
+              {(deliveryFees.totalFee > 0 || deliveryFees.requiresQuote) && (
+                <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-xl p-4">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <div className="bg-blue-100 p-2 rounded-lg">
+                        <Info className="w-5 h-5 text-blue-600" />
+                      </div>
+                      <div>
+                        {deliveryFees.requiresQuote ? (
+                          <>
+                            <p className="text-blue-900 font-semibold">Custom Location Quote</p>
+                            <p className="text-blue-700 text-sm">We'll contact you with delivery pricing</p>
+                          </>
+                        ) : (
+                          <>
+                            <p className="text-blue-900 font-semibold">
+                              {sameReturnLocation ? 'Delivery Service' : 'Pickup & Return Service'}
+                            </p>
+                            <p className="text-blue-700 text-sm">
+                              {sameReturnLocation 
+                                ? `Same location pickup & return`
+                                : `Split delivery: Pickup + Return`
+                              }
+                            </p>
+                          </>
+                        )}
+                      </div>
+                    </div>
+                    <div className="text-right">
+                      {deliveryFees.requiresQuote ? (
+                        <span className="text-lg font-bold text-orange-600">Quote</span>
+                      ) : (
+                        <span className="text-2xl font-bold text-blue-900">${deliveryFees.totalFee}</span>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
             
             {/* Date and Time Grid */}

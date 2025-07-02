@@ -23,12 +23,20 @@ serve(async (req) => {
     const pickupTime = url.searchParams.get("pickup_time") || "10:00";
     const returnTime = url.searchParams.get("return_time") || "10:00";
     const includeDetails = url.searchParams.get("include_details") === "true";
+    
+    // New location parameters
+    const pickupLocationId = url.searchParams.get("pickup_location_id");
+    const returnLocationId = url.searchParams.get("return_location_id");
+    
+    // Legacy support for location values
+    const pickupLocationValue = url.searchParams.get("pickup_location");
+    const returnLocationValue = url.searchParams.get("return_location");
 
     if (!startDate || !endDate) {
       throw new Error("Start date and end date are required");
     }
 
-    // Tam tarih ve saat bilgilerini oluştur
+    // Create full date-time objects
     const requestStart = new Date(`${startDate}T${pickupTime}:00`);
     const requestEnd = new Date(`${endDate}T${returnTime}:00`);
     
@@ -42,7 +50,35 @@ serve(async (req) => {
     // Always use service role key to bypass RLS
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
-    // Eğer belirli bir araç için kontrol yapılıyorsa
+    // If location values are provided but not IDs, convert them
+    let actualPickupLocationId = pickupLocationId;
+    let actualReturnLocationId = returnLocationId;
+    
+    if (!actualPickupLocationId && pickupLocationValue) {
+      const { data: pickupLoc } = await supabase
+        .from("locations")
+        .select("id")
+        .eq("value", pickupLocationValue)
+        .single();
+      
+      if (pickupLoc) {
+        actualPickupLocationId = pickupLoc.id;
+      }
+    }
+    
+    if (!actualReturnLocationId && returnLocationValue) {
+      const { data: returnLoc } = await supabase
+        .from("locations")
+        .select("id")
+        .eq("value", returnLocationValue)
+        .single();
+      
+      if (returnLoc) {
+        actualReturnLocationId = returnLoc.id;
+      }
+    }
+
+    // Check availability for a specific car
     if (carId) {
       const { data: car, error: carError } = await supabase
         .from("cars")
@@ -67,7 +103,9 @@ serve(async (req) => {
         });
       }
 
-      // Sadece aktif rezervasyonları kontrol et (confirmed veya pending)
+      // All cars are available at all locations - no need to check location availability
+
+      // Check for overlapping bookings
       const { data: bookings, error: bookingsError } = await supabase
         .from("bookings")
         .select("start_date, end_date, pickup_time, return_time, status")
@@ -76,15 +114,11 @@ serve(async (req) => {
 
       if (bookingsError) throw new Error(bookingsError.message);
 
-      // Rezervasyonlarla çakışma kontrolü - saat bilgilerini de dikkate alarak
+      // Check for overlaps
       const isOverlapping = bookings.some((booking) => {
-        // Booking'in başlangıç ve bitiş zamanlarını oluştur
         const bookingStart = new Date(`${booking.start_date}T${booking.pickup_time || "10:00"}:00`);
         const bookingEnd = new Date(`${booking.end_date}T${booking.return_time || "10:00"}:00`);
         
-        // Çakışma kontrolü: 
-        // İki rezervasyonun çakışmaması için, biri diğerinin bitmesinden sonra başlamalı
-        // veya biri diğerinin başlamasından önce bitmeli
         return !(bookingEnd <= requestStart || bookingStart >= requestEnd);
       });
 
@@ -103,13 +137,17 @@ serve(async (req) => {
         status: 200
       });
     } 
-    // Tüm müsait araçları getir
+    // Get all available cars
     else {
-      // Önce tüm müsait araçları getir
-      const { data: availableCars, error: carsError } = await supabase
+      // Build the query
+      let query = supabase
         .from("cars")
         .select(includeDetails ? "*" : "id")
         .eq("available", true);
+
+      // All cars are available at all locations - no location filtering needed
+
+      const { data: availableCars, error: carsError } = await query;
 
       if (carsError) throw new Error(carsError.message);
       
@@ -126,7 +164,7 @@ serve(async (req) => {
         });
       }
 
-      // Tüm aktif rezervasyonları getir
+      // Get all active bookings for these cars
       const carIds = availableCars.map(car => car.id);
       const { data: bookings, error: bookingsError } = await supabase
         .from("bookings")
@@ -136,23 +174,21 @@ serve(async (req) => {
 
       if (bookingsError) throw new Error(bookingsError.message);
 
-      // Çakışan rezervasyonları olan araçları filtrele
+      // Filter out cars with overlapping bookings
       const unavailableCarIds = new Set();
       
       if (bookings && bookings.length > 0) {
         bookings.forEach(booking => {
-          // Booking'in başlangıç ve bitiş zamanlarını oluştur
           const bookingStart = new Date(`${booking.start_date}T${booking.pickup_time || "10:00"}:00`);
           const bookingEnd = new Date(`${booking.end_date}T${booking.return_time || "10:00"}:00`);
           
-          // Çakışma kontrolü
           if (!(bookingEnd <= requestStart || bookingStart >= requestEnd)) {
             unavailableCarIds.add(booking.car_id);
           }
         });
       }
 
-      // Müsait araçları filtrele
+      // Filter available cars
       const availableCarIds = availableCars
         .filter(car => !unavailableCarIds.has(car.id))
         .map(car => includeDetails ? car : car.id);

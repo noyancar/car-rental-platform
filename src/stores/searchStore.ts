@@ -12,11 +12,12 @@ interface SearchFilters {
 
 interface SearchParams {
   location: string;
+  pickupLocation?: string;
+  returnLocation?: string;
   pickupDate: string;
   pickupTime: string;
   returnDate: string;
-  returnTime: string;
-}
+  returnTime: string;}
 
 interface SearchState {
   // Search parameters
@@ -45,7 +46,9 @@ interface SearchState {
 
 // Default search parameters
 const defaultSearchParams: SearchParams = {
-  location: 'daniel-k-inouye-airport',
+  location: 'select location',
+  pickupLocation: 'select location',
+  returnLocation: 'select location',
   pickupDate: new Date().toISOString().split('T')[0],
   pickupTime: '10:00',
   returnDate: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString().split('T')[0],
@@ -118,8 +121,25 @@ export const useSearchStore = create<SearchState>((set, get) => ({
         headers['apikey'] = import.meta.env.VITE_SUPABASE_ANON_KEY;
       }
       
+      // Build query parameters
+      const queryParams = new URLSearchParams({
+        start_date: startDate,
+        end_date: endDate,
+        pickup_time: pickupTime,
+        return_time: returnTime,
+        include_details: 'true'
+      });
+      
+      // Add location parameters if available
+      if (searchParams.pickupLocation) {
+        queryParams.append('pickup_location', searchParams.pickupLocation);
+      }
+      if (searchParams.returnLocation) {
+        queryParams.append('return_location', searchParams.returnLocation);
+      }
+      
       const response = await fetch(
-        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/check-car-availability?start_date=${encodeURIComponent(startDate)}&end_date=${encodeURIComponent(endDate)}&pickup_time=${encodeURIComponent(pickupTime)}&return_time=${encodeURIComponent(returnTime)}&include_details=true`,
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/check-car-availability?${queryParams.toString()}`,
         {
           method: 'GET',
           headers,
