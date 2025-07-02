@@ -50,24 +50,39 @@ export function useLocations() {
     return locations.find(loc => loc.id === id);
   };
 
-  const calculateDeliveryFee = (pickupValue: string, returnValue: string): number => {
+  const calculateDeliveryFee = (pickupValue: string, returnValue: string) => {
     const pickupLocation = getLocationByValue(pickupValue);
     const returnLocation = getLocationByValue(returnValue);
 
-    if (!pickupLocation || !returnLocation) return 0;
+    if (!pickupLocation || !returnLocation) {
+      return { pickupFee: 0, returnFee: 0, totalFee: 0, requiresQuote: false };
+    }
 
     // Custom locations require a quote
     if (pickupLocation.category === 'custom' || returnLocation.category === 'custom') {
-      return -1;
+      return { pickupFee: 0, returnFee: 0, totalFee: 0, requiresQuote: true };
     }
 
-    // If both locations are the same, charge full fee once
+    // If both locations are the same
     if (pickupValue === returnValue) {
-      return pickupLocation.fee;
+      return { 
+        pickupFee: pickupLocation.fee, 
+        returnFee: 0, 
+        totalFee: pickupLocation.fee, 
+        requiresQuote: false 
+      };
     }
 
-    // If different locations, split the fees
-    return Math.ceil((pickupLocation.fee + returnLocation.fee) / 2);
+    // If different locations - split the fees like Turo
+    // Example: Hilton ($50) pickup, Airport ($70) return = $25 + $35 = $60
+    const pickupFee = Math.ceil(pickupLocation.fee / 2);
+    const returnFee = Math.ceil(returnLocation.fee / 2);
+    return { 
+      pickupFee, 
+      returnFee, 
+      totalFee: pickupFee + returnFee, 
+      requiresQuote: false 
+    };
   };
 
   return {

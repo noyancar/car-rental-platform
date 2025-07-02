@@ -1,9 +1,10 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "npm:@supabase/supabase-js@2.39.3";
+import Stripe from "npm:stripe@13.10.0";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-application-name",
   "Access-Control-Allow-Methods": "POST, OPTIONS",
 };
 
@@ -15,7 +16,7 @@ serve(async (req) => {
 
   try {
     // Get request body
-    const { booking_id, payment_method_id } = await req.json();
+    const { booking_id, amount, currency = 'usd', metadata = {} } = await req.json();
 
     if (!booking_id) {
       throw new Error("Booking ID is required");
@@ -26,13 +27,17 @@ serve(async (req) => {
     const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") || "";
     const supabase = createClient(supabaseUrl, supabaseKey);
 
-    // Get booking details
+    // Get booking details with extras
     const { data: booking, error: bookingError } = await supabase
       .from("bookings")
       .select(`
         *,
         cars (make, model, year),
-        profiles (first_name, last_name, email)
+        booking_extras (
+          quantity,
+          total_price,
+          extras (name)
+        )
       `)
       .eq("id", booking_id)
       .single();
@@ -41,31 +46,67 @@ serve(async (req) => {
       throw new Error(bookingError?.message || "Booking not found");
     }
 
-    // Use Stripe SDK to create a payment intent
-    // This is a placeholder - you would replace this with actual Stripe integration code
-    // const stripe = Stripe(Deno.env.get("STRIPE_SECRET_KEY") || "");
+    // Calculate total amount including extras
+    let totalAmount = booking.total_price;
+    if (booking.booking_extras && booking.booking_extras.length > 0) {
+      const extrasTotal = booking.booking_extras.reduce((sum: number, extra: any) => 
+        sum + extra.total_price, 0
+      );
+      totalAmount += extrasTotal;
+    }
+
+    // Convert to cents for Stripe
+    const amountInCents = Math.round(totalAmount * 100);
+
+    // Initialize Stripe
+    const stripeSecretKey = Deno.env.get("STRIPE_SECRET_KEY");
+    if (!stripeSecretKey) {
+      console.error("STRIPE_SECRET_KEY is not set in environment variables");
+      throw new Error("Stripe secret key not configured. Please set STRIPE_SECRET_KEY in Supabase secrets.");
+    }
     
-    // For demo purposes, we're simulating a successful payment
-    const paymentIntentId = `pi_${Math.random().toString(36).substring(2, 15)}`;
+    const stripe = new Stripe(stripeSecretKey, {
+      apiVersion: '2023-10-16',
+    });
+
+    // Create payment intent
+    const paymentIntent = await stripe.paymentIntents.create({
+      amount: amountInCents,
+      currency,
+      automatic_payment_methods: {
+        enabled: true,
+      },
+      metadata: {
+        booking_id: booking_id.toString(),
+        user_id: booking.user_id,
+        car_id: booking.car_id.toString(),
+        ...metadata,
+      },
+      description: `Car rental - ${booking.cars.make} ${booking.cars.model} ${booking.cars.year}`,
+    });
     
-    // Update booking with payment intent ID
+    // Update booking with Stripe payment intent ID
     const { error: updateError } = await supabase
       .from("bookings")
       .update({
-        payment_intent_id: paymentIntentId,
-        status: "confirmed"
+        stripe_payment_intent_id: paymentIntent.id,
+        stripe_payment_status: paymentIntent.status,
       })
       .eq("id", booking_id);
 
     if (updateError) {
+      // If we can't update the booking, cancel the payment intent
+      await stripe.paymentIntents.cancel(paymentIntent.id);
       throw new Error(updateError.message);
     }
 
     return new Response(
       JSON.stringify({
         success: true,
-        payment_intent_id: paymentIntentId,
-        client_secret: "dummy_client_secret_for_demo",
+        payment_intent_id: paymentIntent.id,
+        client_secret: paymentIntent.client_secret,
+        amount: amountInCents,
+        currency: paymentIntent.currency,
       }),
       {
         headers: {

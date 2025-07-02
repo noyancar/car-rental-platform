@@ -6,6 +6,14 @@ export const BASE_LOCATION = {
   category: 'base' as const
 };
 
+export const DEFAULT_LOCATION = {
+  value: 'airport-hnl',
+  label: 'Daniel K. Inouye International Airport (HNL)',
+  address: '300 Rodgers Blvd, Honolulu, HI 96819',
+  fee: 70,
+  category: 'airport' as const
+};
+
 const DEFAULT_LOCATIONS = [
   BASE_LOCATION,
   

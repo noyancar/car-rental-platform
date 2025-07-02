@@ -6,7 +6,8 @@ import { Input } from '../ui/Input';
 import { Select } from '../ui/Select';
 import { useSearchStore } from '../../stores/searchStore';
 import { LocationSelector } from '../ui/LocationSelector';
-import { calculateDeliveryFee, BASE_LOCATION } from '../../constants/locations';
+import { DEFAULT_LOCATION } from '../../constants/locations';
+import { useLocations } from '../../hooks/useLocations';
 
 const HOURS = Array.from({ length: 24 }, (_, i) => {
   const hour = i.toString().padStart(2, '0');
@@ -20,16 +21,16 @@ const HeroSection: React.FC = () => {
     updateSearchParams,
     searchCars
   } = useSearchStore();
+  const { calculateDeliveryFee } = useLocations();
   
   const [pickupLocation, setPickupLocation] = useState(
-    searchParams.pickupLocation || searchParams.location || BASE_LOCATION.value
+    searchParams.pickupLocation || DEFAULT_LOCATION.value
   );
   const [returnLocation, setReturnLocation] = useState(
-    searchParams.returnLocation || searchParams.location || BASE_LOCATION.value
+    searchParams.returnLocation || DEFAULT_LOCATION.value
   );
   const [sameReturnLocation, setSameReturnLocation] = useState(
-    (searchParams.pickupLocation || searchParams.location) === 
-    (searchParams.returnLocation || searchParams.location)
+    pickupLocation === returnLocation
   );
   const [deliveryFees, setDeliveryFees] = useState({ 
     pickupFee: 0, 

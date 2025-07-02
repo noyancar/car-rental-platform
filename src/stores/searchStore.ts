@@ -46,9 +46,9 @@ interface SearchState {
 
 // Default search parameters
 const defaultSearchParams: SearchParams = {
-  location: 'base-office',
-  pickupLocation: 'base-office',
-  returnLocation: 'base-office',
+  location: 'select location',
+  pickupLocation: 'select location',
+  returnLocation: 'select location',
   pickupDate: new Date().toISOString().split('T')[0],
   pickupTime: '10:00',
   returnDate: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString().split('T')[0],

@@ -57,6 +57,9 @@ export interface Booking {
   return_time?: string;
   discount_code_id?: number;
   payment_intent_id?: string;
+  stripe_payment_intent_id?: string;
+  stripe_payment_status?: 'requires_payment_method' | 'requires_confirmation' | 'requires_action' | 'processing' | 'requires_capture' | 'canceled' | 'succeeded';
+  stripe_payment_method_id?: string;
 }
 
 export type DiscountCode = {

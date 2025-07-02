@@ -7,7 +7,8 @@ import { Button } from '../../components/ui/Button';
 import { Input } from '../../components/ui/Input';
 import { PageHeader } from '../../components/ui/PageHeader';
 import { LocationSelector } from '../../components/ui/LocationSelector';
-import { calculateDeliveryFee, BASE_LOCATION, getLocationByValue } from '../../constants/locations';
+import { DEFAULT_LOCATION } from '../../constants/locations';
+import { useLocations } from '../../hooks/useLocations';
 import { QuoteRequestModal, type QuoteRequestData } from '../../components/ui/QuoteRequestModal';
 import { useCarStore } from '../../stores/carStore';
 import { useBookingStore } from '../../stores/bookingStore';
@@ -30,6 +31,7 @@ const BookingPage: React.FC = () => {
   } = useBookingStore();
   const { searchParams, isSearchPerformed, updateSearchParams } = useSearchStore();
   const { saveBookingExtras, calculateTotal } = useExtrasStore();
+  const { calculateDeliveryFee, getLocationByValue } = useLocations();
   
   // Initialize dates from searchParams if available, otherwise use default values
   const [startDate, setStartDate] = useState(isSearchPerformed ? searchParams.pickupDate : format(new Date(), 'yyyy-MM-dd'));
@@ -47,10 +49,10 @@ const BookingPage: React.FC = () => {
   
   // Location states
   const [pickupLocation, setPickupLocation] = useState(
-    searchParams.pickupLocation || searchParams.location || BASE_LOCATION.value
+    searchParams.pickupLocation || DEFAULT_LOCATION.value
   );
   const [returnLocation, setReturnLocation] = useState(
-    searchParams.returnLocation || searchParams.location || BASE_LOCATION.value
+    searchParams.returnLocation || DEFAULT_LOCATION.value
   );
   const [sameReturnLocation, setSameReturnLocation] = useState(
     pickupLocation === returnLocation
@@ -66,6 +68,16 @@ const BookingPage: React.FC = () => {
   useEffect(() => {
     const returnLoc = sameReturnLocation ? pickupLocation : returnLocation;
     const fees = calculateDeliveryFee(pickupLocation, returnLoc);
+    
+    console.log('=== DELIVERY FEE DEBUG ===');
+    console.log('Pickup Location:', pickupLocation);
+    console.log('Return Location:', returnLoc);
+    console.log('Same Return Location:', sameReturnLocation);
+    console.log('Calculated Fees:', fees);
+    console.log('Pickup Location Details:', getLocationByValue(pickupLocation));
+    console.log('Return Location Details:', getLocationByValue(returnLoc));
+    console.log('========================');
+    
     setDeliveryFees(fees);
   }, [pickupLocation, returnLocation, sameReturnLocation]);
   
