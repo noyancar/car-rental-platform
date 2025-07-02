@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
-import { ArrowLeft, CreditCard, Shield, Car, Calendar, Package } from 'lucide-react';
+import { ArrowLeft, CreditCard, Shield, Car, Calendar, Package, MapPin } from 'lucide-react';
 import { format } from 'date-fns';
 import { toast } from 'sonner';
 import { Button } from '../components/ui/Button';
@@ -10,15 +10,22 @@ import { useBookingStore } from '../stores/bookingStore';
 import { useAuthStore } from '../stores/authStore';
 import { supabase } from '../lib/supabase';
 import { BookingWithExtras } from '../types';
+import { calculateDeliveryFee, getLocationByValue } from '../constants/locations';
 
 const PaymentPage: React.FC = () => {
   const { bookingId } = useParams();
   const navigate = useNavigate();
   const { user } = useAuthStore();
-  const { fetchBookingById, updateBookingStatus } = useBookingStore();
+  const { updateBookingStatus } = useBookingStore();
   const [booking, setBooking] = useState<BookingWithExtras | null>(null);
   const [loading, setLoading] = useState(true);
   const [processing, setProcessing] = useState(false);
+  const [deliveryFees, setDeliveryFees] = useState({ 
+    pickupFee: 0, 
+    returnFee: 0, 
+    totalFee: 0, 
+    requiresQuote: false 
+  });
   const [cardNumber, setCardNumber] = useState('');
   const [expiryDate, setExpiryDate] = useState('');
   const [cvv, setCvv] = useState('');
@@ -80,6 +87,12 @@ const PaymentPage: React.FC = () => {
       };
 
       setBooking(formattedBooking);
+      
+      // Calculate delivery fees
+      if (formattedBooking.pickup_location && formattedBooking.return_location) {
+        const fees = calculateDeliveryFee(formattedBooking.pickup_location, formattedBooking.return_location);
+        setDeliveryFees(fees);
+      }
     } catch (error) {
       console.error('Error loading booking:', error);
       toast.error('Failed to load booking details');
@@ -190,8 +203,9 @@ const PaymentPage: React.FC = () => {
 
   const rentalDuration = Math.ceil((new Date(booking.end_date).getTime() - new Date(booking.start_date).getTime()) / (1000 * 60 * 60 * 24));
   const carTotal = booking.car ? booking.car.price_per_day * rentalDuration : 0;
-  const extrasTotal = booking.extras_total || 0;
-  const grandTotal = booking.grand_total || booking.total_price;
+  const extrasTotal = booking.booking_extras?.reduce((sum, be) => sum + be.total_price, 0) || 0;
+  const deliveryTotal = deliveryFees.requiresQuote ? 0 : deliveryFees.totalFee;
+  const grandTotal = carTotal + extrasTotal + deliveryTotal;
 
   return (
     <div className="min-h-screen pt-16 pb-12 bg-secondary-50">
@@ -306,14 +320,31 @@ const PaymentPage: React.FC = () => {
                       {booking.car.year} {booking.car.make} {booking.car.model}
                     </h2>
                     
-                    <div className="flex items-center gap-4 text-sm text-gray-600 mb-4">
+                    <div className="space-y-2 text-sm text-gray-600 mb-4">
                       <div className="flex items-center">
-                        <Calendar className="w-4 h-4 mr-1" />
-                        {format(new Date(booking.start_date), 'MMM d')} - {format(new Date(booking.end_date), 'MMM d, yyyy')}
+                        <Calendar className="w-4 h-4 mr-2" />
+                        {format(new Date(booking.start_date), 'MMM d')} - {format(new Date(booking.end_date), 'MMM d, yyyy')} ({rentalDuration} days)
                       </div>
-                      <div>
-                        {rentalDuration} days
+                      
+                      {/* Pickup Location */}
+                      <div className="flex items-center">
+                        <MapPin className="w-4 h-4 mr-2 text-green-600" />
+                        <div>
+                          <span className="font-medium">Pickup: </span>
+                          {getLocationByValue(booking.pickup_location || '')?.label || booking.pickup_location || 'Not specified'}
+                        </div>
                       </div>
+                      
+                      {/* Return Location */}
+                      {booking.pickup_location !== booking.return_location && (
+                        <div className="flex items-center">
+                          <MapPin className="w-4 h-4 mr-2 text-blue-600" />
+                          <div>
+                            <span className="font-medium">Return: </span>
+                            {getLocationByValue(booking.return_location || '')?.label || booking.return_location || 'Not specified'}
+                          </div>
+                        </div>
+                      )}
                     </div>
 
                     {/* Price Breakdown */}
@@ -339,15 +370,39 @@ const PaymentPage: React.FC = () => {
                       )}
 
                       {extrasTotal > 0 && (
-                        <div className="flex justify-between pt-3 border-t">
+                        <div className="flex justify-between">
                           <span className="text-gray-600">Extras Total</span>
                           <span>${extrasTotal.toFixed(2)}</span>
+                        </div>
+                      )}
+                      
+                      {/* Delivery Fee */}
+                      {deliveryFees.totalFee > 0 && !deliveryFees.requiresQuote && (
+                        <div className="flex justify-between">
+                          <span className="text-gray-600">Delivery Fee</span>
+                          <span>${deliveryFees.totalFee.toFixed(2)}</span>
+                        </div>
+                      )}
+                      
+                      {deliveryFees.requiresQuote && (
+                        <div className="flex justify-between">
+                          <span className="text-orange-600">Delivery Fee</span>
+                          <span className="text-orange-600 italic">Quote required</span>
                         </div>
                       )}
 
                       <div className="flex justify-between font-semibold text-lg pt-3 border-t">
                         <span>Total</span>
-                        <span className="text-primary-800">${grandTotal.toFixed(2)}</span>
+                        <span className="text-primary-800">
+                          {deliveryFees.requiresQuote ? (
+                            <>
+                              ${(carTotal + extrasTotal).toFixed(2)}
+                              <span className="text-sm font-normal text-orange-600 block">+ delivery quote</span>
+                            </>
+                          ) : (
+                            `$${grandTotal.toFixed(2)}`
+                          )}
+                        </span>
                       </div>
                     </div>
                   </div>

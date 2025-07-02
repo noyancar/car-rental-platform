@@ -1,6 +1,6 @@
 import React, { useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { Car, CalendarCheck, Tag, Megaphone, Users, TrendingUp, DollarSign, Clock, Package } from 'lucide-react';
+import { Car, CalendarCheck, Tag, Megaphone, Users, TrendingUp, DollarSign, Clock, Package, MapPin } from 'lucide-react';
 import { useAdminStore } from '../../stores/adminStore';
 
 const AdminDashboard: React.FC = () => {
@@ -187,6 +187,17 @@ const AdminDashboard: React.FC = () => {
                 <div>
                   <p className="font-medium">Campaigns</p>
                   <p className="text-sm text-secondary-500">Manage marketing</p>
+                </div>
+              </Link>
+              
+              <Link 
+                to="/admin/locations"
+                className="flex items-center p-4 bg-blue-50 rounded-lg hover:bg-blue-100 transition-colors"
+              >
+                <MapPin className="h-6 w-6 text-blue-600 mr-3" />
+                <div>
+                  <p className="font-medium">Location Management</p>
+                  <p className="text-sm text-secondary-500">Delivery fees & locations</p>
                 </div>
               </Link>
             </div>

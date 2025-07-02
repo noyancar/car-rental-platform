@@ -12,6 +12,8 @@ interface ExtrasModalProps {
   returnDate: string;
   rentalDays: number;
   carTotal: number;
+  deliveryFee?: number;
+  requiresQuote?: boolean;
 }
 
 const categoryInfo: Record<ExtraCategory, { label: string; icon: React.ReactNode }> = {
@@ -43,7 +45,9 @@ export default function ExtrasModal({
   pickupDate,
   returnDate,
   rentalDays,
-  carTotal
+  carTotal,
+  deliveryFee = 0,
+  requiresQuote = false
 }: ExtrasModalProps) {
   const { extras, selectedExtras, loading, fetchExtras, addExtra, removeExtra, updateQuantity, calculateTotal } = useExtrasStore();
   const [activeCategory, setActiveCategory] = useState<ExtraCategory>('services');
@@ -57,7 +61,7 @@ export default function ExtrasModal({
   if (!isOpen) return null;
 
   const { extrasTotal, breakdown } = calculateTotal(rentalDays);
-  const grandTotal = carTotal + extrasTotal;
+  const grandTotal = carTotal + extrasTotal + (requiresQuote ? 0 : deliveryFee);
 
   const categories = Object.keys(categoryInfo) as ExtraCategory[];
   const filteredExtras = extras.filter(extra => extra.category === activeCategory);
@@ -262,13 +266,33 @@ export default function ExtrasModal({
                 <span>Car Rental</span>
                 <span className="font-medium">${carTotal.toFixed(2)}</span>
               </div>
-              <div className="flex justify-between text-volcanic-600">
-                <span>Extras</span>
-                <span className="font-medium">${extrasTotal.toFixed(2)}</span>
-              </div>
+              {extrasTotal > 0 && (
+                <div className="flex justify-between text-volcanic-600">
+                  <span>Extras</span>
+                  <span className="font-medium">${extrasTotal.toFixed(2)}</span>
+                </div>
+              )}
+              {deliveryFee > 0 && !requiresQuote && (
+                <div className="flex justify-between text-volcanic-600">
+                  <span>Delivery Fee</span>
+                  <span className="font-medium">${deliveryFee.toFixed(2)}</span>
+                </div>
+              )}
+              {requiresQuote && (
+                <div className="flex justify-between text-orange-600">
+                  <span>Delivery Fee</span>
+                  <span className="font-medium italic">Quote required</span>
+                </div>
+              )}
               <div className="flex justify-between text-xl font-bold text-volcanic-900 pt-3 border-t border-sandy-300">
                 <span>Total</span>
-                <span className="text-accent-500">${grandTotal.toFixed(2)}</span>
+                <span className="text-accent-500">
+                  {requiresQuote ? (
+                    <span className="text-base">${(carTotal + extrasTotal).toFixed(2)} + quote</span>
+                  ) : (
+                    `$${grandTotal.toFixed(2)}`
+                  )}
+                </span>
               </div>
             </div>
 

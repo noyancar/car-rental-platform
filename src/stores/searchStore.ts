@@ -12,11 +12,12 @@ interface SearchFilters {
 
 interface SearchParams {
   location: string;
+  pickupLocation?: string;
+  returnLocation?: string;
   pickupDate: string;
   pickupTime: string;
   returnDate: string;
-  returnTime: string;
-}
+  returnTime: string;}
 
 interface SearchState {
   // Search parameters
@@ -45,7 +46,9 @@ interface SearchState {
 
 // Default search parameters
 const defaultSearchParams: SearchParams = {
-  location: 'daniel-k-inouye-airport',
+  location: 'base-office',
+  pickupLocation: 'base-office',
+  returnLocation: 'base-office',
   pickupDate: new Date().toISOString().split('T')[0],
   pickupTime: '10:00',
   returnDate: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString().split('T')[0],
