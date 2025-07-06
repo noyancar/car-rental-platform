@@ -27,7 +27,6 @@ export interface Database {
           seats: number
           transmission: string
           mileage_type: string
-          available_locations: string[]
         }
         Insert: {
           id?: number
@@ -46,7 +45,6 @@ export interface Database {
           seats?: number
           transmission?: string
           mileage_type?: string
-          available_locations?: string[]
         }
         Update: {
           id?: number
@@ -65,7 +63,6 @@ export interface Database {
           seats?: number
           transmission?: string
           mileage_type?: string
-          available_locations?: string[]
         }
       }
       bookings: {

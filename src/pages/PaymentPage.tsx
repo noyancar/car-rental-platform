@@ -11,13 +11,14 @@ import { useBookingStore } from '../stores/bookingStore';
 import { useAuthStore } from '../stores/authStore';
 import { supabase } from '../lib/supabase';
 import { BookingWithExtras } from '../types';
-import { calculateDeliveryFee, getLocationByValue } from '../constants/locations';
+import { useLocations } from '../hooks/useLocations';
 
 const PaymentPage: React.FC = () => {
   const { bookingId } = useParams();
   const navigate = useNavigate();
   const { user } = useAuthStore();
   const { updateBookingStatus } = useBookingStore();
+  const { calculateDeliveryFee, getLocationByValue } = useLocations();
   const [booking, setBooking] = useState<BookingWithExtras | null>(null);
   const [loading, setLoading] = useState(true);
   const [paymentClientSecret, setPaymentClientSecret] = useState<string | null>(null);

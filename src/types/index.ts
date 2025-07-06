@@ -29,7 +29,6 @@ export type Car = {
   seats: number;
   transmission: string;
   mileage_type: string;
-  available_locations?: string[];
   trim?: string;
   color?: string;
   license_plate?: string;
