@@ -5,6 +5,7 @@ import { Button } from '../../components/ui/Button';
 import { Input } from '../../components/ui/Input';
 import { Select } from '../../components/ui/Select';
 import { useAdminStore } from '../../stores/adminStore';
+import { useLocations } from '../../hooks/useLocations';
 import type { Booking } from '../../types';
 
 const AdminBookings: React.FC = () => {
@@ -16,6 +17,8 @@ const AdminBookings: React.FC = () => {
     updateBookingStatus
   } = useAdminStore();
   
+  const { dbLocations } = useLocations();
+  
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
   const [dateFilter, setDateFilter] = useState('');
@@ -23,6 +26,16 @@ const AdminBookings: React.FC = () => {
   useEffect(() => {
     fetchAllBookings();
   }, [fetchAllBookings]);
+  
+  useEffect(() => {
+    console.log('Admin bookings data:', allBookings);
+    console.log('Available locations:', dbLocations);
+    if (allBookings.length > 0) {
+      console.log('First booking detail:', allBookings[0]);
+      console.log('Pickup location data:', allBookings[0].pickup_location);
+      console.log('Return location data:', allBookings[0].return_location);
+    }
+  }, [allBookings, dbLocations]);
   
   const handleStatusChange = async (booking: Booking, newStatus: Booking['status']) => {
     try {
@@ -42,6 +55,19 @@ const AdminBookings: React.FC = () => {
       default:
         return <AlertCircle className="h-5 w-5 text-warning-500" />;
     }
+  };
+  
+  const getLocationName = (locationId: string | undefined, locationData?: any) => {
+    // First try to use the location data from the booking (joined data)
+    if (locationData && locationData.label) {
+      return locationData.label;
+    }
+    
+    // Fallback to looking up by ID
+    if (!locationId) return 'Not specified';
+    const location = dbLocations.find(loc => loc.id === locationId);
+    console.log(`Looking for location ${locationId}:`, location);
+    return location ? location.label : 'Unknown location';
   };
   
   const filteredBookings = allBookings.filter(booking => {
@@ -125,6 +151,7 @@ const AdminBookings: React.FC = () => {
                   <th className="px-6 py-3 text-left text-sm font-semibold text-secondary-900">Booking ID</th>
                   <th className="px-6 py-3 text-left text-sm font-semibold text-secondary-900">Car</th>
                   <th className="px-6 py-3 text-left text-sm font-semibold text-secondary-900">Dates</th>
+                  <th className="px-6 py-3 text-left text-sm font-semibold text-secondary-900">Locations</th>
                   <th className="px-6 py-3 text-left text-sm font-semibold text-secondary-900">Total</th>
                   <th className="px-6 py-3 text-left text-sm font-semibold text-secondary-900">Status</th>
                   <th className="px-6 py-3 text-right text-sm font-semibold text-secondary-900">Actions</th>
@@ -157,6 +184,18 @@ const AdminBookings: React.FC = () => {
                       <div className="text-sm">
                         <div>Start: {new Date(booking.start_date).toLocaleDateString()}</div>
                         <div>End: {new Date(booking.end_date).toLocaleDateString()}</div>
+                      </div>
+                    </td>
+                    <td className="px-6 py-4">
+                      <div className="text-sm">
+                        <div className="flex items-center gap-1">
+                          <span className="font-medium">Pickup:</span>
+                          <span>{getLocationName(booking.pickup_location_id, booking.pickup_location)}</span>
+                        </div>
+                        <div className="flex items-center gap-1 mt-1">
+                          <span className="font-medium">Return:</span>
+                          <span>{getLocationName(booking.return_location_id, booking.return_location)}</span>
+                        </div>
                       </div>
                     </td>
                     <td className="px-6 py-4">

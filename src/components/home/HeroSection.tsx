@@ -6,7 +6,6 @@ import { Input } from '../ui/Input';
 import { Select } from '../ui/Select';
 import { useSearchStore } from '../../stores/searchStore';
 import { LocationSelector } from '../ui/LocationSelector';
-import { DEFAULT_LOCATION } from '../../constants/locations';
 import { useLocations } from '../../hooks/useLocations';
 
 const HOURS = Array.from({ length: 24 }, (_, i) => {
@@ -21,13 +20,13 @@ const HeroSection: React.FC = () => {
     updateSearchParams,
     searchCars
   } = useSearchStore();
-  const { calculateDeliveryFee } = useLocations();
+  const { calculateDeliveryFee, DEFAULT_LOCATION } = useLocations();
   
   const [pickupLocation, setPickupLocation] = useState(
-    searchParams.pickupLocation || DEFAULT_LOCATION.value
+    searchParams.pickupLocation || DEFAULT_LOCATION?.value || ''
   );
   const [returnLocation, setReturnLocation] = useState(
-    searchParams.returnLocation || DEFAULT_LOCATION.value
+    searchParams.returnLocation || DEFAULT_LOCATION?.value || ''
   );
   const [sameReturnLocation, setSameReturnLocation] = useState(
     pickupLocation === returnLocation
@@ -108,6 +107,7 @@ const HeroSection: React.FC = () => {
                   onChange={setPickupLocation}
                   showCategories={true}
                   hideFeesInOptions={true}
+                  excludeCustom={true}
                 />
                 
                 <LocationSelector
@@ -116,6 +116,7 @@ const HeroSection: React.FC = () => {
                   onChange={setReturnLocation}
                   showCategories={true}
                   hideFeesInOptions={true}
+                  excludeCustom={true}
                 />
               </div>
               

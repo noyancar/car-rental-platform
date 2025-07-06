@@ -6,7 +6,7 @@ import { Input } from '../ui/Input';
 import { Select } from '../ui/Select';
 import { useSearchStore } from '../../stores/searchStore';
 import { LocationSelector, LocationDisplay } from '../ui/LocationSelector';
-import { calculateDeliveryFee, BASE_LOCATION } from '../../constants/locations';
+import { useLocations } from '../../hooks/useLocations';
 
 const HOURS = Array.from({ length: 24 }, (_, i) => {
   const hour = i.toString().padStart(2, '0');
@@ -16,6 +16,7 @@ const HOURS = Array.from({ length: 24 }, (_, i) => {
 
 const SearchSummary: React.FC = () => {
   const { searchParams, updateSearchParams, searchCars } = useSearchStore();
+  const { calculateDeliveryFee, BASE_LOCATION } = useLocations();
   const [isEditing, setIsEditing] = useState(false);
   const [tempParams, setTempParams] = useState(searchParams);
   const [sameReturnLocation, setSameReturnLocation] = useState(
@@ -30,8 +31,10 @@ const SearchSummary: React.FC = () => {
   
   // Calculate delivery fees
   useEffect(() => {
-    const pickup = tempParams.pickupLocation || tempParams.location || BASE_LOCATION.value;
-    const returnLoc = tempParams.returnLocation || tempParams.location || BASE_LOCATION.value;
+    if (!calculateDeliveryFee) return;
+    
+    const pickup = tempParams.pickupLocation || tempParams.location || BASE_LOCATION?.value || '';
+    const returnLoc = tempParams.returnLocation || tempParams.location || BASE_LOCATION?.value || '';
     const fees = calculateDeliveryFee(pickup, returnLoc);
     setDeliveryFees(fees);
   }, [tempParams.pickupLocation, tempParams.returnLocation, tempParams.location]);
@@ -108,21 +111,23 @@ const SearchSummary: React.FC = () => {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <LocationSelector
                 label="Pickup Location"
-                value={tempParams.pickupLocation || tempParams.location || BASE_LOCATION.value}
+                value={tempParams.pickupLocation || tempParams.location || BASE_LOCATION?.value || ''}
                 onChange={(value) => handleTempParamUpdate('pickupLocation', value)}
                 showCategories={true}
                 hideFeesInOptions={true}
+                excludeCustom={true}
               />
               
               <LocationSelector
                 label="Return Location"
                 value={sameReturnLocation 
-                  ? (tempParams.pickupLocation || tempParams.location || BASE_LOCATION.value)
-                  : (tempParams.returnLocation || tempParams.location || BASE_LOCATION.value)
+                  ? (tempParams.pickupLocation || tempParams.location || BASE_LOCATION?.value || '')
+                  : (tempParams.returnLocation || tempParams.location || BASE_LOCATION?.value || '')
                 }
                 onChange={(value) => handleTempParamUpdate('returnLocation', value)}
                 showCategories={true}
                 hideFeesInOptions={true}
+                excludeCustom={true}
               />
             </div>
             
@@ -237,7 +242,7 @@ const SearchSummary: React.FC = () => {
                 <div className="flex items-center gap-2">
                   <span className="text-sm text-gray-500">Pickup:</span>
                   <LocationDisplay 
-                    locationValue={searchParams.pickupLocation || searchParams.location || BASE_LOCATION.value} 
+                    locationValue={searchParams.pickupLocation || searchParams.location || BASE_LOCATION?.value || ''} 
                     showIcon={false}
                     showFee={false}
                   />
@@ -250,7 +255,7 @@ const SearchSummary: React.FC = () => {
                 <div className="flex items-center gap-2">
                   <span className="text-sm text-gray-500">Return:</span>
                   <LocationDisplay 
-                    locationValue={searchParams.returnLocation || searchParams.location || BASE_LOCATION.value} 
+                    locationValue={searchParams.returnLocation || searchParams.location || BASE_LOCATION?.value || ''} 
                     showIcon={false}
                     showFee={false}
                   />
@@ -259,8 +264,8 @@ const SearchSummary: React.FC = () => {
               
               {/* Delivery Fee if applicable */}
               {(() => {
-                const pickup = searchParams.pickupLocation || searchParams.location || BASE_LOCATION.value;
-                const returnLoc = searchParams.returnLocation || searchParams.location || BASE_LOCATION.value;
+                const pickup = searchParams.pickupLocation || searchParams.location || BASE_LOCATION?.value || '';
+                const returnLoc = searchParams.returnLocation || searchParams.location || BASE_LOCATION?.value || '';
                 const fees = calculateDeliveryFee(pickup, returnLoc);
                 
                 if (fees.totalFee > 0 || fees.requiresQuote) {

@@ -27,7 +27,6 @@ export interface Database {
           seats: number
           transmission: string
           mileage_type: string
-          available_locations: string[]
         }
         Insert: {
           id?: number
@@ -46,7 +45,6 @@ export interface Database {
           seats?: number
           transmission?: string
           mileage_type?: string
-          available_locations?: string[]
         }
         Update: {
           id?: number
@@ -65,7 +63,6 @@ export interface Database {
           seats?: number
           transmission?: string
           mileage_type?: string
-          available_locations?: string[]
         }
       }
       bookings: {
@@ -79,9 +76,6 @@ export interface Database {
           total_price: number
           status: string
           discount_code_id: number | null
-          payment_intent_id: string | null
-          pickup_location: string
-          return_location: string
           pickup_time: string
           return_time: string
           pickup_location_id: string | null
@@ -97,9 +91,6 @@ export interface Database {
           total_price: number
           status?: string
           discount_code_id?: number | null
-          payment_intent_id?: string | null
-          pickup_location?: string
-          return_location?: string
           pickup_time?: string
           return_time?: string
           pickup_location_id?: string | null
@@ -115,9 +106,6 @@ export interface Database {
           total_price?: number
           status?: string
           discount_code_id?: number | null
-          payment_intent_id?: string | null
-          pickup_location?: string
-          return_location?: string
           pickup_time?: string
           return_time?: string
           pickup_location_id?: string | null
@@ -243,6 +231,7 @@ export interface Database {
           coordinates: Json | null
           operating_hours: Json | null
           metadata: Json | null
+          distance_from_base: number | null
         }
         Insert: {
           id?: string
@@ -260,6 +249,7 @@ export interface Database {
           coordinates?: Json | null
           operating_hours?: Json | null
           metadata?: Json | null
+          distance_from_base?: number | null
         }
         Update: {
           id?: string
@@ -277,6 +267,7 @@ export interface Database {
           coordinates?: Json | null
           operating_hours?: Json | null
           metadata?: Json | null
+          distance_from_base?: number | null
         }
       }
       car_locations: {

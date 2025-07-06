@@ -12,7 +12,7 @@ interface BookingState {
   
   fetchUserBookings: () => Promise<void>;
   fetchBookingById: (id: number) => Promise<void>;
-  createBooking: (booking: Pick<Booking, 'car_id' | 'user_id' | 'start_date' | 'end_date' | 'total_price' | 'status' | 'pickup_location' | 'return_location' | 'pickup_time' | 'return_time'> & { discount_code_id?: number; payment_intent_id?: string }) => Promise<Booking | null>;
+  createBooking: (booking: Pick<Booking, 'car_id' | 'user_id' | 'start_date' | 'end_date' | 'total_price' | 'status' | 'pickup_time' | 'return_time'> & { discount_code_id?: number; pickup_location?: string; return_location?: string }) => Promise<Booking | null>;
   updateBookingStatus: (id: number, status: Booking['status']) => Promise<void>;
   calculatePrice: (carId: number, startDate: string, endDate: string, pickupTime?: string, returnTime?: string, discountCodeId?: number) => Promise<number>;
   checkAvailability: (carId: number, startDate: string, endDate: string, pickupTime?: string, returnTime?: string) => Promise<boolean>;
@@ -160,7 +160,7 @@ export const useBookingStore = create<BookingState>((set, get) => ({
         }
       }
       
-      // Make sure all booking fields are included
+      // Make sure all booking fields are included - only use location IDs
       const bookingData = {
         car_id: booking.car_id,
         user_id: booking.user_id,
@@ -168,14 +168,11 @@ export const useBookingStore = create<BookingState>((set, get) => ({
         end_date: booking.end_date,
         total_price: booking.total_price,
         status: booking.status || 'pending',
-        pickup_location: booking.pickup_location || null,
-        return_location: booking.return_location || null,
         pickup_location_id: pickup_location_id,
         return_location_id: return_location_id,
         pickup_time: booking.pickup_time || null,
         return_time: booking.return_time || null,
-        discount_code_id: booking.discount_code_id || null,
-        payment_intent_id: booking.payment_intent_id || null
+        discount_code_id: booking.discount_code_id || null
       };
       
       console.log('Creating booking with data:', bookingData);
