@@ -86,8 +86,8 @@ const PendingPaymentPage: React.FC = () => {
         end_date: pendingBooking.end_date,
         total_price: pendingBooking.total_price,
         status: 'pending',
-        pickup_location: pendingBooking.pickup_location || 'default-location',
-        return_location: pendingBooking.return_location || pendingBooking.pickup_location || 'default-location',
+        pickup_location: pendingBooking.pickup_location || 'base-office',
+        return_location: pendingBooking.return_location || pendingBooking.pickup_location || 'base-office',
         pickup_time: pendingBooking.pickup_time || '10:00',
         return_time: pendingBooking.return_time || '10:00'
       });

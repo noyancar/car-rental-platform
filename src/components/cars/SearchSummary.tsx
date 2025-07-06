@@ -31,11 +31,13 @@ const SearchSummary: React.FC = () => {
   
   // Calculate delivery fees
   useEffect(() => {
+    if (!calculateDeliveryFee) return;
+    
     const pickup = tempParams.pickupLocation || tempParams.location || BASE_LOCATION?.value || '';
     const returnLoc = tempParams.returnLocation || tempParams.location || BASE_LOCATION?.value || '';
     const fees = calculateDeliveryFee(pickup, returnLoc);
     setDeliveryFees(fees);
-  }, [tempParams.pickupLocation, tempParams.returnLocation, tempParams.location, calculateDeliveryFee, BASE_LOCATION]);
+  }, [tempParams.pickupLocation, tempParams.returnLocation, tempParams.location]);
   
   const formatDate = (dateString: string): string => {
     return format(new Date(dateString), 'MMM d, yyyy');

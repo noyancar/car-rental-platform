@@ -10,6 +10,7 @@ interface LocationOption {
   address: string;
   fee: number;
   category: 'base' | 'airport' | 'hotel' | 'custom';
+  distance_from_base?: number | null;
 }
 
 export function useLocations() {
@@ -29,7 +30,8 @@ export function useLocations() {
     label: loc.label,
     address: loc.address,
     fee: loc.delivery_fee,
-    category: loc.category
+    category: loc.category,
+    distance_from_base: loc.distance_from_base
   }));
 
   // Helper functions that work with both old and new systems
@@ -49,9 +51,15 @@ export function useLocations() {
       return { pickupFee: 0, returnFee: 0, totalFee: 0, requiresQuote: false };
     }
 
-    // Custom locations require a quote
+    // Handle custom locations
     if (pickupLocation.category === 'custom' || returnLocation.category === 'custom') {
-      return { pickupFee: 0, returnFee: 0, totalFee: 0, requiresQuote: true };
+      // Check if it's the "ask for quote" type (fee = -1)
+      const needsQuote = pickupLocation.fee === -1 || returnLocation.fee === -1;
+      
+      if (needsQuote) {
+        return { pickupFee: 0, returnFee: 0, totalFee: 0, requiresQuote: true };
+      }
+      // Otherwise calculate normally (for within 10mi custom locations)
     }
 
     // If both locations are the same

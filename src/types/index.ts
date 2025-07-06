@@ -50,12 +50,11 @@ export interface Booking {
   created_at: string;
   updated_at: string;
   car?: Car;
-  pickup_location?: string;
-  return_location?: string;
+  pickup_location_id?: string;
+  return_location_id?: string;
   pickup_time?: string;
   return_time?: string;
   discount_code_id?: number;
-  payment_intent_id?: string;
   stripe_payment_intent_id?: string;
   stripe_payment_status?: 'requires_payment_method' | 'requires_confirmation' | 'requires_action' | 'processing' | 'requires_capture' | 'canceled' | 'succeeded';
   stripe_payment_method_id?: string;
