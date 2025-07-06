@@ -13,15 +13,8 @@ END;
 -- Delete old custom location entry if exists
 DELETE FROM locations WHERE value = 'custom-location';
 
--- Insert new custom location options
-INSERT INTO locations (value, label, address, category, delivery_fee, sort_order, distance_from_base) VALUES
-  ('custom-within-10mi', 'Custom Location (Within 10 miles)', '', 'custom', 70, 100, 10),
-  ('custom-outside-10mi', 'Custom Location (Outside 10 miles)', '', 'custom', -1, 101, NULL)
-ON CONFLICT (value) DO UPDATE SET
-  label = EXCLUDED.label,
-  delivery_fee = EXCLUDED.delivery_fee,
-  sort_order = EXCLUDED.sort_order,
-  distance_from_base = EXCLUDED.distance_from_base;
+-- Remove custom location options for now
+DELETE FROM locations WHERE value IN ('custom-within-10mi', 'custom-outside-10mi');
 
 -- Add comment for documentation
 COMMENT ON COLUMN locations.distance_from_base IS 'Distance from base office in miles. NULL for locations requiring quote.';

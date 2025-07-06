@@ -115,6 +115,7 @@ const SearchSummary: React.FC = () => {
                 onChange={(value) => handleTempParamUpdate('pickupLocation', value)}
                 showCategories={true}
                 hideFeesInOptions={true}
+                excludeCustom={true}
               />
               
               <LocationSelector
@@ -126,6 +127,7 @@ const SearchSummary: React.FC = () => {
                 onChange={(value) => handleTempParamUpdate('returnLocation', value)}
                 showCategories={true}
                 hideFeesInOptions={true}
+                excludeCustom={true}
               />
             </div>
             

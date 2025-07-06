@@ -107,6 +107,7 @@ const HeroSection: React.FC = () => {
                   onChange={setPickupLocation}
                   showCategories={true}
                   hideFeesInOptions={true}
+                  excludeCustom={true}
                 />
                 
                 <LocationSelector
@@ -115,6 +116,7 @@ const HeroSection: React.FC = () => {
                   onChange={setReturnLocation}
                   showCategories={true}
                   hideFeesInOptions={true}
+                  excludeCustom={true}
                 />
               </div>
               
