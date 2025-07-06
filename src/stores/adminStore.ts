@@ -74,7 +74,7 @@ export const useAdminStore = create<AdminState>((set, get) => ({
       const carData = {
         ...car,
         // If image_urls is not provided, create it from image_url
-        image_urls: car.image_urls?.length > 0 
+        image_urls: car.image_urls && car.image_urls.length > 0 
           ? car.image_urls 
           : car.image_url ? [car.image_url] : [],
         // Set main_image_index to 0 if not provided
@@ -180,19 +180,26 @@ export const useAdminStore = create<AdminState>((set, get) => ({
         .from('bookings')
         .select(`
           *,
-          cars (*)
+          cars (*),
+          pickup_location:locations!pickup_location_id (*),
+          return_location:locations!return_location_id (*)
         `)
         .order('created_at', { ascending: false });
       
       if (error) throw error;
       
+      console.log('Fetched bookings with locations:', data);
+      
       const bookings: Booking[] = data.map(item => ({
         ...item,
         car: item.cars,
+        pickup_location: item.pickup_location,
+        return_location: item.return_location,
       }));
       
       set({ allBookings: bookings });
     } catch (error) {
+      console.error('Error fetching bookings:', error);
       set({ error: (error as Error).message });
     } finally {
       set({ loading: false });
