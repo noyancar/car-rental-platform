@@ -15,9 +15,9 @@ const HOURS = Array.from({ length: 24 }, (_, i) => {
 
 
 const SearchSummary: React.FC = () => {
-  const { searchParams, updateSearchParams, searchCars } = useSearchStore();
+  const { searchParams, updateSearchParams, searchCars, isSearchPerformed } = useSearchStore();
   const { calculateDeliveryFee, BASE_LOCATION } = useLocations();
-  const [isEditing, setIsEditing] = useState(false);
+  const [isEditing, setIsEditing] = useState(!isSearchPerformed);
   const [tempParams, setTempParams] = useState(searchParams);
   const [sameReturnLocation, setSameReturnLocation] = useState(
     searchParams.pickupLocation === searchParams.returnLocation
@@ -95,15 +95,19 @@ const SearchSummary: React.FC = () => {
         // Edit mode
         <div className="space-y-6">
           <div className="flex justify-between items-center">
-            <h3 className="text-xl font-display font-semibold text-volcanic-900">Edit Search Parameters</h3>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={handleEditToggle}
-              leftIcon={<X size={16} />}
-            >
-              Cancel
-            </Button>
+            <h3 className="text-xl font-display font-semibold text-volcanic-900">
+              {!isSearchPerformed ? 'Find Your Perfect Car' : 'Edit Search Parameters'}
+            </h3>
+            {isSearchPerformed && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleEditToggle}
+                leftIcon={<X size={16} />}
+              >
+                Cancel
+              </Button>
+            )}
           </div>
           
           <div className="space-y-4">
@@ -223,7 +227,7 @@ const SearchSummary: React.FC = () => {
                   leftIcon={<Check size={16} />}
                   className="w-full"
                 >
-                  Update Search
+                  {isSearchPerformed ? 'Update Search' : 'Search'}
                 </Button>
               </div>
             </div>
