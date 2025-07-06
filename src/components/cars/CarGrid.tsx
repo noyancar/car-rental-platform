@@ -1,6 +1,6 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { Star, Car as CarIcon } from 'lucide-react';
+import { Star, Car as CarIcon, Calendar, MapPin } from 'lucide-react';
 import { Button } from '../ui/Button';
 import { useSearchStore } from '../../stores/searchStore';
 
@@ -25,12 +25,28 @@ const CarGrid: React.FC = () => {
   
   if (!isSearchPerformed) {
     return (
-      <div className="bg-sandy-100 p-12 text-center rounded-2xl shadow-md">
-        <CarIcon size={48} className="mx-auto mb-4 text-primary-600" />
-        <h3 className="text-2xl font-display font-semibold mb-3 text-volcanic-900">Search for Available Cars</h3>
-        <p className="text-volcanic-600 text-lg">
-          Use the search form to find available cars for your trip.
-        </p>
+      <div className="bg-white p-12 text-center rounded-2xl shadow-md max-w-2xl mx-auto">
+        <div className="mb-6">
+          <div className="flex justify-center items-center gap-3 mb-4">
+            <Calendar className="w-8 h-8 text-primary-600" />
+            <CarIcon className="w-10 h-10 text-primary-600" />
+            <MapPin className="w-8 h-8 text-primary-600" />
+          </div>
+          <h3 className="text-3xl font-display font-bold mb-4 text-volcanic-900">
+            Let's Find Your Perfect Car!
+          </h3>
+          <p className="text-volcanic-600 text-lg mb-2">
+            Tell us when and where you need a car, and we'll show you all available options.
+          </p>
+          <p className="text-volcanic-500 text-base">
+            Our real-time availability ensures you only see cars you can actually book.
+          </p>
+        </div>
+        <div className="bg-primary-50 p-6 rounded-xl border border-primary-200">
+          <p className="text-primary-700 font-medium">
+            💡 Quick tip: Start by selecting your travel dates above to see available cars and real-time pricing.
+          </p>
+        </div>
       </div>
     );
   }

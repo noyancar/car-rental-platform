@@ -8,8 +8,10 @@ const CarsPage: React.FC = () => {
   return (
     <div className="py-20 bg-sandy-50 min-h-screen">
       <div className="container-custom">
-        {/* Search Summary Section */}
-        {isSearchPerformed && <SearchSummary />}
+        {/* Search Form - Always visible */}
+        <div className="mb-8">
+          <SearchSummary />
+        </div>
         
         {/* Main Content */}
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
