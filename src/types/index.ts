@@ -48,7 +48,7 @@ export interface Booking {
   total_price: number;
   status: BookingStatus;
   created_at: string;
-  updated_at: string;
+  updated_at?: string;
   car?: Car;
   pickup_location_id?: string;
   return_location_id?: string;
@@ -58,7 +58,7 @@ export interface Booking {
   return_time?: string;
   discount_code_id?: number;
   stripe_payment_intent_id?: string;
-  stripe_payment_status?: 'requires_payment_method' | 'requires_confirmation' | 'requires_action' | 'processing' | 'requires_capture' | 'canceled' | 'succeeded';
+  stripe_payment_status?: 'pending' | 'processing' | 'succeeded' | 'failed' | 'canceled';
   stripe_payment_method_id?: string;
 }
 

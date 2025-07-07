@@ -68,15 +68,6 @@ const BookingPage: React.FC = () => {
     const returnLoc = sameReturnLocation ? pickupLocation : returnLocation;
     const fees = calculateDeliveryFee(pickupLocation, returnLoc);
     
-    console.log('=== DELIVERY FEE DEBUG ===');
-    console.log('Pickup Location:', pickupLocation);
-    console.log('Return Location:', returnLoc);
-    console.log('Same Return Location:', sameReturnLocation);
-    console.log('Calculated Fees:', fees);
-    console.log('Pickup Location Details:', getLocationByValue(pickupLocation));
-    console.log('Return Location Details:', getLocationByValue(returnLoc));
-    console.log('========================');
-    
     setDeliveryFees(fees);
   }, [pickupLocation, returnLocation, sameReturnLocation]);
   
@@ -279,7 +270,6 @@ const BookingPage: React.FC = () => {
           await saveBookingExtras(booking.id, rentalDuration);
           
           // Navigate to payment page
-          toast.success('Booking created successfully');
           navigate(`/payment/${booking.id}`);
         }
       } else {
