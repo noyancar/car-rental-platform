@@ -90,7 +90,7 @@ serve(async (req) => {
       .from("bookings")
       .update({
         stripe_payment_intent_id: paymentIntent.id,
-        stripe_payment_status: paymentIntent.status,
+        stripe_payment_status: "pending",
       })
       .eq("id", booking_id);
 

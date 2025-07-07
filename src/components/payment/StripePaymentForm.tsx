@@ -6,6 +6,7 @@ import {
 } from '@stripe/react-stripe-js';
 import { Button } from '../ui/Button';
 import { AlertCircle } from 'lucide-react';
+import { supabase } from '../../lib/supabase';
 
 interface StripePaymentFormProps {
   onSuccess: (paymentIntentId: string) => void;
@@ -54,11 +55,42 @@ export default function StripePaymentForm({
         }
         onError(error.message || 'Payment failed');
       } else if (paymentIntent && paymentIntent.status === 'succeeded') {
-        // Payment succeeded
-        onSuccess(paymentIntent.id);
+        // Payment succeeded - wait for webhook to update the booking
+        // Poll for booking status update (max 10 seconds)
+        let attempts = 0;
+        const maxAttempts = 10;
+        
+        const checkBookingStatus = async () => {
+          const { data: booking } = await supabase
+            .from('bookings')
+            .select('stripe_payment_status')
+            .eq('id', bookingId)
+            .single();
+          
+          if (booking?.stripe_payment_status === 'succeeded') {
+            onSuccess(paymentIntent.id);
+            return true;
+          }
+          
+          return false;
+        };
+        
+        const pollInterval = setInterval(async () => {
+          attempts++;
+          
+          const isUpdated = await checkBookingStatus();
+          
+          if (isUpdated || attempts >= maxAttempts) {
+            clearInterval(pollInterval);
+            
+            if (!isUpdated && attempts >= maxAttempts) {
+              // Webhook didn't update in time, but payment was successful
+              onSuccess(paymentIntent.id);
+            }
+          }
+        }, 1000);
       }
     } catch (err) {
-      console.error('Payment error:', err);
       setErrorMessage('An unexpected error occurred. Please try again.');
       onError('Payment processing failed');
     } finally {

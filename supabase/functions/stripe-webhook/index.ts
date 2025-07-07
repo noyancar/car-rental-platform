@@ -1,6 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "npm:@supabase/supabase-js@2.39.3";
-import Stripe from "npm:stripe@13.10.0";
+import Stripe from "npm:stripe@11.1.0";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -9,6 +9,8 @@ const corsHeaders = {
 };
 
 serve(async (req) => {
+  console.log("Stripe webhook called");
+  
   // Handle CORS preflight request
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders, status: 204 });
@@ -18,8 +20,14 @@ serve(async (req) => {
     // Get Stripe signature from headers
     const signature = req.headers.get("stripe-signature");
     if (!signature) {
-      throw new Error("No Stripe signature found");
+      console.error("No Stripe signature found in headers");
+      return new Response(
+        JSON.stringify({ error: "No Stripe signature found" }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
     }
+    
+    console.log("Stripe signature found");
 
     // Get raw request body
     const body = await req.text();
@@ -29,11 +37,16 @@ serve(async (req) => {
     const stripeWebhookSecret = Deno.env.get("STRIPE_WEBHOOK_SECRET");
     
     if (!stripeSecretKey || !stripeWebhookSecret) {
-      throw new Error("Stripe configuration missing");
+      console.error("Missing Stripe configuration");
+      return new Response(
+        JSON.stringify({ error: "Stripe configuration missing" }),
+        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
     }
 
     const stripe = new Stripe(stripeSecretKey, {
-      apiVersion: '2023-10-16',
+      apiVersion: '2022-11-15',
+      httpClient: Stripe.createFetchHttpClient(),
     });
 
     // Verify webhook signature
@@ -54,30 +67,50 @@ serve(async (req) => {
     const supabase = createClient(supabaseUrl, supabaseKey);
 
     // Handle different event types
+    console.log(`Handling event type: ${event.type}`);
+    
     switch (event.type) {
       case 'payment_intent.succeeded': {
         const paymentIntent = event.data.object as Stripe.PaymentIntent;
         const bookingId = paymentIntent.metadata.booking_id;
+        
+        console.log(`Payment intent succeeded: ${paymentIntent.id}, booking_id: ${bookingId}`);
 
         if (bookingId) {
+          // First, check if booking exists
+          const { data: existingBooking, error: fetchError } = await supabase
+            .from("bookings")
+            .select("id, status, stripe_payment_status")
+            .eq("id", bookingId)
+            .single();
+          
+          if (fetchError) {
+            console.error("Error fetching booking:", fetchError);
+            throw fetchError;
+          }
+          
+          console.log("Existing booking:", existingBooking);
+          
           // Update booking status to confirmed
-          const { error } = await supabase
+          const { data: updatedBooking, error } = await supabase
             .from("bookings")
             .update({
               status: "confirmed",
-              stripe_payment_status: paymentIntent.status,
+              stripe_payment_status: "succeeded",
               stripe_payment_method_id: paymentIntent.payment_method as string,
-              updated_at: new Date().toISOString(),
             })
             .eq("id", bookingId)
-            .eq("stripe_payment_intent_id", paymentIntent.id);
+            .eq("stripe_payment_intent_id", paymentIntent.id)
+            .in("status", ["pending", "draft"]) // Only confirm if booking is in pending/draft state
+            .select()
+            .single();
 
           if (error) {
             console.error("Error updating booking:", error);
             throw error;
           }
 
-          console.log(`Booking ${bookingId} confirmed with payment ${paymentIntent.id}`);
+          console.log(`Booking ${bookingId} confirmed with payment ${paymentIntent.id}`, updatedBooking);
         }
         break;
       }
@@ -91,8 +124,7 @@ serve(async (req) => {
           const { error } = await supabase
             .from("bookings")
             .update({
-              stripe_payment_status: paymentIntent.status,
-              updated_at: new Date().toISOString(),
+              stripe_payment_status: "failed",
             })
             .eq("id", bookingId)
             .eq("stripe_payment_intent_id", paymentIntent.id);
@@ -117,8 +149,7 @@ serve(async (req) => {
             .from("bookings")
             .update({
               status: "cancelled",
-              stripe_payment_status: paymentIntent.status,
-              updated_at: new Date().toISOString(),
+              stripe_payment_status: "canceled",
             })
             .eq("id", bookingId)
             .eq("stripe_payment_intent_id", paymentIntent.id)
@@ -152,7 +183,6 @@ serve(async (req) => {
               .from("bookings")
               .update({
                 status: "cancelled",
-                updated_at: new Date().toISOString(),
               })
               .eq("id", booking.id);
 

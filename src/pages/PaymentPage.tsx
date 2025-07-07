@@ -103,7 +103,7 @@ const PaymentPage: React.FC = () => {
       // Create payment intent
       await createPaymentIntent(formattedBooking);
     } catch (error) {
-      console.error('Error loading booking:', error);
+
       toast.error('Failed to load booking details');
       navigate('/');
     } finally {
@@ -125,11 +125,8 @@ const PaymentPage: React.FC = () => {
       });
 
       if (error) {
-        console.error('Edge Function error:', error);
         throw error;
       }
-
-      console.log('Edge Function response:', data);
 
       if (data && data.success && data.client_secret) {
         setPaymentClientSecret(data.client_secret);
@@ -137,7 +134,6 @@ const PaymentPage: React.FC = () => {
         throw new Error(data?.error || 'Failed to create payment intent');
       }
     } catch (error) {
-      console.error('Error creating payment intent:', error);
       setPaymentError('Failed to initialize payment. Please try again.');
       toast.error('Failed to initialize payment');
     }
@@ -146,12 +142,14 @@ const PaymentPage: React.FC = () => {
   const handlePaymentSuccess = async (paymentIntentId: string) => {
     try {
       // Update booking status to confirmed
-      await updateBookingStatus(parseInt(bookingId!), 'confirmed');
+      await supabase
+        .from('bookings')
+        .update({ stripe_payment_status: 'succeeded' })
+        .eq('id', parseInt(bookingId!));
       
       toast.success('Payment successful! Your booking is confirmed.');
       navigate(`/bookings/${bookingId}`);
     } catch (error) {
-      console.error('Error updating booking:', error);
       toast.error('Payment was successful but we encountered an error. Please contact support.');
     }
   };

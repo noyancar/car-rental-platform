@@ -1,19 +1,45 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { ArrowLeft, Calendar, Clock, Car as CarIcon, CreditCard, CheckCircle, XCircle } from 'lucide-react';
+import { ArrowLeft, Calendar, Clock, Car as CarIcon, CreditCard, CheckCircle, XCircle, RefreshCw } from 'lucide-react';
 import { format } from 'date-fns';
 import { Button } from '../../components/ui/Button';
 import { useBookingStore } from '../../stores/bookingStore';
+import { supabase } from '../../lib/supabase';
+import { toast } from 'sonner';
 
 const BookingDetailsPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const { currentBooking, loading, error, fetchBookingById } = useBookingStore();
+  const [isCheckingPayment, setIsCheckingPayment] = useState(false);
   
   useEffect(() => {
     if (id) {
       fetchBookingById(parseInt(id));
     }
   }, [id, fetchBookingById]);
+  
+  const checkPaymentStatus = async () => {
+    if (!currentBooking || !currentBooking.stripe_payment_intent_id) return;
+    
+    setIsCheckingPayment(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('check-payment-status', {
+        body: { booking_id: currentBooking.id }
+      });
+      
+      if (error) throw error;
+      
+      if (data.success) {
+        toast.success('Payment status checked and updated');
+        // Reload booking to show updated status
+        fetchBookingById(currentBooking.id);
+      }
+    } catch (error) {
+      toast.error('Failed to check payment status');
+    } finally {
+      setIsCheckingPayment(false);
+    }
+  };
   
   if (loading) {
     return (
@@ -167,24 +193,66 @@ const BookingDetailsPage: React.FC = () => {
           
           {/* Payment Status */}
           <div className="p-6">
-            <h2 className="text-lg font-semibold mb-4 flex items-center">
-              <CreditCard size={20} className="mr-2" />
-              Payment Status
-            </h2>
+            <div className="flex justify-between items-center mb-4">
+              <h2 className="text-lg font-semibold flex items-center">
+                <CreditCard size={20} className="mr-2" />
+                Payment Status
+              </h2>
+              {currentBooking.stripe_payment_status !== 'succeeded' && currentBooking.stripe_payment_status !== 'canceled' && currentBooking.stripe_payment_status !== 'failed' && (
+                <button
+                  onClick={() => fetchBookingById(parseInt(id!))}
+                  className="text-primary-600 hover:text-primary-700 flex items-center text-sm"
+                  disabled={loading}
+                >
+                  <RefreshCw size={16} className={`mr-1 ${loading ? 'animate-spin' : ''}`} />
+                  Refresh
+                </button>
+              )}
+            </div>
             <div className="flex items-center">
-              {currentBooking.payment_intent_id ? (
+              {currentBooking.stripe_payment_status === 'succeeded' ? (
                 <>
                   <CheckCircle size={20} className="text-success-500 mr-2" />
                   <div>
                     <p className="font-medium">Payment Completed</p>
                     <p className="text-sm text-secondary-500">
-                      Transaction ID: {currentBooking.payment_intent_id}
+                      Transaction ID: {currentBooking.stripe_payment_intent_id}
                     </p>
                   </div>
                 </>
-              ) : (
+              ) : currentBooking.stripe_payment_status === 'processing' ? (
+                <>
+                  <Clock size={20} className="text-warning-500 mr-2" />
+                  <div>
+                    <p className="font-medium">Payment Processing</p>
+                    <p className="text-sm text-secondary-500">
+                      Your payment is being processed...
+                    </p>
+                  </div>
+                </>
+              ) : currentBooking.stripe_payment_status === 'failed' ? (
                 <>
                   <XCircle size={20} className="text-error-500 mr-2" />
+                  <div>
+                    <p className="font-medium">Payment Failed</p>
+                    <p className="text-sm text-secondary-500">
+                      The payment could not be processed
+                    </p>
+                  </div>
+                </>
+              ) : currentBooking.stripe_payment_status === 'canceled' ? (
+                <>
+                  <XCircle size={20} className="text-error-500 mr-2" />
+                  <div>
+                    <p className="font-medium">Payment Canceled</p>
+                    <p className="text-sm text-secondary-500">
+                      The payment was canceled
+                    </p>
+                  </div>
+                </>
+              ) : currentBooking.stripe_payment_status === 'pending' || !currentBooking.stripe_payment_status ? (
+                <>
+                  <Clock size={20} className="text-warning-500 mr-2" />
                   <div>
                     <p className="font-medium">Payment Pending</p>
                     <p className="text-sm text-secondary-500">
@@ -192,8 +260,32 @@ const BookingDetailsPage: React.FC = () => {
                     </p>
                   </div>
                 </>
+              ) : (
+                <>
+                  <XCircle size={20} className="text-error-500 mr-2" />
+                  <div>
+                    <p className="font-medium">Unknown Payment Status</p>
+                    <p className="text-sm text-secondary-500">
+                      Status: {currentBooking.stripe_payment_status}
+                    </p>
+                  </div>
+                </>
               )}
             </div>
+            {/* Manual Payment Check for pending payments */}
+            {currentBooking.stripe_payment_intent_id && currentBooking.stripe_payment_status === 'pending' && (
+              <div className="mt-4">
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  onClick={checkPaymentStatus}
+                  disabled={isCheckingPayment}
+                  leftIcon={<RefreshCw size={14} className={isCheckingPayment ? 'animate-spin' : ''} />}
+                >
+                  {isCheckingPayment ? 'Checking...' : 'Check Payment Status'}
+                </Button>
+              </div>
+            )}
           </div>
         </div>
       </div>
