@@ -17,15 +17,15 @@
   }
 
   h1 {
-    @apply text-4xl md:text-5xl;
+    @apply text-2xl sm:text-3xl md:text-4xl lg:text-5xl;
   }
 
   h2 {
-    @apply text-3xl md:text-4xl;
+    @apply text-xl sm:text-2xl md:text-3xl lg:text-4xl;
   }
 
   h3 {
-    @apply text-2xl md:text-3xl;
+    @apply text-lg sm:text-xl md:text-2xl lg:text-3xl;
   }
 
   p {
@@ -48,7 +48,7 @@
   }
 
   .btn:hover {
-    @apply transform scale-[1.02];
+    @apply transform scale-[1.02] md:scale-[1.02] scale-100;
   }
 
   .btn:active {
@@ -56,7 +56,7 @@
   }
 
   .input {
-    @apply w-full px-4 py-3 rounded-md border border-secondary-300 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent;
+    @apply w-full px-3 py-2 sm:px-4 sm:py-3 rounded-md border border-secondary-300 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent text-sm sm:text-base;
   }
 
   .card {
@@ -64,11 +64,11 @@
   }
 
   .container-custom {
-    @apply container mx-auto px-4 sm:px-6 lg:px-8;
+    @apply container mx-auto px-3 sm:px-4 md:px-6 lg:px-8;
   }
 
   .form-control {
-    @apply w-full h-12 px-4 border border-sandy-300 rounded-lg bg-white/90 backdrop-blur-sm text-volcanic-900 placeholder-volcanic-400 transition-all duration-200 focus:border-primary-500 focus:ring-2 focus:ring-primary-500/20 focus:outline-none;
+    @apply w-full h-10 sm:h-11 md:h-12 px-3 sm:px-4 border border-sandy-300 rounded-lg bg-white/90 backdrop-blur-sm text-volcanic-900 placeholder-volcanic-400 transition-all duration-200 focus:border-primary-500 focus:ring-2 focus:ring-primary-500/20 focus:outline-none text-sm sm:text-base;
   }
 
   .form-select {
@@ -104,7 +104,7 @@
   }
 
   .badge {
-    @apply inline-flex items-center px-3 py-1 rounded-full text-sm font-medium;
+    @apply inline-flex items-center px-2 py-0.5 sm:px-3 sm:py-1 rounded-full text-xs sm:text-sm font-medium;
   }
 
   .badge-primary {
@@ -120,7 +120,7 @@
   }
 
   .price-tag {
-    @apply bg-accent-500 text-white px-4 py-2 rounded-lg font-semibold shadow-lg;
+    @apply bg-accent-500 text-white px-3 py-1.5 sm:px-4 sm:py-2 rounded-lg font-semibold shadow-lg text-sm sm:text-base;
   }
 
   .nav-link-active {

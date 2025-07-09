@@ -65,18 +65,7 @@ export function LocationSelector({
       <select
         value={value}
         onChange={(e) => onChange(e.target.value)}
-        className="w-full px-3 py-2 border-2 border-gray-400 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white text-gray-900 min-h-[40px]"
-        style={{
-          display: 'block',
-          width: '100%',
-          padding: '8px 12px',
-          border: '2px solid #9CA3AF',
-          borderRadius: '8px',
-          backgroundColor: 'white',
-          color: '#111827',
-          minHeight: '40px',
-          fontSize: '16px'
-        }}
+        className="w-full px-3 sm:px-4 py-2 sm:py-3 border-2 border-gray-400 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white text-gray-900 min-h-[36px] sm:min-h-[40px] text-sm sm:text-base"
       >
         <option value="">{placeholder}</option>
         
@@ -127,21 +116,21 @@ export function LocationDisplay({
   if (!location) return null;
   
   return (
-    <div className={cn("flex items-center gap-2", className)}>
+    <div className={cn("flex items-center gap-1 sm:gap-2", className)}>
       {showIcon && (
         <span className="text-gray-500">
           {categoryIcons[location.category as LocationCategory]}
         </span>
       )}
-      <span>{location.label}</span>
+      <span className="text-xs sm:text-sm md:text-base truncate max-w-[200px] sm:max-w-none">{location.label}</span>
       {showFee && location.fee > 0 && (
-        <span className="text-sm text-gray-500">
-          (${location.fee} delivery)
+        <span className="text-xs sm:text-sm text-gray-500 whitespace-nowrap">
+          (${location.fee})
         </span>
       )}
       {showFee && location.fee === -1 && (
-        <span className="text-sm text-gray-500">
-          (Quote required)
+        <span className="text-xs sm:text-sm text-gray-500 whitespace-nowrap">
+          (Quote)
         </span>
       )}
     </div>

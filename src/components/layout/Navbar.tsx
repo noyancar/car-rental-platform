@@ -48,14 +48,14 @@ export const Navbar: React.FC = () => {
       <header 
         className={`fixed w-full z-50 transition-all duration-300 ${
           isScrolled || isMenuOpen || location.pathname !== '/' 
-            ? 'bg-white shadow-md py-3' 
-            : 'bg-transparent py-5'
+            ? 'bg-white shadow-md py-2 sm:py-3' 
+            : 'bg-transparent py-3 sm:py-4 md:py-5'
         }`}
       >
         <div className="container-custom mx-auto flex justify-between items-center">
           <Link to="/" className="flex items-center">
-            <Car className="h-8 w-8 text-primary-800" />
-            <span className="ml-2 text-xl font-bold text-primary-800">NoyanCar</span>
+            <Car className="h-6 w-6 sm:h-7 sm:w-7 md:h-8 md:w-8 text-primary-800" />
+            <span className="ml-1.5 sm:ml-2 text-base sm:text-lg md:text-xl font-bold text-primary-800">NoyanCar</span>
           </Link>
           
           <nav className="hidden md:flex items-center space-x-8">
@@ -132,20 +132,20 @@ export const Navbar: React.FC = () => {
           </nav>
           
           <button 
-            className="md:hidden text-secondary-800 focus:outline-none"
+            className="md:hidden text-secondary-800 focus:outline-none p-1"
             onClick={() => setIsMenuOpen(!isMenuOpen)}
           >
             {isMenuOpen ? (
-              <X className="h-6 w-6" />
+              <X className="h-5 w-5 sm:h-6 sm:w-6" />
             ) : (
-              <Menu className="h-6 w-6" />
+              <Menu className="h-5 w-5 sm:h-6 sm:w-6" />
             )}
           </button>
         </div>
         
         {isMenuOpen && (
           <div className="md:hidden bg-white shadow-md">
-            <div className="container mx-auto py-4 space-y-3">
+            <div className="container mx-auto px-3 sm:px-4 py-3 sm:py-4 space-y-2 sm:space-y-3">
               <Link 
                 to="/cars" 
                 className={`block py-2 font-medium ${

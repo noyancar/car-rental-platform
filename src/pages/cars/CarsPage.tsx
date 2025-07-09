@@ -6,15 +6,15 @@ const CarsPage: React.FC = () => {
   const { isSearchPerformed } = useSearchStore();
   
   return (
-    <div className="py-20 bg-sandy-50 min-h-screen">
+    <div className="py-6 sm:py-8 md:py-10 bg-sandy-50 min-h-screen">
       <div className="container-custom">
         {/* Search Form - Always visible */}
-        <div className="mb-8">
+        <div className="mb-6 sm:mb-8">
           <SearchSummary />
         </div>
         
         {/* Main Content */}
-        <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
+        <div className="grid grid-cols-1 lg:grid-cols-4 gap-6 sm:gap-8">
           {/* Filters - Left Sidebar */}
           <div className="lg:col-span-1">
             {isSearchPerformed && <CarFilters />}

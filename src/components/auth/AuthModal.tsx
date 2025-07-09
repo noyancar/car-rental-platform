@@ -137,8 +137,8 @@ const AuthModal: React.FC<AuthModalProps> = ({
             <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
               <Check className="w-8 h-8 text-green-600" />
             </div>
-            <h3 className="text-xl font-semibold mb-2">Check your email!</h3>
-            <p className="text-gray-600 mb-6">
+            <h3 className="text-lg sm:text-xl font-semibold mb-2">Check your email!</h3>
+            <p className="text-sm sm:text-base text-gray-600 mb-4 sm:mb-6">
               We've sent a magic link to <strong>{email}</strong>
             </p>
             <Button
@@ -158,10 +158,10 @@ const AuthModal: React.FC<AuthModalProps> = ({
       return (
         <form onSubmit={handleMagicLink} className="space-y-6">
           <div>
-            <h2 className="text-2xl font-bold text-gray-900 mb-2">
+            <h2 className="text-xl sm:text-2xl font-bold text-gray-900 mb-1.5 sm:mb-2">
               Sign in with magic link
             </h2>
-            <p className="text-gray-600">
+            <p className="text-sm sm:text-base text-gray-600">
               We'll send you a link to sign in instantly, no password needed.
             </p>
           </div>
@@ -191,7 +191,7 @@ const AuthModal: React.FC<AuthModalProps> = ({
             <button
               type="button"
               onClick={() => setMode('signin')}
-              className="text-sm text-primary-700 hover:text-primary-800 underline"
+              className="text-xs sm:text-sm text-primary-700 hover:text-primary-800 underline"
             >
               Back to sign in
             </button>
@@ -201,12 +201,12 @@ const AuthModal: React.FC<AuthModalProps> = ({
     }
 
     return (
-      <div className="space-y-6">
+      <div className="space-y-4 sm:space-y-6">
         <div className="text-center">
-          <h2 className="text-3xl font-bold text-gray-900 mb-2">
+          <h2 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-1 sm:mb-2">
             {mode === 'signin' ? 'Welcome back' : 'Create an account'}
           </h2>
-          <p className="text-gray-600 text-sm">
+          <p className="text-gray-600 text-sm sm:text-base">
             {mode === 'signin' 
               ? 'Enter your credentials to access your account' 
               : 'Start your journey with NoyanCar today'}
@@ -234,36 +234,32 @@ const AuthModal: React.FC<AuthModalProps> = ({
           <div className="absolute inset-0 flex items-center">
             <div className="w-full border-t border-gray-200"></div>
           </div>
-          <div className="relative flex justify-center text-xs">
-            <span className="px-4 bg-white text-gray-500 uppercase tracking-wider">Or continue with</span>
+          <div className="relative flex justify-center text-xs sm:text-sm">
+            <span className="px-3 sm:px-4 bg-white text-gray-500 uppercase tracking-wider">Or continue with</span>
           </div>
         </div>
 
         {/* Email/Password Form */}
-        <form onSubmit={handleEmailPassword} className="space-y-4">
-          <div>
-            <Input
-              type="email"
-              label="Email address"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              placeholder="Enter your email"
-              required
-              className="w-full"
-            />
-          </div>
+        <form onSubmit={handleEmailPassword} className="space-y-3">
+          <Input
+            type="email"
+            label="Email address"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            placeholder="Enter your email"
+            required
+            className="w-full"
+          />
 
-          <div>
-            <Input
-              type="password"
-              label="Password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              placeholder="Enter your password"
-              required
-              className="w-full"
-            />
-          </div>
+          <Input
+            type="password"
+            label="Password"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            placeholder="Enter your password"
+            required
+            className="w-full"
+          />
 
           <Button
             type="submit"
@@ -272,23 +268,23 @@ const AuthModal: React.FC<AuthModalProps> = ({
             size="lg"
             isLoading={loading}
             disabled={loading}
-            className="mt-6"
+            className="!mt-4"
           >
             {mode === 'signin' ? 'Sign in' : 'Create account'}
           </Button>
         </form>
 
         {/* Alternative Actions */}
-        <div className="space-y-4 text-center">
+        <div className="space-y-2 sm:space-y-3 text-center">
           <button
             type="button"
             onClick={() => setMode('magic-link')}
-            className="text-sm text-primary-700 hover:text-primary-800 font-medium"
+            className="text-xs sm:text-sm text-primary-700 hover:text-primary-800 font-medium"
           >
             Sign in with magic link
           </button>
 
-          <div className="text-sm text-gray-600">
+          <div className="text-xs sm:text-sm text-gray-600">
             {mode === 'signin' ? "Don't have an account? " : "Already have an account? "}
             <button
               type="button"
@@ -305,13 +301,13 @@ const AuthModal: React.FC<AuthModalProps> = ({
 
   return (
     <Modal isOpen={isOpen} onClose={onClose} showCloseButton={false}>
-      <div className="relative bg-white rounded-2xl shadow-xl p-8 w-full max-w-md mx-auto">
+      <div className="relative bg-white rounded-2xl shadow-xl p-4 sm:p-6 md:p-8 w-full max-w-md mx-auto max-h-[90vh] overflow-y-auto">
         <button
           onClick={onClose}
-          className="absolute top-6 right-6 text-gray-400 hover:text-gray-600 transition-colors"
+          className="absolute top-3 right-3 sm:top-6 sm:right-6 text-gray-400 hover:text-gray-600 transition-colors z-10"
           aria-label="Close modal"
         >
-          <X size={20} />
+          <X className="h-5 w-5 sm:h-6 sm:w-6" />
         </button>
 
         <div className="max-w-sm mx-auto">

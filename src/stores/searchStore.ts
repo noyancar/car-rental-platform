@@ -44,14 +44,51 @@ interface SearchState {
   applyFilters: () => void;
 }
 
+// Helper function to get today's date in local timezone
+const getTodayDate = () => {
+  const today = new Date();
+  const year = today.getFullYear();
+  const month = String(today.getMonth() + 1).padStart(2, '0');
+  const day = String(today.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+};
+
+// Helper function to get tomorrow's date in local timezone
+const getTomorrowDate = () => {
+  const tomorrow = new Date();
+  tomorrow.setDate(tomorrow.getDate() + 1);
+  const year = tomorrow.getFullYear();
+  const month = String(tomorrow.getMonth() + 1).padStart(2, '0');
+  const day = String(tomorrow.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+};
+
+// Helper function to get next available hour
+const getNextAvailableHour = () => {
+  const now = new Date();
+  const currentHour = now.getHours();
+  const currentMinutes = now.getMinutes();
+  
+  // If it's past the current hour (e.g., 15:30), go to next hour (16:00)
+  // Add 1 hour buffer for booking preparation
+  let nextHour = currentMinutes > 0 ? currentHour + 2 : currentHour + 1;
+  
+  // If it's too late in the day, return tomorrow's first available hour
+  if (nextHour >= 22) {
+    return '09:00';
+  }
+  
+  return `${nextHour.toString().padStart(2, '0')}:00`;
+};
+
 // Default search parameters
 const defaultSearchParams: SearchParams = {
   location: 'select location',
   pickupLocation: 'select location',
   returnLocation: 'select location',
-  pickupDate: new Date().toISOString().split('T')[0],
-  pickupTime: '10:00',
-  returnDate: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+  pickupDate: getTodayDate(),
+  pickupTime: getNextAvailableHour(),
+  returnDate: getTomorrowDate(),
   returnTime: '10:00',
 };
 
@@ -80,7 +117,76 @@ export const useSearchStore = create<SearchState>((set, get) => ({
   },
   
   updateSearchParams: (params) => {
-    set({ searchParams: { ...get().searchParams, ...params } });
+    const currentParams = get().searchParams;
+    const newParams = { ...currentParams, ...params };
+    
+    // Check if we're selecting today's date
+    const today = getTodayDate();
+    const isPickupToday = newParams.pickupDate === today;
+    const isReturnToday = newParams.returnDate === today;
+    
+    // Handle pickup time validation for today
+    if ((params.pickupTime || params.pickupDate) && isPickupToday) {
+      const now = new Date();
+      const currentTimeInMinutes = now.getHours() * 60 + now.getMinutes();
+      
+      // Parse the selected pickup time
+      const [pickupHour, pickupMinute] = (newParams.pickupTime || '10:00').split(':').map(Number);
+      const pickupTimeInMinutes = pickupHour * 60 + pickupMinute;
+      
+      // If pickup time is in the past (with 1 hour buffer), update it
+      if (pickupTimeInMinutes < currentTimeInMinutes + 60) {
+        newParams.pickupTime = getNextAvailableHour();
+        
+        // Since same-day rental is not allowed anymore, no need to update return time
+      }
+    }
+    
+    // If pickup date is changed, check if return date needs to be updated
+    if (params.pickupDate && params.pickupDate !== currentParams.pickupDate) {
+      const pickupDate = new Date(params.pickupDate);
+      const returnDate = new Date(newParams.returnDate);
+      
+      // If return date is before or equal to new pickup date, set it to next day
+      if (returnDate <= pickupDate) {
+        const nextDay = new Date(pickupDate);
+        nextDay.setDate(nextDay.getDate() + 1);
+        newParams.returnDate = nextDay.toISOString().split('T')[0];
+      }
+    }
+    
+    // If return date is changed, ensure it's after pickup date
+    if (params.returnDate) {
+      const pickupDate = new Date(newParams.pickupDate);
+      const returnDate = new Date(params.returnDate);
+      
+      // Return date must be at least 1 day after pickup date
+      if (returnDate <= pickupDate) {
+        const nextDay = new Date(pickupDate);
+        nextDay.setDate(nextDay.getDate() + 1);
+        newParams.returnDate = nextDay.toISOString().split('T')[0];
+      }
+    }
+    
+    // Since same-day rental is not allowed, this validation is no longer needed
+    // Return date is always at least 1 day after pickup date
+    
+    // Ensure pickup date is not in the past
+    if (params.pickupDate) {
+      const todayDate = new Date();
+      todayDate.setHours(0, 0, 0, 0);
+      const selectedPickup = new Date(params.pickupDate);
+      selectedPickup.setHours(0, 0, 0, 0);
+      
+      if (selectedPickup < todayDate) {
+        newParams.pickupDate = getTodayDate();
+        newParams.returnDate = getTomorrowDate();
+        newParams.pickupTime = getNextAvailableHour();
+        newParams.returnTime = '10:00';
+      }
+    }
+    
+    set({ searchParams: newParams });
   },
   
   setFilters: (filters) => {
@@ -97,6 +203,12 @@ export const useSearchStore = create<SearchState>((set, get) => ({
     try {
       const { searchParams } = get();
       set({ loading: true, error: null });
+      
+      // Check if locations are selected
+      if (!searchParams.pickupLocation || searchParams.pickupLocation === 'select location' || 
+          !searchParams.returnLocation || searchParams.returnLocation === 'select location') {
+        throw new Error('Please select pickup and return locations');
+      }
       
       // Remove authentication requirement - users can search without login
       // Get current session but don't require it
@@ -148,7 +260,19 @@ export const useSearchStore = create<SearchState>((set, get) => ({
       
       if (!response.ok) {
         const errorText = await response.text();
-        throw new Error(`Error searching for cars: ${errorText}`);
+        
+        // Parse error message for user-friendly display
+        let userMessage = 'Unable to connect to our servers. Please check your internet connection and try again.';
+        
+        if (response.status === 500 || response.status === 503) {
+          userMessage = 'Our service is temporarily unavailable. Please try again in a few moments.';
+        } else if (errorText.includes('available') || response.status === 404) {
+          userMessage = 'No cars available for the selected dates. Please try different dates.';
+        } else if (errorText.includes('location')) {
+          userMessage = 'Please select pickup and return locations.';
+        }
+        
+        throw new Error(userMessage);
       }
       
       const result = await response.json();

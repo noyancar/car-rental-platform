@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { ArrowLeft, Calendar, CreditCard, AlertCircle, CheckCircle, Clock, Users, Gauge, MapPin, Info } from 'lucide-react';
-import { format, addDays, isBefore, isValid, parseISO } from 'date-fns';
+import { format, isBefore, isValid, parseISO } from 'date-fns';
 import { toast } from 'sonner';
 import { Button } from '../../components/ui/Button';
 import { Input } from '../../components/ui/Input';
@@ -226,6 +226,18 @@ const BookingPage: React.FC = () => {
       return;
     }
     
+    // Check if locations are selected
+    if (!pickupLocation || pickupLocation === 'select location') {
+      toast.error('Please select a pickup location');
+      return;
+    }
+    
+    const finalReturnLocation = sameReturnLocation ? pickupLocation : returnLocation;
+    if (!finalReturnLocation || finalReturnLocation === 'select location') {
+      toast.error('Please select a return location');
+      return;
+    }
+    
     // Check if quote is required
     if (deliveryFees.requiresQuote) {
       setShowQuoteModal(true);
@@ -357,9 +369,14 @@ const BookingPage: React.FC = () => {
     );
   }
   
-  // Calculate rental duration
+  // Calculate rental duration with time consideration
   const rentalDuration = startDate && endDate 
-    ? Math.max(1, Math.ceil((new Date(endDate).getTime() - new Date(startDate).getTime()) / (1000 * 60 * 60 * 24)))
+    ? (() => {
+        const startDateTime = new Date(`${startDate}T${pickupTime}`);
+        const endDateTime = new Date(`${endDate}T${returnTime}`);
+        const diffMs = endDateTime.getTime() - startDateTime.getTime();
+        return Math.ceil(diffMs / (1000 * 60 * 60 * 24));
+      })()
     : 0;
   
   // Generate breadcrumb items
@@ -739,10 +756,10 @@ const BookingPage: React.FC = () => {
                     </div>
                   )}
                   
-                  <p className="pt-2">
-                    <CreditCard size={16} className="inline mr-1" />
-                    <span className="text-secondary-800">Payment collected at pickup</span>
-                  </p>
+                  <div className="pt-2 flex items-center gap-2">
+                    <CreditCard size={16} className="text-green-600" />
+                    <span className="text-green-600 font-medium">Secure online payment</span>
+                  </div>
                 </div>
               </div>
             </div>

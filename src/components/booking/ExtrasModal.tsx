@@ -17,11 +17,11 @@ interface ExtrasModalProps {
 }
 
 const categoryInfo: Record<ExtraCategory, { label: string; icon: React.ReactNode }> = {
-  services: { label: 'Services', icon: <Sparkles className="w-5 h-5" /> },
-  safety: { label: 'Safety', icon: <Shield className="w-5 h-5" /> },
-  beach: { label: 'Beach', icon: <Umbrella className="w-5 h-5" /> },
-  tech: { label: 'Technology', icon: <Camera className="w-5 h-5" /> },
-  camping: { label: 'Camping', icon: <Package className="w-5 h-5" /> }
+  services: { label: 'Services', icon: <Sparkles className="w-4 h-4 sm:w-5 sm:h-5" /> },
+  safety: { label: 'Safety', icon: <Shield className="w-4 h-4 sm:w-5 sm:h-5" /> },
+  beach: { label: 'Beach', icon: <Umbrella className="w-4 h-4 sm:w-5 sm:h-5" /> },
+  tech: { label: 'Technology', icon: <Camera className="w-4 h-4 sm:w-5 sm:h-5" /> },
+  camping: { label: 'Camping', icon: <Package className="w-4 h-4 sm:w-5 sm:h-5" /> }
 };
 
 const iconMap: Record<string, React.ReactNode> = {
@@ -90,20 +90,20 @@ export default function ExtrasModal({
   };
 
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
-      <div className="bg-white rounded-2xl shadow-hawaii max-w-6xl w-full max-h-[90vh] overflow-hidden animate-slide-up">
+    <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-3 sm:p-4 z-50">
+      <div className="bg-white rounded-xl sm:rounded-2xl shadow-hawaii max-w-6xl w-full max-h-[90vh] overflow-hidden animate-slide-up">
         {/* Header */}
-        <div className="gradient-hawaii text-white p-6 flex justify-between items-center">
+        <div className="gradient-hawaii text-white p-4 sm:p-5 md:p-6 flex justify-between items-center">
           <div>
-            <h2 className="text-2xl font-display font-bold">Enhance Your Island Adventure</h2>
-            <p className="text-white/90 mt-1">Add extras to make your trip even better</p>
+            <h2 className="text-lg sm:text-xl md:text-2xl font-display font-bold">Enhance Your Island Adventure</h2>
+            <p className="text-white/90 text-sm sm:text-base mt-0.5 sm:mt-1">Add extras to make your trip even better</p>
           </div>
           <button
             onClick={onClose}
             className="p-2 hover:bg-white/20 rounded-lg transition-all duration-200 group"
             aria-label="Close modal"
           >
-            <X className="w-6 h-6 group-hover:rotate-90 transition-transform duration-200" />
+            <X className="w-5 h-5 sm:w-6 sm:h-6 group-hover:rotate-90 transition-transform duration-200" />
           </button>
         </div>
 
@@ -111,36 +111,36 @@ export default function ExtrasModal({
           {/* Left side - Categories and Extras */}
           <div className="flex-1 overflow-y-auto">
             {/* Category tabs */}
-            <div className="bg-sandy-100 border-b border-sandy-200 px-6 py-4">
-              <div className="flex gap-3">
+            <div className="bg-sandy-100 border-b border-sandy-200 px-3 py-3 sm:px-6 sm:py-4">
+              <div className="flex gap-2 sm:gap-3 overflow-x-auto scrollbar-hide">
                 {categories.map(category => (
                   <button
                     key={category}
                     onClick={() => setActiveCategory(category)}
-                    className={`px-4 py-2 rounded-lg flex items-center gap-2 transition-all duration-200 ${
+                    className={`px-3 py-1.5 sm:px-4 sm:py-2 rounded-lg flex items-center gap-1.5 sm:gap-2 transition-all duration-200 whitespace-nowrap ${
                       activeCategory === category 
                         ? 'bg-primary-600 text-white shadow-lg transform scale-105' 
                         : 'bg-white text-volcanic-700 hover:bg-sandy-200 hover:shadow-md'
                     }`}
                   >
                     {categoryInfo[category].icon}
-                    <span className="font-semibold">{categoryInfo[category].label}</span>
+                    <span className="font-semibold text-sm sm:text-base">{categoryInfo[category].label}</span>
                   </button>
                 ))}
               </div>
             </div>
 
             {/* Extras list */}
-            <div className="p-6">
+            <div className="p-3 sm:p-4 md:p-6">
               {loading ? (
                 <div className="text-center py-12">
                   <div className="loading-spinner h-12 w-12 mx-auto"></div>
-                  <p className="text-volcanic-500 mt-4">Loading extras...</p>
+                  <p className="text-volcanic-500 mt-3 sm:mt-4 text-sm sm:text-base">Loading extras...</p>
                 </div>
               ) : filteredExtras.length === 0 ? (
-                <p className="text-center text-volcanic-500 py-12">No extras available in this category</p>
+                <p className="text-center text-volcanic-500 py-8 sm:py-12 text-sm sm:text-base">No extras available in this category</p>
               ) : (
-                <div className="space-y-4">
+                <div className="space-y-3 sm:space-y-4">
                   {filteredExtras.map(extra => {
                     const quantity = getQuantity(extra.id);
                     const isSelected = quantity > 0;
@@ -149,7 +149,7 @@ export default function ExtrasModal({
                     return (
                       <div
                         key={extra.id}
-                        className={`p-6 rounded-xl border-2 transition-all duration-300 ${
+                        className={`p-4 sm:p-5 md:p-6 rounded-xl border-2 transition-all duration-300 ${
                           isSelected 
                             ? 'border-primary-500 bg-primary-50 shadow-lg' 
                             : 'border-sandy-200 hover:border-primary-300 hover:shadow-md bg-white'
@@ -159,7 +159,7 @@ export default function ExtrasModal({
                           <div className="flex-1">
                             <div className="flex items-center gap-3">
                               {extra.icon_name && iconMap[extra.icon_name]}
-                              <h3 className="text-lg font-display font-semibold text-volcanic-900">{extra.name}</h3>
+                              <h3 className="text-base sm:text-lg font-display font-semibold text-volcanic-900">{extra.name}</h3>
                               {isSelected && (
                                 <span className="bg-primary-100 text-primary-700 px-3 py-1 rounded-full text-sm flex items-center gap-1 font-medium">
                                   <Check className="w-4 h-4" />
@@ -168,10 +168,10 @@ export default function ExtrasModal({
                               )}
                             </div>
                             {extra.description && (
-                              <p className="text-volcanic-600 mt-2">{extra.description}</p>
+                              <p className="text-volcanic-600 mt-1.5 sm:mt-2 text-sm sm:text-base">{extra.description}</p>
                             )}
-                            <div className="flex items-center gap-4 mt-3">
-                              <span className="text-2xl font-bold text-volcanic-900">
+                            <div className="flex items-center gap-3 sm:gap-4 mt-2 sm:mt-3">
+                              <span className="text-lg sm:text-xl md:text-2xl font-bold text-volcanic-900">
                                 ${extra.price.toFixed(2)}
                                 <span className="text-sm font-normal text-volcanic-500 ml-1">
                                   {extra.price_type === 'per_day' ? '/day' : '/trip'}
@@ -186,7 +186,7 @@ export default function ExtrasModal({
                           </div>
                           
                           {/* Quantity controls */}
-                          <div className="ml-6">
+                          <div className="ml-3 sm:ml-4 md:ml-6">
                             {isAvailable ? (
                               <div className="flex items-center gap-2">
                                 <button

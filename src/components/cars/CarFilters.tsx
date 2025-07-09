@@ -28,9 +28,9 @@ const CarFilters: React.FC = () => {
       const uniqueMakes = [...new Set(searchResults.map(car => car.make))].sort();
       setMakes(uniqueMakes);
       
-      // Extract unique categories
-      const uniqueCategories = [...new Set(searchResults.map(car => car.category))].sort();
-      setCategories(uniqueCategories);
+      // Use predefined categories to ensure all are visible
+      const predefinedCategories = ['SUV', 'Sedan', 'Luxury', 'Convertible'];
+      setCategories(predefinedCategories);
       
       // Find price range
       const prices = searchResults.map(car => car.price_per_day);
@@ -80,10 +80,10 @@ const CarFilters: React.FC = () => {
   };
   
   return (
-    <div className="bg-white rounded-xl shadow-hawaii p-6">
-      <div className="flex items-center justify-between mb-6">
-        <h3 className="text-xl font-display font-semibold text-volcanic-900 flex items-center">
-          <Sliders size={20} className="mr-2 text-primary-600" />
+    <div className="bg-white rounded-xl shadow-hawaii p-4 sm:p-5 md:p-6">
+      <div className="flex items-center justify-between mb-4 sm:mb-5 md:mb-6">
+        <h3 className="text-base sm:text-lg md:text-xl font-display font-semibold text-volcanic-900 flex items-center">
+          <Sliders className="w-4 h-4 sm:w-5 sm:h-5 mr-1.5 sm:mr-2 text-primary-600" />
           Filter Cars
         </h3>
         
@@ -96,7 +96,7 @@ const CarFilters: React.FC = () => {
         </Button>
       </div>
       
-      <div className="space-y-4">
+      <div className="space-y-3 sm:space-y-4">
         {/* Make Filter */}
         <div>
           <Select

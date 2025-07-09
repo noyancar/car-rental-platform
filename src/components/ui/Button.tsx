@@ -36,11 +36,11 @@ export const Button = memo<ButtonProps>(({
     ghost: 'text-volcanic-700 hover:bg-sandy-200 focus:ring-sandy-400',
   };
   
-  // Size classes
+  // Size classes with better mobile touch targets
   const sizeClasses = {
-    sm: 'text-sm px-3 py-1.5',
-    md: 'text-base px-4 py-2',
-    lg: 'text-lg px-6 py-3',
+    sm: 'text-sm px-3 py-2 sm:px-3 sm:py-1.5 min-h-[36px] sm:min-h-0',
+    md: 'text-sm sm:text-base px-4 py-2.5 sm:px-4 sm:py-2 min-h-[40px] sm:min-h-0',
+    lg: 'text-base sm:text-lg px-5 py-3 sm:px-6 sm:py-3 min-h-[44px] sm:min-h-0',
   };
   
   // Width classes

@@ -90,12 +90,12 @@ const SearchSummary: React.FC = () => {
   };
   
   return (
-    <div className="bg-white rounded-xl shadow-hawaii p-6 mb-8 animate-fade-in">
+    <div className="bg-white rounded-xl shadow-hawaii p-4 sm:p-5 md:p-6 mb-6 sm:mb-8 animate-fade-in">
       {isEditing ? (
         // Edit mode
         <div className="space-y-6">
           <div className="flex justify-between items-center">
-            <h3 className="text-xl font-display font-semibold text-volcanic-900">
+            <h3 className="text-lg sm:text-xl font-display font-semibold text-volcanic-900">
               {!isSearchPerformed ? 'Find Your Perfect Car' : 'Edit Search Parameters'}
             </h3>
             {isSearchPerformed && (
@@ -236,15 +236,15 @@ const SearchSummary: React.FC = () => {
       ) : (
         // View mode
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center">
-          <div className="space-y-3 mb-4 md:mb-0">
-            <h3 className="text-xl font-display font-semibold text-volcanic-900">Your Search</h3>
+          <div className="space-y-2 sm:space-y-3 mb-4 md:mb-0">
+            <h3 className="text-base sm:text-lg md:text-xl font-display font-semibold text-volcanic-900">Your Search</h3>
             
             <div className="space-y-2">
               {/* Pickup Location */}
-              <div className="flex items-center text-volcanic-600">
-                <MapPin size={18} className="mr-2 text-primary-600 flex-shrink-0" />
-                <div className="flex items-center gap-2">
-                  <span className="text-sm text-gray-500">Pickup:</span>
+              <div className="flex items-start text-volcanic-600">
+                <MapPin className="w-4 h-4 sm:w-5 sm:h-5 mr-1.5 sm:mr-2 text-primary-600 flex-shrink-0 mt-0.5" />
+                <div className="flex flex-col sm:flex-row sm:items-center gap-0.5 sm:gap-2 min-w-0">
+                  <span className="text-xs sm:text-sm text-gray-500 shrink-0">Pickup:</span>
                   <LocationDisplay 
                     locationValue={searchParams.pickupLocation || searchParams.location || BASE_LOCATION?.value || ''} 
                     showIcon={false}
@@ -254,10 +254,10 @@ const SearchSummary: React.FC = () => {
               </div>
               
               {/* Return Location */}
-              <div className="flex items-center text-volcanic-600">
-                <ArrowRight size={18} className="mr-2 text-primary-600 flex-shrink-0" />
-                <div className="flex items-center gap-2">
-                  <span className="text-sm text-gray-500">Return:</span>
+              <div className="flex items-start text-volcanic-600">
+                <ArrowRight className="w-4 h-4 sm:w-5 sm:h-5 mr-1.5 sm:mr-2 text-primary-600 flex-shrink-0 mt-0.5" />
+                <div className="flex flex-col sm:flex-row sm:items-center gap-0.5 sm:gap-2 min-w-0">
+                  <span className="text-xs sm:text-sm text-gray-500 shrink-0">Return:</span>
                   <LocationDisplay 
                     locationValue={searchParams.returnLocation || searchParams.location || BASE_LOCATION?.value || ''} 
                     showIcon={false}
@@ -274,9 +274,9 @@ const SearchSummary: React.FC = () => {
                 
                 if (fees.totalFee > 0 || fees.requiresQuote) {
                   return (
-                    <div className="text-sm text-gray-600 ml-6">
+                    <div className="text-xs sm:text-sm text-gray-600 ml-5 sm:ml-6">
                       {fees.requiresQuote ? (
-                        <span className="text-orange-600 font-medium">Quote required for delivery</span>
+                        <span className="text-orange-600 font-medium">Quote required</span>
                       ) : (
                         <span>Delivery fee: <span className="font-medium text-green-600">${fees.totalFee}</span></span>
                       )}
@@ -287,12 +287,17 @@ const SearchSummary: React.FC = () => {
               })()}
             </div>
             
-            <div className="flex items-center text-volcanic-600">
-              <CalendarClock size={18} className="mr-2 text-primary-600" />
-              <span className="font-medium">
-                {formatDate(searchParams.pickupDate)} at {searchParams.pickupTime} - 
-                {formatDate(searchParams.returnDate)} at {searchParams.returnTime}
-              </span>
+            <div className="flex items-start text-volcanic-600">
+              <CalendarClock className="w-4 h-4 sm:w-5 sm:h-5 mr-1.5 sm:mr-2 text-primary-600 flex-shrink-0 mt-0.5" />
+              <div className="text-xs sm:text-sm md:text-base">
+                <span className="font-medium block sm:inline">
+                  {formatDate(searchParams.pickupDate)} at {searchParams.pickupTime}
+                </span>
+                <span className="text-gray-500 mx-1 hidden sm:inline">-</span>
+                <span className="font-medium block sm:inline">
+                  {formatDate(searchParams.returnDate)} at {searchParams.returnTime}
+                </span>
+              </div>
             </div>
           </div>
           
