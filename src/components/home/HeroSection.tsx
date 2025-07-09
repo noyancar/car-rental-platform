@@ -238,10 +238,7 @@ const HeroSection: React.FC = () => {
                   label="Return Time"
                   options={HOURS.map((hour) => ({
                     ...hour,
-                    disabled: isTimeDisabled(hour.value, searchParams.pickupTime, searchParams.pickupDate === searchParams.returnDate),
-                    label: isTimeDisabled(hour.value, searchParams.pickupTime, searchParams.pickupDate === searchParams.returnDate) 
-                      ? `${hour.label} (Not available)` 
-                      : hour.label
+                    disabled: isTimeDisabled(hour.value, searchParams.pickupTime, searchParams.pickupDate === searchParams.returnDate)
                   }))}
                   value={searchParams.returnTime}
                   onChange={(e) => updateSearchParams({ returnTime: e.target.value })}
