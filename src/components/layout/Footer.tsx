@@ -4,16 +4,16 @@ import { Car, Facebook, Twitter, Instagram, Linkedin, Mail, Phone, MapPin } from
 
 export const Footer: React.FC = () => {
   return (
-    <footer className="bg-secondary-800 text-white pt-16 pb-8">
+    <footer className="bg-secondary-800 text-white pt-8 sm:pt-12 md:pt-16 pb-6 sm:pb-8">
       <div className="container-custom mx-auto">
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 sm:gap-8">
           {/* Brand */}
           <div>
-            <div className="flex items-center mb-4">
-              <Car className="h-8 w-8" />
-              <span className="ml-2 text-xl font-bold">Noyan Car</span>
+            <div className="flex items-center mb-3 sm:mb-4">
+              <Car className="h-6 w-6 sm:h-7 sm:w-7 md:h-8 md:w-8" />
+              <span className="ml-1.5 sm:ml-2 text-base sm:text-lg md:text-xl font-bold">Noyan Car</span>
             </div>
-            <p className="text-secondary-300 mb-6">
+            <p className="text-secondary-300 text-sm sm:text-base mb-4 sm:mb-6">
               Experience premium car rentals with exceptional service and luxury vehicles for any occasion.
             </p>
             <div className="flex space-x-4">
@@ -34,8 +34,8 @@ export const Footer: React.FC = () => {
           
           {/* Quick Links */}
           <div>
-            <h3 className="text-lg font-semibold mb-4 text-white">Quick Links</h3>
-            <ul className="space-y-2">
+            <h3 className="text-base sm:text-lg font-semibold mb-3 sm:mb-4 text-white">Quick Links</h3>
+            <ul className="space-y-1.5 sm:space-y-2 text-sm sm:text-base">
               <li>
                 <Link to="/cars" className="text-secondary-300 hover:text-white transition-colors">
                   Browse Cars
@@ -66,8 +66,8 @@ export const Footer: React.FC = () => {
           
           {/* Categories */}
           <div>
-            <h3 className="text-lg font-semibold mb-4 text-white">Car Categories</h3>
-            <ul className="space-y-2">
+            <h3 className="text-base sm:text-lg font-semibold mb-3 sm:mb-4 text-white">Car Categories</h3>
+            <ul className="space-y-1.5 sm:space-y-2 text-sm sm:text-base">
               <li>
                 <Link to="/cars?category=luxury" className="text-secondary-300 hover:text-white transition-colors">
                   Luxury Cars
@@ -98,8 +98,8 @@ export const Footer: React.FC = () => {
           
           {/* Contact */}
           <div>
-            <h3 className="text-lg font-semibold mb-4 text-white">Contact Us</h3>
-            <ul className="space-y-4">
+            <h3 className="text-base sm:text-lg font-semibold mb-3 sm:mb-4 text-white">Contact Us</h3>
+            <ul className="space-y-3 sm:space-y-4 text-sm sm:text-base">
               <li className="flex items-start">
                 <MapPin className="h-5 w-5 mr-2 text-secondary-300 mt-0.5" />
                 <span className="text-secondary-300">
@@ -123,9 +123,9 @@ export const Footer: React.FC = () => {
           </div>
         </div>
         
-        <div className="border-t border-secondary-700 mt-12 pt-8 text-center text-secondary-400">
-          <p>© {new Date().getFullYear()} DriveLuxe. All rights reserved.</p>
-          <div className="mt-2 space-x-4">
+        <div className="border-t border-secondary-700 mt-8 sm:mt-12 pt-6 sm:pt-8 text-center text-secondary-400">
+          <p className="text-sm sm:text-base">© {new Date().getFullYear()} DriveLuxe. All rights reserved.</p>
+          <div className="mt-2 space-x-3 sm:space-x-4 text-sm sm:text-base">
             <Link to="/terms" className="text-secondary-400 hover:text-white transition-colors">
               Terms of Service
             </Link>

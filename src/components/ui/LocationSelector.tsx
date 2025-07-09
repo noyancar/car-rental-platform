@@ -116,21 +116,21 @@ export function LocationDisplay({
   if (!location) return null;
   
   return (
-    <div className={cn("flex items-center gap-2", className)}>
+    <div className={cn("flex items-center gap-1 sm:gap-2", className)}>
       {showIcon && (
         <span className="text-gray-500">
           {categoryIcons[location.category as LocationCategory]}
         </span>
       )}
-      <span>{location.label}</span>
+      <span className="text-xs sm:text-sm md:text-base truncate max-w-[200px] sm:max-w-none">{location.label}</span>
       {showFee && location.fee > 0 && (
-        <span className="text-sm text-gray-500">
-          (${location.fee} delivery)
+        <span className="text-xs sm:text-sm text-gray-500 whitespace-nowrap">
+          (${location.fee})
         </span>
       )}
       {showFee && location.fee === -1 && (
-        <span className="text-sm text-gray-500">
-          (Quote required)
+        <span className="text-xs sm:text-sm text-gray-500 whitespace-nowrap">
+          (Quote)
         </span>
       )}
     </div>

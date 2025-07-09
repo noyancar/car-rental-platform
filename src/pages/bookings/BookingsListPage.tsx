@@ -41,7 +41,7 @@ const BookingsListPage: React.FC = () => {
   
   if (loading) {
     return (
-      <div className="min-h-screen pt-16 pb-12 flex flex-col items-center justify-center">
+      <div className="min-h-screen pt-20 pb-12 flex flex-col items-center justify-center">
         <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary-800"></div>
       </div>
     );
@@ -49,7 +49,7 @@ const BookingsListPage: React.FC = () => {
   
   if (error) {
     return (
-      <div className="min-h-screen pt-16 pb-12 flex flex-col items-center justify-center">
+      <div className="min-h-screen pt-20 pb-12 flex flex-col items-center justify-center">
         <div className="bg-error-50 text-error-500 p-4 rounded-md">
           Error loading bookings: {error}
         </div>
@@ -58,7 +58,7 @@ const BookingsListPage: React.FC = () => {
   }
   
   return (
-    <div className="min-h-screen pt-16 pb-12 bg-secondary-50">
+    <div className="min-h-screen pt-20 pb-12 bg-secondary-50">
       <div className="container-custom">
         <PageHeader
           title="My Bookings"

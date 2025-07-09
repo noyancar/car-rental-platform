@@ -15,7 +15,7 @@ const DealsPage: React.FC = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen pt-16 pb-12 flex items-center justify-center bg-secondary-50">
+      <div className="min-h-screen pt-20 pb-12 flex items-center justify-center bg-secondary-50">
         <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary-800"></div>
       </div>
     );
@@ -23,7 +23,7 @@ const DealsPage: React.FC = () => {
   
   if (error) {
     return (
-      <div className="min-h-screen pt-16 pb-12 flex items-center justify-center bg-secondary-50">
+      <div className="min-h-screen pt-20 pb-12 flex items-center justify-center bg-secondary-50">
         <div className="bg-error-50 text-error-500 p-4 rounded-md">
           Error loading campaigns: {error}
         </div>
@@ -32,7 +32,7 @@ const DealsPage: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen pt-16 pb-12 bg-secondary-50">
+    <div className="min-h-screen pt-20 pb-12 bg-secondary-50">
       <div className="container-custom">
         {/* Hero Section */}
         <div className="text-center mb-16">
