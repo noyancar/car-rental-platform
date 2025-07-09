@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { ArrowLeft, Calendar, CreditCard, AlertCircle, CheckCircle, Clock, Users, Gauge, MapPin, Info } from 'lucide-react';
-import { format, addDays, isBefore, isValid, parseISO } from 'date-fns';
+import { format, isBefore, isValid, parseISO } from 'date-fns';
 import { toast } from 'sonner';
 import { Button } from '../../components/ui/Button';
 import { Input } from '../../components/ui/Input';
@@ -744,10 +744,10 @@ const BookingPage: React.FC = () => {
                     </div>
                   )}
                   
-                  <p className="pt-2">
-                    <CreditCard size={16} className="inline mr-1" />
-                    <span className="text-secondary-800">Payment collected at pickup</span>
-                  </p>
+                  <div className="pt-2 flex items-center gap-2">
+                    <CreditCard size={16} className="text-green-600" />
+                    <span className="text-green-600 font-medium">Secure online payment</span>
+                  </div>
                 </div>
               </div>
             </div>
