@@ -65,18 +65,7 @@ export function LocationSelector({
       <select
         value={value}
         onChange={(e) => onChange(e.target.value)}
-        className="w-full px-3 py-2 border-2 border-gray-400 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white text-gray-900 min-h-[40px]"
-        style={{
-          display: 'block',
-          width: '100%',
-          padding: '8px 12px',
-          border: '2px solid #9CA3AF',
-          borderRadius: '8px',
-          backgroundColor: 'white',
-          color: '#111827',
-          minHeight: '40px',
-          fontSize: '16px'
-        }}
+        className="w-full px-3 sm:px-4 py-2 sm:py-3 border-2 border-gray-400 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white text-gray-900 min-h-[36px] sm:min-h-[40px] text-sm sm:text-base"
       >
         <option value="">{placeholder}</option>
         

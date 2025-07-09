@@ -38,9 +38,9 @@ export const Button = memo<ButtonProps>(({
   
   // Size classes
   const sizeClasses = {
-    sm: 'text-sm px-3 py-1.5',
-    md: 'text-base px-4 py-2',
-    lg: 'text-lg px-6 py-3',
+    sm: 'text-xs sm:text-sm px-2 sm:px-3 py-1 sm:py-1.5',
+    md: 'text-sm sm:text-base px-3 sm:px-4 py-1.5 sm:py-2',
+    lg: 'text-base sm:text-lg px-4 sm:px-6 py-2 sm:py-3',
   };
   
   // Width classes

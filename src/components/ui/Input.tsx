@@ -20,7 +20,7 @@ export const Input: React.FC<InputProps> = ({
   const inputId = id || generatedId;
   
   return (
-    <div className="w-full mb-4">
+    <div className="w-full">
       {label && (
         <label 
           htmlFor={inputId} 
@@ -40,11 +40,11 @@ export const Input: React.FC<InputProps> = ({
         <input
           id={inputId}
           className={`
-            w-full px-4 py-3 rounded-md border 
+            w-full px-3 sm:px-4 py-2 sm:py-3 rounded-md border text-sm sm:text-base
             ${error ? 'border-error-500 focus:ring-error-500' : 'border-secondary-300 focus:ring-primary-500'} 
             focus:outline-none focus:ring-2 focus:border-transparent
-            ${leftIcon ? 'pl-10' : ''}
-            ${rightIcon ? 'pr-10' : ''}
+            ${leftIcon ? 'pl-9 sm:pl-10' : ''}
+            ${rightIcon ? 'pr-9 sm:pr-10' : ''}
             ${className}
           `}
           {...props}
