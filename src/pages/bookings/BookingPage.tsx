@@ -357,9 +357,14 @@ const BookingPage: React.FC = () => {
     );
   }
   
-  // Calculate rental duration
+  // Calculate rental duration with time consideration
   const rentalDuration = startDate && endDate 
-    ? Math.max(1, Math.ceil((new Date(endDate).getTime() - new Date(startDate).getTime()) / (1000 * 60 * 60 * 24)))
+    ? (() => {
+        const startDateTime = new Date(`${startDate}T${pickupTime}`);
+        const endDateTime = new Date(`${endDate}T${returnTime}`);
+        const diffMs = endDateTime.getTime() - startDateTime.getTime();
+        return Math.ceil(diffMs / (1000 * 60 * 60 * 24));
+      })()
     : 0;
   
   // Generate breadcrumb items
