@@ -5,11 +5,13 @@ interface InputProps extends InputHTMLAttributes<HTMLInputElement> {
   error?: string;
   leftIcon?: React.ReactNode;
   rightIcon?: React.ReactNode;
+  hint?: string;
 }
 
 export const Input: React.FC<InputProps> = ({
   label,
   error,
+  hint,
   leftIcon,
   rightIcon,
   className = '',
@@ -27,6 +29,7 @@ export const Input: React.FC<InputProps> = ({
           className="block text-sm font-medium text-secondary-700 mb-1"
         >
           {label}
+          {hint && <span className="text-xs text-gray-500 ml-1">({hint})</span>}
         </label>
       )}
       

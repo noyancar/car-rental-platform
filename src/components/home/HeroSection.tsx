@@ -181,12 +181,14 @@ const HeroSection: React.FC = () => {
               <div className="space-y-3">
                 <Input
                   label="Pickup Date"
+                  hint="MM/DD/YYYY"
                   type="date"
                   value={searchParams.pickupDate}
                   onChange={(e) => updateSearchParams({ pickupDate: e.target.value })}
                   min={new Date().toISOString().split('T')[0]}
                   leftIcon={<CalendarDays className="text-primary-600" size={18} />}
                   className="bg-white/90 backdrop-blur-sm border-transparent focus:border-primary-500 text-secondary-800"
+                  placeholder="MM/DD/YYYY"
                 />
                 <Select
                   label="Pickup Time"
@@ -202,12 +204,18 @@ const HeroSection: React.FC = () => {
               <div className="space-y-3">
                 <Input
                   label="Return Date"
+                  hint="MM/DD/YYYY"
                   type="date"
                   value={searchParams.returnDate}
                   onChange={(e) => updateSearchParams({ returnDate: e.target.value })}
-                  min={searchParams.pickupDate}
+                  min={(() => {
+                    const pickupDate = new Date(searchParams.pickupDate);
+                    pickupDate.setDate(pickupDate.getDate() + 1);
+                    return pickupDate.toISOString().split('T')[0];
+                  })()}
                   leftIcon={<CalendarDays className="text-primary-600" size={18} />}
                   className="bg-white/90 backdrop-blur-sm border-transparent focus:border-primary-500 text-secondary-800"
+                  placeholder="MM/DD/YYYY"
                 />
                 <Select
                   label="Return Time"
