@@ -257,7 +257,6 @@ const AdminCars: React.FC = () => {
                 { value: 'suv', label: 'SUV' },
                 { value: 'sedan', label: 'Sedan' },
                 { value: 'convertible', label: 'Convertible' },
-                { value: 'electric', label: 'Electric' },
               ]}
               value={filterCategory}
               onChange={(e) => setFilterCategory(e.target.value)}
@@ -446,8 +445,7 @@ const AdminCars: React.FC = () => {
                     { value: 'suv', label: 'SUV' },
                     { value: 'sedan', label: 'Sedan' },
                     { value: 'convertible', label: 'Convertible' },
-                    { value: 'electric', label: 'Electric' },
-                  ]}
+                      ]}
                   value={editingCar?.category || newCar.category}
                   onChange={(e) => editingCar
                     ? setEditingCar({ ...editingCar, category: e.target.value })

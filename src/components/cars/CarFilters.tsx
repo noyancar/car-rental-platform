@@ -28,9 +28,9 @@ const CarFilters: React.FC = () => {
       const uniqueMakes = [...new Set(searchResults.map(car => car.make))].sort();
       setMakes(uniqueMakes);
       
-      // Extract unique categories
-      const uniqueCategories = [...new Set(searchResults.map(car => car.category))].sort();
-      setCategories(uniqueCategories);
+      // Use predefined categories to ensure all are visible
+      const predefinedCategories = ['SUV', 'Sedan', 'Luxury', 'Convertible'];
+      setCategories(predefinedCategories);
       
       // Find price range
       const prices = searchResults.map(car => car.price_per_day);
