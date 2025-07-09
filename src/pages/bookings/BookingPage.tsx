@@ -226,6 +226,18 @@ const BookingPage: React.FC = () => {
       return;
     }
     
+    // Check if locations are selected
+    if (!pickupLocation || pickupLocation === 'select location') {
+      toast.error('Please select a pickup location');
+      return;
+    }
+    
+    const finalReturnLocation = sameReturnLocation ? pickupLocation : returnLocation;
+    if (!finalReturnLocation || finalReturnLocation === 'select location') {
+      toast.error('Please select a return location');
+      return;
+    }
+    
     // Check if quote is required
     if (deliveryFees.requiresQuote) {
       setShowQuoteModal(true);

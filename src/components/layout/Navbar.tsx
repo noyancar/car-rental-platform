@@ -145,7 +145,7 @@ export const Navbar: React.FC = () => {
         
         {isMenuOpen && (
           <div className="md:hidden bg-white shadow-md">
-            <div className="container mx-auto py-4 space-y-3">
+            <div className="container mx-auto px-4 py-4 space-y-3">
               <Link 
                 to="/cars" 
                 className={`block py-2 font-medium ${

@@ -204,6 +204,12 @@ export const useSearchStore = create<SearchState>((set, get) => ({
       const { searchParams } = get();
       set({ loading: true, error: null });
       
+      // Check if locations are selected
+      if (!searchParams.pickupLocation || searchParams.pickupLocation === 'select location' || 
+          !searchParams.returnLocation || searchParams.returnLocation === 'select location') {
+        throw new Error('Please select pickup and return locations');
+      }
+      
       // Remove authentication requirement - users can search without login
       // Get current session but don't require it
       const { data: { session } } = await supabase.auth.getSession();
@@ -254,7 +260,19 @@ export const useSearchStore = create<SearchState>((set, get) => ({
       
       if (!response.ok) {
         const errorText = await response.text();
-        throw new Error(`Error searching for cars: ${errorText}`);
+        
+        // Parse error message for user-friendly display
+        let userMessage = 'Unable to connect to our servers. Please check your internet connection and try again.';
+        
+        if (response.status === 500 || response.status === 503) {
+          userMessage = 'Our service is temporarily unavailable. Please try again in a few moments.';
+        } else if (errorText.includes('available') || response.status === 404) {
+          userMessage = 'No cars available for the selected dates. Please try different dates.';
+        } else if (errorText.includes('location')) {
+          userMessage = 'Please select pickup and return locations.';
+        }
+        
+        throw new Error(userMessage);
       }
       
       const result = await response.json();

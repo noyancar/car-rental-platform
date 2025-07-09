@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { CalendarDays, Search, Info, Clock } from 'lucide-react';
+import { toast } from 'sonner';
 import { Button } from '../ui/Button';
 import { Input } from '../ui/Input';
 import { Select } from '../ui/Select';
@@ -55,11 +56,23 @@ const HeroSection: React.FC = () => {
   const handleSearch = async (e: React.FormEvent) => {
     e.preventDefault();
     
+    // Check if locations are selected
+    if (!pickupLocation || pickupLocation === 'select location') {
+      toast.error('Please select a pickup location');
+      return;
+    }
+    
+    const finalReturnLocation = sameReturnLocation ? pickupLocation : returnLocation;
+    if (!finalReturnLocation || finalReturnLocation === 'select location') {
+      toast.error('Please select a return location');
+      return;
+    }
+    
     // Update search params with selected locations
     updateSearchParams({ 
       location: pickupLocation,
       pickupLocation,
-      returnLocation: sameReturnLocation ? pickupLocation : returnLocation
+      returnLocation: finalReturnLocation
     });
     
     // Search for available cars with current parameters

@@ -201,12 +201,12 @@ const AuthModal: React.FC<AuthModalProps> = ({
     }
 
     return (
-      <div className="space-y-6">
+      <div className="space-y-4 sm:space-y-6">
         <div className="text-center">
-          <h2 className="text-3xl font-bold text-gray-900 mb-2">
+          <h2 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-1 sm:mb-2">
             {mode === 'signin' ? 'Welcome back' : 'Create an account'}
           </h2>
-          <p className="text-gray-600 text-sm">
+          <p className="text-gray-600 text-xs sm:text-sm">
             {mode === 'signin' 
               ? 'Enter your credentials to access your account' 
               : 'Start your journey with NoyanCar today'}
@@ -240,30 +240,26 @@ const AuthModal: React.FC<AuthModalProps> = ({
         </div>
 
         {/* Email/Password Form */}
-        <form onSubmit={handleEmailPassword} className="space-y-4">
-          <div>
-            <Input
-              type="email"
-              label="Email address"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              placeholder="Enter your email"
-              required
-              className="w-full"
-            />
-          </div>
+        <form onSubmit={handleEmailPassword} className="space-y-3">
+          <Input
+            type="email"
+            label="Email address"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            placeholder="Enter your email"
+            required
+            className="w-full"
+          />
 
-          <div>
-            <Input
-              type="password"
-              label="Password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              placeholder="Enter your password"
-              required
-              className="w-full"
-            />
-          </div>
+          <Input
+            type="password"
+            label="Password"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            placeholder="Enter your password"
+            required
+            className="w-full"
+          />
 
           <Button
             type="submit"
@@ -272,23 +268,23 @@ const AuthModal: React.FC<AuthModalProps> = ({
             size="lg"
             isLoading={loading}
             disabled={loading}
-            className="mt-6"
+            className="!mt-4"
           >
             {mode === 'signin' ? 'Sign in' : 'Create account'}
           </Button>
         </form>
 
         {/* Alternative Actions */}
-        <div className="space-y-4 text-center">
+        <div className="space-y-2 sm:space-y-3 text-center">
           <button
             type="button"
             onClick={() => setMode('magic-link')}
-            className="text-sm text-primary-700 hover:text-primary-800 font-medium"
+            className="text-xs sm:text-sm text-primary-700 hover:text-primary-800 font-medium"
           >
             Sign in with magic link
           </button>
 
-          <div className="text-sm text-gray-600">
+          <div className="text-xs sm:text-sm text-gray-600">
             {mode === 'signin' ? "Don't have an account? " : "Already have an account? "}
             <button
               type="button"
@@ -305,10 +301,10 @@ const AuthModal: React.FC<AuthModalProps> = ({
 
   return (
     <Modal isOpen={isOpen} onClose={onClose} showCloseButton={false}>
-      <div className="relative bg-white rounded-2xl shadow-xl p-8 w-full max-w-md mx-auto">
+      <div className="relative bg-white rounded-2xl shadow-xl p-4 sm:p-6 md:p-8 w-full max-w-md mx-auto max-h-[90vh] overflow-y-auto">
         <button
           onClick={onClose}
-          className="absolute top-6 right-6 text-gray-400 hover:text-gray-600 transition-colors"
+          className="absolute top-3 right-3 sm:top-6 sm:right-6 text-gray-400 hover:text-gray-600 transition-colors z-10"
           aria-label="Close modal"
         >
           <X size={20} />
