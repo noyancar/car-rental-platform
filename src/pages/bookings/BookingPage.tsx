@@ -576,7 +576,7 @@ const BookingPage: React.FC = () => {
                                     disabled={isDisabled}
                                     style={isDisabled ? { color: '#9CA3AF', backgroundColor: '#F3F4F6' } : {}}
                                   >
-                                    {hourValue} {isDisabled ? '(Not available)' : ''}
+                                    {hourValue}
                                   </option>
                                 );
                               })}
