@@ -33,8 +33,12 @@ const BookingPage: React.FC = () => {
   const { calculateDeliveryFee, getLocationByValue, DEFAULT_LOCATION } = useLocations();
   
   // Initialize dates from searchParams if available, otherwise use default values
-  const [startDate, setStartDate] = useState(isSearchPerformed ? searchParams.pickupDate : format(new Date(), 'yyyy-MM-dd'));
-  const [endDate, setEndDate] = useState(isSearchPerformed ? searchParams.returnDate : '');
+  const today = new Date();
+  const tomorrow = new Date();
+  tomorrow.setDate(tomorrow.getDate() + 1);
+  
+  const [startDate, setStartDate] = useState(isSearchPerformed ? searchParams.pickupDate : format(today, 'yyyy-MM-dd'));
+  const [endDate, setEndDate] = useState(isSearchPerformed ? searchParams.returnDate : format(tomorrow, 'yyyy-MM-dd'));
   const [pickupTime, setPickupTime] = useState(isSearchPerformed ? searchParams.pickupTime : '10:00');
   const [returnTime, setReturnTime] = useState(isSearchPerformed ? searchParams.returnTime : '10:00');
   const [totalPrice, setTotalPrice] = useState(0);
@@ -107,22 +111,43 @@ const BookingPage: React.FC = () => {
     }
 
     if (isBefore(end, start)) {
-      setValidationMessage('End date must be after start date');
+      setValidationMessage('Return date cannot be before pickup date');
       return false;
+    }
+    
+    // For same-day rentals, validate time
+    if (startDate === endDate) {
+      const [pickupHour, pickupMinute] = pickupTime.split(':').map(Number);
+      const [returnHour, returnMinute] = returnTime.split(':').map(Number);
+      const pickupTimeInMinutes = pickupHour * 60 + pickupMinute;
+      const returnTimeInMinutes = returnHour * 60 + returnMinute;
+      
+      if (returnTimeInMinutes <= pickupTimeInMinutes) {
+        setValidationMessage('For same-day rentals, return time must be after pickup time');
+        return false;
+      }
     }
 
     setValidationMessage('');
     return true;
-  }, [startDate, endDate]);
+  }, [startDate, endDate, pickupTime, returnTime]);
 
   // Handle start date change
   const handleStartDateChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const newStartDate = e.target.value;
     setStartDate(newStartDate);
     
-    // Clear end date if it's before new start date
+    // If end date is before new start date, set it to next day by default
     if (endDate && isBefore(parseISO(endDate), parseISO(newStartDate))) {
-      setEndDate('');
+      const nextDay = new Date(newStartDate);
+      nextDay.setDate(nextDay.getDate() + 1);
+      setEndDate(format(nextDay, 'yyyy-MM-dd'));
+    }
+    // If no end date set, default to next day
+    else if (!endDate) {
+      const nextDay = new Date(newStartDate);
+      nextDay.setDate(nextDay.getDate() + 1);
+      setEndDate(format(nextDay, 'yyyy-MM-dd'));
     }
     
     // Reset availability status
@@ -132,18 +157,79 @@ const BookingPage: React.FC = () => {
 
   // Handle end date change
   const handleEndDateChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setEndDate(e.target.value);
+    const newEndDate = e.target.value;
+    setEndDate(newEndDate);
     setIsAvailable(null);
     setShowPriceSummary(false);
+    
+    // If switching to same-day rental, validate return time
+    if (startDate === newEndDate) {
+      const [pickupHour] = pickupTime.split(':').map(Number);
+      const [returnHour] = returnTime.split(':').map(Number);
+      
+      if (returnHour <= pickupHour) {
+        // Auto-adjust return time to be at least 1 hour after pickup
+        const newReturnHour = pickupHour + 1;
+        if (newReturnHour < 24) {
+          setReturnTime(`${newReturnHour.toString().padStart(2, '0')}:00`);
+        } else {
+          // Can't do same-day rental if pickup is too late
+          toast.info('Same-day rental not available for late pickup times');
+          const nextDay = new Date(startDate);
+          nextDay.setDate(nextDay.getDate() + 1);
+          setEndDate(format(nextDay, 'yyyy-MM-dd'));
+        }
+      }
+    }
   };
 
   // Handle time changes
   const handlePickupTimeChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-    setPickupTime(e.target.value);
+    const newPickupTime = e.target.value;
+    setPickupTime(newPickupTime);
+    
+    // If same-day rental, ensure return time is still valid
+    if (startDate === endDate) {
+      const [newPickupHour] = newPickupTime.split(':').map(Number);
+      const [returnHour] = returnTime.split(':').map(Number);
+      
+      if (returnHour <= newPickupHour) {
+        // Auto-adjust return time to be at least 1 hour after pickup
+        const newReturnHour = newPickupHour + 1;
+        if (newReturnHour < 24) {
+          setReturnTime(`${newReturnHour.toString().padStart(2, '0')}:00`);
+        } else {
+          // If it would go past midnight, set return to next day
+          const nextDay = new Date(startDate);
+          nextDay.setDate(nextDay.getDate() + 1);
+          setEndDate(format(nextDay, 'yyyy-MM-dd'));
+          setReturnTime('10:00');
+        }
+      }
+    }
   };
 
   const handleReturnTimeChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-    setReturnTime(e.target.value);
+    const newReturnTime = e.target.value;
+    
+    // If same-day rental, validate return time is after pickup time
+    if (startDate === endDate) {
+      const [pickupHour] = pickupTime.split(':').map(Number);
+      const [returnHour] = newReturnTime.split(':').map(Number);
+      
+      if (returnHour <= pickupHour) {
+        // This shouldn't happen with disabled options, but keep as fallback
+        toast.error('Return time must be after pickup time for same-day rentals');
+        // Set to first available time
+        const firstAvailableHour = pickupHour + 1;
+        if (firstAvailableHour < 24) {
+          setReturnTime(`${firstAvailableHour.toString().padStart(2, '0')}:00`);
+        }
+        return;
+      }
+    }
+    
+    setReturnTime(newReturnTime);
   };
   
   // Update price when dates change
@@ -422,7 +508,7 @@ const BookingPage: React.FC = () => {
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div>
                           <Input
-                            label="Start Date"
+                            label="Pickup Date"
                             type="date"
                             value={startDate}
                             onChange={handleStartDateChange}
@@ -433,7 +519,7 @@ const BookingPage: React.FC = () => {
                         
                         <div>
                           <Input
-                            label="End Date"
+                            label="Return Date"
                             type="date"
                             value={endDate}
                             onChange={handleEndDateChange}
@@ -479,9 +565,18 @@ const BookingPage: React.FC = () => {
                             >
                               {Array.from({ length: 24 }, (_, i) => {
                                 const hour = i.toString().padStart(2, '0');
+                                const hourValue = `${hour}:00`;
+                                const isSameDay = startDate === endDate;
+                                const isDisabled = isSameDay && parseInt(hour) <= parseInt(pickupTime.split(':')[0]);
+                                
                                 return (
-                                  <option key={hour} value={`${hour}:00`}>
-                                    {`${hour}:00`}
+                                  <option 
+                                    key={hour} 
+                                    value={hourValue}
+                                    disabled={isDisabled}
+                                    style={isDisabled ? { color: '#9CA3AF', backgroundColor: '#F3F4F6' } : {}}
+                                  >
+                                    {hourValue} {isDisabled ? '(Not available)' : ''}
                                   </option>
                                 );
                               })}
