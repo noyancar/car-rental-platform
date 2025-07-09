@@ -138,38 +138,70 @@ export const useSearchStore = create<SearchState>((set, get) => ({
       if (pickupTimeInMinutes < currentTimeInMinutes + 60) {
         newParams.pickupTime = getNextAvailableHour();
         
-        // Since same-day rental is not allowed anymore, no need to update return time
+        // If same-day rental, ensure return time is after pickup time
+        if (newParams.pickupDate === newParams.returnDate) {
+          const [returnHour] = (newParams.returnTime || '10:00').split(':').map(Number);
+          const newPickupHour = parseInt(newParams.pickupTime.split(':')[0]);
+          if (returnHour <= newPickupHour) {
+            newParams.returnTime = `${(newPickupHour + 1).toString().padStart(2, '0')}:00`;
+          }
+        }
       }
     }
     
-    // If pickup date is changed, check if return date needs to be updated
+    // If pickup date is changed, set default return date to next day (but allow same-day)
     if (params.pickupDate && params.pickupDate !== currentParams.pickupDate) {
       const pickupDate = new Date(params.pickupDate);
       const returnDate = new Date(newParams.returnDate);
       
-      // If return date is before or equal to new pickup date, set it to next day
-      if (returnDate <= pickupDate) {
+      // If return date is before new pickup date, set it to next day by default
+      if (returnDate < pickupDate) {
+        const nextDay = new Date(pickupDate);
+        nextDay.setDate(nextDay.getDate() + 1);
+        newParams.returnDate = nextDay.toISOString().split('T')[0];
+      }
+      // If pickup date was changed and no explicit return date was provided, set default to next day
+      else if (!params.returnDate) {
         const nextDay = new Date(pickupDate);
         nextDay.setDate(nextDay.getDate() + 1);
         newParams.returnDate = nextDay.toISOString().split('T')[0];
       }
     }
     
-    // If return date is changed, ensure it's after pickup date
+    // If return date is changed, validate based on pickup date
     if (params.returnDate) {
       const pickupDate = new Date(newParams.pickupDate);
       const returnDate = new Date(params.returnDate);
       
-      // Return date must be at least 1 day after pickup date
-      if (returnDate <= pickupDate) {
-        const nextDay = new Date(pickupDate);
-        nextDay.setDate(nextDay.getDate() + 1);
-        newParams.returnDate = nextDay.toISOString().split('T')[0];
+      // Return date must not be before pickup date
+      if (returnDate < pickupDate) {
+        // Set to same day as pickup (allow same-day rental)
+        newParams.returnDate = newParams.pickupDate;
       }
     }
     
-    // Since same-day rental is not allowed, this validation is no longer needed
-    // Return date is always at least 1 day after pickup date
+    // Validate time for same-day rentals
+    if (newParams.pickupDate === newParams.returnDate) {
+      const [pickupHour, pickupMinute] = newParams.pickupTime.split(':').map(Number);
+      const [returnHour, returnMinute] = newParams.returnTime.split(':').map(Number);
+      const pickupTimeInMinutes = pickupHour * 60 + pickupMinute;
+      const returnTimeInMinutes = returnHour * 60 + returnMinute;
+      
+      // For same-day rental, return time must be after pickup time
+      if (returnTimeInMinutes <= pickupTimeInMinutes) {
+        // Set return time to at least 1 hour after pickup
+        const newReturnHour = pickupHour + 1;
+        if (newReturnHour < 24) {
+          newParams.returnTime = `${newReturnHour.toString().padStart(2, '0')}:00`;
+        } else {
+          // If it would go past midnight, set return to next day
+          const nextDay = new Date(newParams.pickupDate);
+          nextDay.setDate(nextDay.getDate() + 1);
+          newParams.returnDate = nextDay.toISOString().split('T')[0];
+          newParams.returnTime = '10:00';
+        }
+      }
+    }
     
     // Ensure pickup date is not in the past
     if (params.pickupDate) {

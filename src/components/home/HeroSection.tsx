@@ -14,6 +14,16 @@ const HOURS = Array.from({ length: 24 }, (_, i) => {
   return { value: `${hour}:00`, label: `${hour}:00` };
 });
 
+// Helper function to check if a time should be disabled
+const isTimeDisabled = (time: string, pickupTime: string, isSameDay: boolean): boolean => {
+  if (!isSameDay) return false;
+  
+  const [timeHour] = time.split(':').map(Number);
+  const [pickupHour] = pickupTime.split(':').map(Number);
+  
+  return timeHour <= pickupHour;
+};
+
 const HeroSection: React.FC = () => {
   const navigate = useNavigate();
   const { 
@@ -219,18 +229,20 @@ const HeroSection: React.FC = () => {
                   type="date"
                   value={searchParams.returnDate}
                   onChange={(e) => updateSearchParams({ returnDate: e.target.value })}
-                  min={(() => {
-                    const pickupDate = new Date(searchParams.pickupDate);
-                    pickupDate.setDate(pickupDate.getDate() + 1);
-                    return pickupDate.toISOString().split('T')[0];
-                  })()}
+                  min={searchParams.pickupDate}
                   leftIcon={<CalendarDays className="text-primary-600" size={18} />}
                   className="bg-white/90 backdrop-blur-sm border-transparent focus:border-primary-500 text-secondary-800"
                   placeholder="MM/DD/YYYY"
                 />
                 <Select
                   label="Return Time"
-                  options={HOURS}
+                  options={HOURS.map((hour) => ({
+                    ...hour,
+                    disabled: isTimeDisabled(hour.value, searchParams.pickupTime, searchParams.pickupDate === searchParams.returnDate),
+                    label: isTimeDisabled(hour.value, searchParams.pickupTime, searchParams.pickupDate === searchParams.returnDate) 
+                      ? `${hour.label} (Not available)` 
+                      : hour.label
+                  }))}
                   value={searchParams.returnTime}
                   onChange={(e) => updateSearchParams({ returnTime: e.target.value })}
                   leftIcon={<Clock className="text-primary-600" size={18} />}
