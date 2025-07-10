@@ -110,8 +110,8 @@ export const Footer: React.FC = () => {
               </li>
               <li className="flex items-center">
                 <Mail className="h-5 w-5 mr-2 text-secondary-300" />
-                <a href="mailto:info@driveluxe.com" className="text-secondary-300 hover:text-white transition-colors">
-                  info@driveluxe.com
+                <a href="mailto:info@noyancar.com" className="text-secondary-300 hover:text-white transition-colors">
+                  info@noyancar.com
                 </a>
               </li>
             </ul>
@@ -119,7 +119,7 @@ export const Footer: React.FC = () => {
         </div>
         
         <div className="border-t border-secondary-700 mt-8 sm:mt-12 pt-6 sm:pt-8 text-center text-secondary-400">
-          <p className="text-sm sm:text-base">© {new Date().getFullYear()} DriveLuxe. All rights reserved.</p>
+          <p className="text-sm sm:text-base">© {new Date().getFullYear()} NoyanCar. All rights reserved.</p>
           <div className="mt-2 space-x-3 sm:space-x-4 text-sm sm:text-base">
             <Link to="/terms" className="text-secondary-400 hover:text-white transition-colors">
               Terms of Service

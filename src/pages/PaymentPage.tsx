@@ -313,7 +313,7 @@ const PaymentPage: React.FC = () => {
                   
                   <div className="p-6">
                     <h2 className="text-xl font-semibold mb-1">
-                      {booking.car.year} {booking.car.make} {booking.car.model}
+                      {booking.car.make} {booking.car.model} {booking.car.year}
                     </h2>
                     
                     <div className="space-y-2 text-sm text-gray-600 mb-4">

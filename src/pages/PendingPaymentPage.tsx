@@ -180,7 +180,7 @@ const PendingPaymentPage: React.FC = () => {
                     />
                     <div className="flex-1">
                       <h3 className="text-lg font-semibold">
-                        {car.year} {car.make} {car.model}
+                        {car.make} {car.model} {car.year}
                       </h3>
                       <div className="flex items-center gap-4 text-sm text-gray-600 mt-2">
                         <div className="flex items-center">

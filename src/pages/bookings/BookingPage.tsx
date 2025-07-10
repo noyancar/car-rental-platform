@@ -468,7 +468,7 @@ const BookingPage: React.FC = () => {
   // Generate breadcrumb items
   const breadcrumbItems = currentCar ? [
     { label: 'Cars', path: '/cars' },
-    { label: `${currentCar.year} ${currentCar.make} ${currentCar.model}`, path: `/cars/${carId}` },
+    { label: `${currentCar.make} ${currentCar.model} ${currentCar.year}`, path: `/cars/${carId}` },
     { label: 'Book Now', path: `/booking/${carId}` }
   ] : [];
 
@@ -477,7 +477,7 @@ const BookingPage: React.FC = () => {
       <div className="container-custom">
         <PageHeader
           title="Complete Your Booking"
-          subtitle={currentCar ? `${currentCar.year} ${currentCar.make} ${currentCar.model}` : ''}
+          subtitle={currentCar ? `${currentCar.make} ${currentCar.model} ${currentCar.year}` : ''}
           breadcrumbItems={breadcrumbItems}
           fallbackPath={`/cars/${carId}`}
         />
@@ -801,7 +801,7 @@ const BookingPage: React.FC = () => {
               
               <div className="p-6">
                 <h2 className="text-xl font-semibold mb-1">
-                  {currentCar.year} {currentCar.make} {currentCar.model}
+                  {currentCar.make} {currentCar.model} {currentCar.year}
                 </h2>
                 <p className="text-primary-800 font-semibold mb-4">
                   ${currentCar.price_per_day}/day

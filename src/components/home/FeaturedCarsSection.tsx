@@ -47,7 +47,7 @@ const FeaturedCarsSection: React.FC<FeaturedCarsSectionProps> = ({ featuredCars,
                 </div>
                 <div className="p-3 sm:p-4">
                   <h3 className="text-base sm:text-lg font-semibold">
-                    {car.year} {car.make} {car.model}
+                    {car.make} {car.model} {car.year}
                   </h3>
                   <div className="flex items-center text-accent-500 mt-1 mb-2 sm:mb-3">
                     <Star className="w-3 h-3 sm:w-4 sm:h-4 fill-current" />

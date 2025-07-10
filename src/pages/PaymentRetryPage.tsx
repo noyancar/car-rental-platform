@@ -114,7 +114,7 @@ const PaymentRetryPage: React.FC = () => {
                     <div className="flex justify-between">
                       <span className="text-gray-600">Vehicle:</span>
                       <span className="font-medium">
-                        {booking.cars.year} {booking.cars.make} {booking.cars.model}
+                        {booking.cars.make} {booking.cars.model} {booking.cars.year}
                       </span>
                     </div>
                   )}

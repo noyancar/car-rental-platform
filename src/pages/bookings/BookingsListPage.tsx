@@ -106,7 +106,7 @@ const BookingsListPage: React.FC = () => {
                       <div className="flex flex-wrap justify-between items-start gap-4">
                         <div>
                           <h3 className="text-xl font-semibold">
-                            {booking.car?.year} {booking.car?.make} {booking.car?.model}
+                            {booking.car?.make} {booking.car?.model} {booking.car?.year}
                           </h3>
                           <p className="text-secondary-600">{booking.car?.category}</p>
                         </div>

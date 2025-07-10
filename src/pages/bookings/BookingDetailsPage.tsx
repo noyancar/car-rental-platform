@@ -149,7 +149,7 @@ const BookingDetailsPage: React.FC = () => {
               </div>
               <div className="ml-4">
                 <h3 className="text-xl font-semibold">
-                  {currentBooking.car?.year} {currentBooking.car?.make} {currentBooking.car?.model}
+                  {currentBooking.car?.make} {currentBooking.car?.model} {currentBooking.car?.year}
                 </h3>
                 <p className="text-secondary-600 mt-1">
                   Category: {currentBooking.car?.category}

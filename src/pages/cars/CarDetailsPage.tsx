@@ -77,158 +77,191 @@ const CarDetailsPage: React.FC = () => {
   // Generate breadcrumb items
   const breadcrumbItems = [
     { label: 'Cars', path: '/cars' },
-    { label: `${currentCar.year} ${currentCar.make} ${currentCar.model}`, path: `/cars/${id}` }
+    { label: `${currentCar.make} ${currentCar.model} ${currentCar.year}`, path: `/cars/${id}` }
   ];
   
   return (
     <div className="min-h-screen pt-16 pb-12 bg-secondary-50">
       <div className="container-custom">
         <PageHeader
-          title={`${currentCar.year} ${currentCar.make} ${currentCar.model} ${currentCar.trim || ''}`}
-          subtitle={`${currentCar.category} • $${currentCar.price_per_day}/day`}
+          title={`${currentCar.make} ${currentCar.model} ${currentCar.year}`}
+          subtitle={`$${currentCar.price_per_day}/day`}
           breadcrumbItems={breadcrumbItems}
           fallbackPath="/cars"
+          className="lg:hidden"
         />
         
-        <div className="bg-white rounded-lg shadow-md overflow-hidden">
-          {/* Car Image Slider */}
-          <div className="relative">
-            <SimpleImageViewer 
-              images={sliderImages}
-              alt={`${currentCar.make} ${currentCar.model}`}
-              className="w-full"
-              aspectRatio="auto"
-              maxHeight="max-h-[600px]"
-            />
-            <div className="absolute top-4 left-4 z-10">
-              <span className="bg-primary-800 text-white px-4 py-2 rounded-full text-sm">
-                {currentCar.category}
-              </span>
+        {/* Desktop Layout - Side by Side */}
+        <div className="lg:grid lg:grid-cols-12 lg:gap-8">
+          {/* Left Column - Images */}
+          <div className="lg:col-span-7">
+            <div className="bg-white rounded-lg shadow-md overflow-hidden">
+              {/* Car Image Slider */}
+              <div className="relative">
+                <SimpleImageViewer 
+                  images={sliderImages}
+                  alt={`${currentCar.make} ${currentCar.model}`}
+                  className="w-full"
+                  aspectRatio="auto"
+                  maxHeight="max-h-[300px] sm:max-h-[400px] lg:max-h-[500px]"
+                />
+              </div>
             </div>
           </div>
           
-          {/* Car Details */}
-          <div className="p-8">
-            {/* Back to Search Results Button */}
-            {isSearchPerformed && (
+          {/* Right Column - Details */}
+          <div className="lg:col-span-5 mt-6 lg:mt-0">
+            <div className="bg-white rounded-lg shadow-md p-4 sm:p-6 lg:p-8">
+              {/* Desktop Breadcrumb */}
+              <div className="hidden lg:block mb-6">
+                <PageHeader
+                  title={`${currentCar.make} ${currentCar.model} ${currentCar.year}`}
+                  subtitle={`$${currentCar.price_per_day}/day`}
+                  breadcrumbItems={breadcrumbItems}
+                  fallbackPath="/cars"
+                />
+              </div>
+            
+            {/* Car Info Header */}
               <div className="mb-6">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => navigate('/cars')}
-                  leftIcon={<ArrowLeft size={16} />}
-                >
-                  Back to Search Results
-                </Button>
-              </div>
-            )}
-            
-            <div className="flex justify-between items-start">
-              <div>
-                <div className="flex items-center gap-4 mb-2">
-                  {currentCar.color && (
-                    <span className="text-secondary-600 flex items-center">
-                      <Palette size={16} className="mr-1" />
-                      {currentCar.color}
-                    </span>
-                  )}
-                  {currentCar.license_plate && (
-                    <span className="font-mono text-sm bg-secondary-100 px-2 py-1 rounded">
-                      {currentCar.license_plate}
-                    </span>
-                  )}
-                </div>
-              </div>
               
-              <div className="flex flex-col gap-2">
-                {isSearchPerformed && (
-                  <div className="text-right mb-2">
-                    <p className="text-sm text-secondary-600">Your Dates:</p>
-                    <p className="font-medium">
-                      {format(new Date(searchParams.pickupDate), 'MMM d')} - {format(new Date(searchParams.returnDate), 'MMM d, yyyy')}
-                    </p>
+                {/* Price and Booking Section */}
+                <div className="border-t border-b border-gray-100 py-4 mb-6">
+                  <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                    <div>
+                      <p className="text-3xl font-bold text-primary-800">
+                        ${currentCar.price_per_day}<span className="text-lg font-normal text-gray-600">/day</span>
+                      </p>
+                      {isSearchPerformed && (
+                        <p className="text-sm text-gray-600 mt-1">
+                          {format(new Date(searchParams.pickupDate), 'MMM d')} - {format(new Date(searchParams.returnDate), 'MMM d')}
+                        </p>
+                      )}
+                    </div>
+                    <Button 
+                      variant="primary" 
+                      size="md"
+                      onClick={handleBookNow}
+                      className="w-full sm:w-auto"
+                    >
+                      Book Now
+                    </Button>
                   </div>
-                )}
-                
-                <Button 
-                  variant="primary" 
-                  size="lg"
-                  onClick={handleBookNow}
-                >
-                  Book Now
-                </Button>
+                </div>
               </div>
+            
+            
+            {/* Features - Quick Info */}
+            <div className="grid grid-cols-2 lg:grid-cols-3 gap-3 mb-6">
+              <div className="flex items-center p-3 bg-gray-50 rounded-lg">
+                <Users className="h-5 w-5 text-primary-700 mr-2 flex-shrink-0" />
+                <div>
+                  <p className="text-xs text-gray-600">Seats</p>
+                  <p className="text-sm font-semibold text-gray-900">{currentCar.seats || 5}</p>
+                </div>
+              </div>
+              
+              <div className="flex items-center p-3 bg-gray-50 rounded-lg">
+                <Car className="h-5 w-5 text-primary-700 mr-2 flex-shrink-0" />
+                <div>
+                  <p className="text-xs text-gray-600">Doors</p>
+                  <p className="text-sm font-semibold text-gray-900">{currentCar.doors || 4}</p>
+                </div>
+              </div>
+              
+              <div className="flex items-center p-3 bg-gray-50 rounded-lg">
+                <Fuel className="h-5 w-5 text-primary-700 mr-2 flex-shrink-0" />
+                <div>
+                  <p className="text-xs text-gray-600">Fuel</p>
+                  <p className="text-sm font-semibold text-gray-900">{currentCar.fuel_type || 'Gas'}</p>
+                </div>
+              </div>
+              
+              <div className="flex items-center p-3 bg-gray-50 rounded-lg">
+                <CarIcon className="h-5 w-5 text-primary-700 mr-2 flex-shrink-0" />
+                <div>
+                  <p className="text-xs text-gray-600">Transmission</p>
+                  <p className="text-sm font-semibold text-gray-900">{currentCar.transmission || 'Automatic'}</p>
+                </div>
+              </div>
+              
+              <div className="flex items-center p-3 bg-gray-50 rounded-lg">
+                <Gauge className="h-5 w-5 text-primary-700 mr-2 flex-shrink-0" />
+                <div>
+                  <p className="text-xs text-gray-600">Mileage</p>
+                  <p className="text-sm font-semibold text-gray-900">{currentCar.mileage_type || 'Unlimited'}</p>
+                </div>
+              </div>
+              
+              <div className="flex items-center p-3 bg-gray-50 rounded-lg">
+                <Clock className="h-5 w-5 text-primary-700 mr-2 flex-shrink-0" />
+                <div>
+                  <p className="text-xs text-gray-600">Min. Rental</p>
+                  <p className="text-sm font-semibold text-gray-900">24 Hours</p>
+                </div>
+              </div>
+              
+              {currentCar.color && (
+                <div className="flex items-center p-3 bg-gray-50 rounded-lg">
+                  <Palette className="h-5 w-5 text-primary-700 mr-2 flex-shrink-0" />
+                  <div>
+                    <p className="text-xs text-gray-600">Color</p>
+                    <p className="text-sm font-semibold text-gray-900">{currentCar.color}</p>
+                  </div>
+                </div>
+              )}
+              
+              {currentCar.category && (
+                <div className="flex items-center p-3 bg-gray-50 rounded-lg">
+                  <Car className="h-5 w-5 text-primary-700 mr-2 flex-shrink-0" />
+                  <div>
+                    <p className="text-xs text-gray-600">Category</p>
+                    <p className="text-sm font-semibold text-gray-900">{currentCar.category}</p>
+                  </div>
+                </div>
+              )}
             </div>
             
-            
-            {/* Features */}
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-8">
-              <div className="flex items-center p-4 bg-secondary-50 rounded-lg">
-                <Users className="h-6 w-6 text-primary-700 mr-3" />
-                <div>
-                  <p className="text-sm text-secondary-600">Seats</p>
-                  <p className="font-semibold">{currentCar.seats || 5} Passengers</p>
-                </div>
-              </div>
-              
-              <div className="flex items-center p-4 bg-secondary-50 rounded-lg">
-                <Car className="h-6 w-6 text-primary-700 mr-3" />
-                <div>
-                  <p className="text-sm text-secondary-600">Doors</p>
-                  <p className="font-semibold">{currentCar.doors || 4} Doors</p>
-                </div>
-              </div>
-              
-              <div className="flex items-center p-4 bg-secondary-50 rounded-lg">
-                <Fuel className="h-6 w-6 text-primary-700 mr-3" />
-                <div>
-                  <p className="text-sm text-secondary-600">Fuel Type</p>
-                  <p className="font-semibold">{currentCar.fuel_type || 'Gas'} • {currentCar.gas_grade || 'Regular'}</p>
-                </div>
-              </div>
-              
-              <div className="flex items-center p-4 bg-secondary-50 rounded-lg">
-                <CarIcon className="h-6 w-6 text-primary-700 mr-3" />
-                <div>
-                  <p className="text-sm text-secondary-600">Transmission</p>
-                  <p className="font-semibold">{currentCar.transmission || 'Automatic'}</p>
-                </div>
-              </div>
-              
-              <div className="flex items-center p-4 bg-secondary-50 rounded-lg">
-                <Gauge className="h-6 w-6 text-primary-700 mr-3" />
-                <div>
-                  <p className="text-sm text-secondary-600">Mileage</p>
-                  <p className="font-semibold">{currentCar.mileage_type || 'Unlimited'}</p>
-                </div>
-              </div>
-              
-              <div className="flex items-center p-4 bg-secondary-50 rounded-lg">
-                <Clock className="h-6 w-6 text-primary-700 mr-3" />
-                <div>
-                  <p className="text-sm text-secondary-600">Min. Rental</p>
-                  <p className="font-semibold">24 Hours</p>
-                </div>
-              </div>
+            {/* Description - Desktop Only */}
+            <div className="mb-6 hidden lg:block">
+              <h2 className="text-lg font-semibold mb-3 text-gray-900">About this car</h2>
+              <p className="text-gray-600 text-sm leading-relaxed">{currentCar.description}</p>
             </div>
             
-            {/* Description */}
-            <div className="mt-8">
-              <h2 className="text-xl font-semibold mb-4">Description</h2>
-              <p className="text-secondary-600">{currentCar.description}</p>
-            </div>
-            
-            {/* Features List */}
-            <div className="mt-8">
-              <h2 className="text-xl font-semibold mb-4">Features</h2>
-              <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+            {/* Features List - Desktop Only */}
+            <div className="hidden lg:block">
+              <h2 className="text-lg font-semibold mb-3 text-gray-900">Features & Amenities</h2>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                 {currentCar.features.map((feature, index) => (
-                  <div key={index} className="flex items-center">
-                    <div className="w-2 h-2 bg-primary-800 rounded-full mr-2"></div>
-                    <span>{feature}</span>
+                  <div key={index} className="flex items-center text-sm">
+                    <div className="w-1.5 h-1.5 bg-primary-600 rounded-full mr-2 flex-shrink-0"></div>
+                    <span className="text-gray-700">{feature}</span>
                   </div>
                 ))}
               </div>
+            </div>
+          </div>
+        </div>
+        </div>
+        
+        {/* Mobile Only - Full Width Sections */}
+        <div className="lg:hidden mt-6 space-y-6">
+          {/* Description for Mobile */}
+          <div className="bg-white rounded-lg shadow-md p-4">
+            <h2 className="text-lg font-semibold mb-3 text-gray-900">About this car</h2>
+            <p className="text-gray-600 text-sm leading-relaxed">{currentCar.description}</p>
+          </div>
+          
+          {/* Features for Mobile */}
+          <div className="bg-white rounded-lg shadow-md p-4">
+            <h2 className="text-lg font-semibold mb-3 text-gray-900">Features & Amenities</h2>
+            <div className="grid grid-cols-1 gap-2">
+              {currentCar.features.map((feature, index) => (
+                <div key={index} className="flex items-center text-sm">
+                  <div className="w-1.5 h-1.5 bg-primary-600 rounded-full mr-2 flex-shrink-0"></div>
+                  <span className="text-gray-700">{feature}</span>
+                </div>
+              ))}
             </div>
           </div>
         </div>

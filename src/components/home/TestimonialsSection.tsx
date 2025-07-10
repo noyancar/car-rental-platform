@@ -14,14 +14,14 @@ const TESTIMONIALS: Testimonial[] = [
     id: '1',
     name: 'James Davidson',
     location: 'Los Angeles, CA',
-    text: 'The BMW I rented for my anniversary was immaculate. The booking process was seamless, and the staff was incredibly helpful. Will definitely use DriveLuxe again!',
+    text: 'The BMW I rented for my anniversary was immaculate. The booking process was seamless, and the staff was incredibly helpful. Will definitely use NoyanCar again!',
     initials: 'JD'
   },
   {
     id: '2',
     name: 'Sarah Chen',
     location: 'New York, NY',
-    text: 'I needed a luxury SUV for a client meeting, and DriveLuxe delivered. The Range Rover was spotless, and the pickup/drop-off process was extremely convenient.',
+    text: 'I needed a luxury SUV for a client meeting, and NoyanCar delivered. The Range Rover was spotless, and the pickup/drop-off process was extremely convenient.',
     initials: 'SC'
   },
   {
