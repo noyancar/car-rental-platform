@@ -60,14 +60,6 @@ export const Navbar: React.FC = () => {
           
           <nav className="hidden md:flex items-center space-x-8">
             <Link 
-              to="/cars" 
-              className={`font-medium hover:text-primary-700 transition-colors ${
-                location.pathname.includes('/cars') ? 'text-primary-800' : 'text-secondary-700'
-              }`}
-            >
-              Browse Cars
-            </Link>
-            <Link 
               to="/how-it-works" 
               className={`font-medium hover:text-primary-700 transition-colors ${
                 location.pathname === '/how-it-works' ? 'text-primary-800' : 'text-secondary-700'
@@ -146,14 +138,6 @@ export const Navbar: React.FC = () => {
         {isMenuOpen && (
           <div className="md:hidden bg-white shadow-md">
             <div className="container mx-auto px-3 sm:px-4 py-3 sm:py-4 space-y-2 sm:space-y-3">
-              <Link 
-                to="/cars" 
-                className={`block py-2 font-medium ${
-                  location.pathname.includes('/cars') ? 'text-primary-800' : 'text-secondary-700'
-                }`}
-              >
-                Browse Cars
-              </Link>
               <Link 
                 to="/how-it-works" 
                 className={`block py-2 font-medium ${

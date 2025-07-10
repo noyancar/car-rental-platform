@@ -1,9 +1,25 @@
-import React from 'react';
+import React, { useEffect } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { SearchSummary, CarFilters, CarGrid } from '../../components/cars';
 import { useSearchStore } from '../../stores/searchStore';
 
 const CarsPage: React.FC = () => {
-  const { isSearchPerformed } = useSearchStore();
+  const { isSearchPerformed, setFilters, searchCars } = useSearchStore();
+  const [searchParams] = useSearchParams();
+  
+  // Handle URL parameters on component mount
+  useEffect(() => {
+    const category = searchParams.get('category');
+    if (category) {
+      // Apply the category filter from URL
+      setFilters({ category });
+      
+      // If no search has been performed yet, trigger a search
+      if (!isSearchPerformed) {
+        searchCars();
+      }
+    }
+  }, [searchParams]);
   
   return (
     <div className="py-6 sm:py-8 md:py-10 bg-sandy-50 min-h-screen">

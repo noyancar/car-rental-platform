@@ -5,6 +5,7 @@ import { Toaster } from 'sonner';
 // Layout components
 import { Navbar } from './components/layout/Navbar';
 import { Footer } from './components/layout/Footer';
+import ScrollToTop from './components/utils/ScrollToTop';
 
 // Auth pages
 import Login from './pages/auth/Login';
@@ -68,6 +69,7 @@ function App() {
   
   return (
     <Router>
+      <ScrollToTop />
       <div className="flex flex-col min-h-screen">
         <Navbar />
         <main className="flex-grow pt-14 sm:pt-16 md:pt-20">
