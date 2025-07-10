@@ -13,6 +13,16 @@ const HOURS = Array.from({ length: 24 }, (_, i) => {
   return { value: `${hour}:00`, label: `${hour}:00` };
 });
 
+// Helper function to check if a time should be disabled
+const isTimeDisabled = (time: string, pickupTime: string, isSameDay: boolean): boolean => {
+  if (!isSameDay) return false;
+  
+  const [timeHour] = time.split(':').map(Number);
+  const [pickupHour] = pickupTime.split(':').map(Number);
+  
+  return timeHour <= pickupHour;
+};
+
 
 const SearchSummary: React.FC = () => {
   const { searchParams, updateSearchParams, searchCars, isSearchPerformed } = useSearchStore();
@@ -52,18 +62,104 @@ const SearchSummary: React.FC = () => {
   };
   
   const handleTempParamUpdate = (key: keyof typeof tempParams, value: string) => {
+    let updatedParams = { ...tempParams };
+    
     if (key === 'pickupLocation' && sameReturnLocation) {
-      setTempParams({
-        ...tempParams,
+      updatedParams = {
+        ...updatedParams,
         pickupLocation: value,
         returnLocation: value
-      });
+      };
     } else {
-      setTempParams({
-        ...tempParams,
+      updatedParams = {
+        ...updatedParams,
         [key]: value
-      });
+      };
     }
+    
+    // Apply the same validation logic as searchStore
+    // Check if we're selecting today's date
+    const today = new Date().toISOString().split('T')[0];
+    const isPickupToday = updatedParams.pickupDate === today;
+    
+    // Handle pickup time validation for today
+    if ((key === 'pickupTime' || key === 'pickupDate') && isPickupToday) {
+      const now = new Date();
+      const currentTimeInMinutes = now.getHours() * 60 + now.getMinutes();
+      
+      // Parse the selected pickup time
+      const [pickupHour, pickupMinute] = (updatedParams.pickupTime || '10:00').split(':').map(Number);
+      const pickupTimeInMinutes = pickupHour * 60 + pickupMinute;
+      
+      // If pickup time is in the past (with 1 hour buffer), update it
+      if (pickupTimeInMinutes < currentTimeInMinutes + 60) {
+        // Calculate next available hour
+        let nextHour = now.getMinutes() > 0 ? now.getHours() + 2 : now.getHours() + 1;
+        if (nextHour >= 22) {
+          updatedParams.pickupTime = '09:00';
+        } else {
+          updatedParams.pickupTime = `${nextHour.toString().padStart(2, '0')}:00`;
+        }
+        
+        // If same-day rental, ensure return time is after pickup time
+        if (updatedParams.pickupDate === updatedParams.returnDate) {
+          const [returnHour] = (updatedParams.returnTime || '10:00').split(':').map(Number);
+          const newPickupHour = parseInt(updatedParams.pickupTime.split(':')[0]);
+          if (returnHour <= newPickupHour) {
+            updatedParams.returnTime = `${(newPickupHour + 1).toString().padStart(2, '0')}:00`;
+          }
+        }
+      }
+    }
+    
+    // If pickup date is changed
+    if (key === 'pickupDate') {
+      const pickupDate = new Date(value);
+      const returnDate = new Date(updatedParams.returnDate);
+      
+      // If return date is before new pickup date, set it to next day by default
+      if (returnDate < pickupDate) {
+        const nextDay = new Date(pickupDate);
+        nextDay.setDate(nextDay.getDate() + 1);
+        updatedParams.returnDate = nextDay.toISOString().split('T')[0];
+      }
+    }
+    
+    // If return date is changed
+    if (key === 'returnDate') {
+      const pickupDate = new Date(updatedParams.pickupDate);
+      const returnDate = new Date(value);
+      
+      // Return date must not be before pickup date
+      if (returnDate < pickupDate) {
+        updatedParams.returnDate = updatedParams.pickupDate;
+      }
+    }
+    
+    // Validate time for same-day rentals
+    if (updatedParams.pickupDate === updatedParams.returnDate) {
+      const [pickupHour, pickupMinute] = updatedParams.pickupTime.split(':').map(Number);
+      const [returnHour, returnMinute] = updatedParams.returnTime.split(':').map(Number);
+      const pickupTimeInMinutes = pickupHour * 60 + pickupMinute;
+      const returnTimeInMinutes = returnHour * 60 + returnMinute;
+      
+      // For same-day rental, return time must be after pickup time
+      if (returnTimeInMinutes <= pickupTimeInMinutes) {
+        // Set return time to at least 1 hour after pickup
+        const newReturnHour = pickupHour + 1;
+        if (newReturnHour < 24) {
+          updatedParams.returnTime = `${newReturnHour.toString().padStart(2, '0')}:00`;
+        } else {
+          // If it would go past midnight, set return to next day
+          const nextDay = new Date(updatedParams.pickupDate);
+          nextDay.setDate(nextDay.getDate() + 1);
+          updatedParams.returnDate = nextDay.toISOString().split('T')[0];
+          updatedParams.returnTime = '10:00';
+        }
+      }
+    }
+    
+    setTempParams(updatedParams);
   };
   
   const handleSameLocationToggle = (checked: boolean) => {
@@ -213,7 +309,10 @@ const SearchSummary: React.FC = () => {
               <div>
                 <Select
                   label="Return Time"
-                  options={HOURS}
+                  options={HOURS.map((hour) => ({
+                    ...hour,
+                    disabled: isTimeDisabled(hour.value, tempParams.pickupTime, tempParams.pickupDate === tempParams.returnDate)
+                  }))}
                   value={tempParams.returnTime}
                   onChange={(e) => handleTempParamUpdate('returnTime', e.target.value)}
                 />
