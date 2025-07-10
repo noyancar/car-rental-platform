@@ -5,7 +5,11 @@ import { Input } from '../ui/Input';
 import { Button } from '../ui/Button';
 import { useSearchStore } from '../../stores/searchStore';
 
-const CarFilters: React.FC = () => {
+interface CarFiltersProps {
+  onClose?: () => void;
+}
+
+const CarFilters: React.FC<CarFiltersProps> = ({ onClose }) => {
   const { searchResults, filters, setFilters, resetFilters } = useSearchStore();
   
   // Extracted unique values from search results for filter options
@@ -99,6 +103,11 @@ const CarFilters: React.FC = () => {
       minPrice: selectedMinPrice,
       maxPrice: selectedMaxPrice
     });
+    
+    // Close filters on mobile after applying
+    if (onClose && window.innerWidth < 1024) {
+      onClose();
+    }
   };
   
   // Reset filters

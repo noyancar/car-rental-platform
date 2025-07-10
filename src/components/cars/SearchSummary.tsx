@@ -183,6 +183,9 @@ const SearchSummary: React.FC = () => {
     
     // Exit edit mode
     setIsEditing(false);
+    
+    // Scroll to top after search update
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   };
   
   return (
@@ -333,69 +336,127 @@ const SearchSummary: React.FC = () => {
           </div>
         </div>
       ) : (
-        // View mode
-        <div className="flex flex-col md:flex-row justify-between items-start md:items-center">
-          <div className="space-y-2 sm:space-y-3 mb-4 md:mb-0">
-            <h3 className="text-base sm:text-lg md:text-xl font-display font-semibold text-volcanic-900">Your Search</h3>
-            
-            <div className="space-y-2">
-              {/* Pickup Location */}
-              <div className="flex items-start text-volcanic-600">
-                <MapPin className="w-4 h-4 sm:w-5 sm:h-5 mr-1.5 sm:mr-2 text-primary-600 flex-shrink-0 mt-0.5" />
-                <div className="flex flex-col sm:flex-row sm:items-center gap-0.5 sm:gap-2 min-w-0">
-                  <span className="text-xs sm:text-sm text-gray-500 shrink-0">Pickup:</span>
-                  <LocationDisplay 
-                    locationValue={searchParams.pickupLocation || searchParams.location || BASE_LOCATION?.value || ''} 
-                    showIcon={false}
-                    showFee={false}
-                  />
+        // View mode - Compact for mobile
+        <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+          <div className="flex-1 w-full">
+            {/* Mobile Compact View */}
+            <div className="md:hidden space-y-3">
+              {/* Location Lines */}
+              <div className="space-y-1">
+                <div className="flex items-start gap-2">
+                  <MapPin className="w-4 h-4 text-primary-600 mt-0.5 flex-shrink-0" />
+                  <div className="flex-1 text-sm">
+                    <LocationDisplay 
+                      locationValue={searchParams.pickupLocation || searchParams.location || BASE_LOCATION?.value || ''} 
+                      showIcon={false}
+                      showFee={false}
+                      className="font-medium"
+                    />
+                  </div>
+                </div>
+                <div className="flex items-start gap-2">
+                  <ArrowRight className="w-4 h-4 text-primary-600 mt-0.5 flex-shrink-0" />
+                  <div className="flex-1 text-sm">
+                    <LocationDisplay 
+                      locationValue={searchParams.returnLocation || searchParams.location || BASE_LOCATION?.value || ''} 
+                      showIcon={false}
+                      showFee={false}
+                      className="font-medium"
+                    />
+                  </div>
                 </div>
               </div>
               
-              {/* Return Location */}
-              <div className="flex items-start text-volcanic-600">
-                <ArrowRight className="w-4 h-4 sm:w-5 sm:h-5 mr-1.5 sm:mr-2 text-primary-600 flex-shrink-0 mt-0.5" />
-                <div className="flex flex-col sm:flex-row sm:items-center gap-0.5 sm:gap-2 min-w-0">
-                  <span className="text-xs sm:text-sm text-gray-500 shrink-0">Return:</span>
-                  <LocationDisplay 
-                    locationValue={searchParams.returnLocation || searchParams.location || BASE_LOCATION?.value || ''} 
-                    showIcon={false}
-                    showFee={false}
-                  />
+              {/* Date/Time Line */}
+              <div className="flex items-start gap-2">
+                <CalendarClock className="w-4 h-4 text-primary-600 mt-0.5 flex-shrink-0" />
+                <div className="text-sm">
+                  <span className="font-medium">
+                    {format(new Date(searchParams.pickupDate), 'MMM d')} - {format(new Date(searchParams.returnDate), 'MMM d, yyyy')}
+                  </span>
+                  <span className="text-gray-500 block">
+                    {searchParams.pickupTime} - {searchParams.returnTime}
+                    {(() => {
+                      const pickup = searchParams.pickupLocation || searchParams.location || BASE_LOCATION?.value || '';
+                      const returnLoc = searchParams.returnLocation || searchParams.location || BASE_LOCATION?.value || '';
+                      const fees = calculateDeliveryFee(pickup, returnLoc);
+                      
+                      if (fees.totalFee > 0) {
+                        return (
+                          <span className="text-primary-600 font-medium">
+                            {' '}• ${fees.totalFee} delivery
+                          </span>
+                        );
+                      }
+                      return null;
+                    })()}
+                  </span>
                 </div>
               </div>
-              
-              {/* Delivery Fee if applicable */}
-              {(() => {
-                const pickup = searchParams.pickupLocation || searchParams.location || BASE_LOCATION?.value || '';
-                const returnLoc = searchParams.returnLocation || searchParams.location || BASE_LOCATION?.value || '';
-                const fees = calculateDeliveryFee(pickup, returnLoc);
-                
-                if (fees.totalFee > 0 || fees.requiresQuote) {
-                  return (
-                    <div className="text-xs sm:text-sm text-gray-600 ml-5 sm:ml-6">
-                      {fees.requiresQuote ? (
-                        <span className="text-orange-600 font-medium">Quote required</span>
-                      ) : (
-                        <span>Delivery fee: <span className="font-medium text-green-600">${fees.totalFee}</span></span>
-                      )}
-                    </div>
-                  );
-                }
-                return null;
-              })()}
             </div>
             
-            <div className="flex items-start text-volcanic-600">
-              <CalendarClock className="w-4 h-4 sm:w-5 sm:h-5 mr-1.5 sm:mr-2 text-primary-600 flex-shrink-0 mt-0.5" />
-              <div className="text-xs sm:text-sm md:text-base">
-                <span className="font-medium block sm:inline">
-                  {formatDate(searchParams.pickupDate)} at {searchParams.pickupTime}
-                </span>
-                <span className="text-gray-500 mx-1 hidden sm:inline">-</span>
-                <span className="font-medium block sm:inline">
-                  {formatDate(searchParams.returnDate)} at {searchParams.returnTime}
-                </span>
+            {/* Desktop Full View */}
+            <div className="hidden md:block">
+              <div className="space-y-2">
+                {/* Pickup Location */}
+                <div className="flex items-start text-volcanic-600">
+                  <MapPin className="w-5 h-5 mr-2 text-primary-600 flex-shrink-0 mt-0.5" />
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm text-gray-500">Pickup:</span>
+                    <LocationDisplay 
+                      locationValue={searchParams.pickupLocation || searchParams.location || BASE_LOCATION?.value || ''} 
+                      showIcon={false}
+                      showFee={false}
+                    />
+                  </div>
+                </div>
+                
+                {/* Return Location */}
+                <div className="flex items-start text-volcanic-600">
+                  <ArrowRight className="w-5 h-5 mr-2 text-primary-600 flex-shrink-0 mt-0.5" />
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm text-gray-500">Return:</span>
+                    <LocationDisplay 
+                      locationValue={searchParams.returnLocation || searchParams.location || BASE_LOCATION?.value || ''} 
+                      showIcon={false}
+                      showFee={false}
+                    />
+                  </div>
+                </div>
+                
+                {/* Date Time */}
+                <div className="flex items-start text-volcanic-600">
+                  <CalendarClock className="w-5 h-5 mr-2 text-primary-600 flex-shrink-0 mt-0.5" />
+                  <div className="text-base">
+                    <span className="font-medium">
+                      {formatDate(searchParams.pickupDate)} at {searchParams.pickupTime}
+                    </span>
+                    <span className="text-gray-500 mx-1">-</span>
+                    <span className="font-medium">
+                      {formatDate(searchParams.returnDate)} at {searchParams.returnTime}
+                    </span>
+                  </div>
+                </div>
+                
+                {/* Delivery Fee */}
+                {(() => {
+                  const pickup = searchParams.pickupLocation || searchParams.location || BASE_LOCATION?.value || '';
+                  const returnLoc = searchParams.returnLocation || searchParams.location || BASE_LOCATION?.value || '';
+                  const fees = calculateDeliveryFee(pickup, returnLoc);
+                  
+                  if (fees.totalFee > 0 || fees.requiresQuote) {
+                    return (
+                      <div className="text-sm text-gray-600 ml-7">
+                        {fees.requiresQuote ? (
+                          <span className="text-orange-600 font-medium">Quote required</span>
+                        ) : (
+                          <span>Delivery fee: <span className="font-medium text-green-600">${fees.totalFee}</span></span>
+                        )}
+                      </div>
+                    );
+                  }
+                  return null;
+                })()}
               </div>
             </div>
           </div>
@@ -405,6 +466,7 @@ const SearchSummary: React.FC = () => {
             size="sm"
             onClick={handleEditToggle}
             leftIcon={<Edit2 size={16} />}
+            className="w-full md:w-auto"
           >
             Edit Search
           </Button>
