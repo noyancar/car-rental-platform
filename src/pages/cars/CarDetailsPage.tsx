@@ -109,6 +109,20 @@ const CarDetailsPage: React.FC = () => {
           
           {/* Car Details */}
           <div className="p-8">
+            {/* Back to Search Results Button */}
+            {isSearchPerformed && (
+              <div className="mb-6">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => navigate('/cars')}
+                  leftIcon={<ArrowLeft size={16} />}
+                >
+                  Back to Search Results
+                </Button>
+              </div>
+            )}
+            
             <div className="flex justify-between items-start">
               <div>
                 <div className="flex items-center gap-4 mb-2">
