@@ -122,7 +122,8 @@ const PendingPaymentPage: React.FC = () => {
         
         // Navigate to payment page
         console.log('Navigating to payment page:', `/payment/${booking.id}`);
-        toast.success('Booking created successfully!');
+        // Don't show success toast here - it's just a draft booking
+        // The actual success message will appear after payment
         navigate(`/payment/${booking.id}`);
       } else {
         console.error('No booking returned from createBooking');
