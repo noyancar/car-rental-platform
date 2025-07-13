@@ -38,7 +38,7 @@ const CarDetailsPage: React.FC = () => {
   
   if (loading) {
     return (
-      <div className="min-h-screen pt-16 pb-12 flex flex-col items-center justify-center">
+      <div className="min-h-screen pt-2 pb-12 flex flex-col items-center justify-center">
         <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary-800"></div>
       </div>
     );
@@ -46,7 +46,7 @@ const CarDetailsPage: React.FC = () => {
   
   if (error) {
     return (
-      <div className="min-h-screen pt-16 pb-12 flex flex-col items-center justify-center">
+      <div className="min-h-screen pt-2 pb-12 flex flex-col items-center justify-center">
         <div className="bg-error-50 text-error-500 p-4 rounded-md">
           Error loading car details: {error}
         </div>
@@ -56,7 +56,7 @@ const CarDetailsPage: React.FC = () => {
   
   if (!currentCar) {
     return (
-      <div className="min-h-screen pt-16 pb-12 flex flex-col items-center justify-center">
+      <div className="min-h-screen pt-2 pb-12 flex flex-col items-center justify-center">
         <div className="text-center">
           <h2 className="text-2xl font-semibold mb-4">Car Not Found</h2>
           <Link to="/cars">
@@ -81,7 +81,7 @@ const CarDetailsPage: React.FC = () => {
   ];
   
   return (
-    <div className="min-h-screen pt-16 pb-12 bg-secondary-50">
+    <div className="min-h-screen pt-2 pb-12 bg-secondary-50">
       <div className="container-custom">
         <PageHeader
           title={`${currentCar.make} ${currentCar.model} ${currentCar.year}`}
