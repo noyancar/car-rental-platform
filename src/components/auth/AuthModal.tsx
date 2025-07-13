@@ -29,11 +29,12 @@ const AuthModal: React.FC<AuthModalProps> = ({
   onSuccess,
   initialMode = 'signin'
 }) => {
-  const [mode, setMode] = useState<'signin' | 'signup' | 'magic-link'>(initialMode);
+  const [mode, setMode] = useState<'signin' | 'signup' | 'magic-link' | 'forgot-password'>(initialMode);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [magicLinkSent, setMagicLinkSent] = useState(false);
+  const [resetEmailSent, setResetEmailSent] = useState(false);
 
   const handleGoogleLogin = async () => {
     try {
@@ -129,6 +130,28 @@ const AuthModal: React.FC<AuthModalProps> = ({
     }
   };
 
+  const handleForgotPassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    try {
+      setLoading(true);
+      
+      const { error } = await supabase.auth.resetPasswordForEmail(email, {
+        redirectTo: `${window.location.origin}/auth/callback?type=recovery`
+      });
+      
+      if (error) throw error;
+      
+      setResetEmailSent(true);
+      toast.success('Password reset link sent! Check your email.');
+    } catch (error: any) {
+      console.error('Password reset error:', error);
+      toast.error(error.message || 'Failed to send password reset email');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const renderContent = () => {
     if (mode === 'magic-link') {
       if (magicLinkSent) {
@@ -185,6 +208,75 @@ const AuthModal: React.FC<AuthModalProps> = ({
             leftIcon={<Mail size={20} />}
           >
             Send magic link
+          </Button>
+
+          <div className="text-center">
+            <button
+              type="button"
+              onClick={() => setMode('signin')}
+              className="text-xs sm:text-sm text-primary-700 hover:text-primary-800 underline"
+            >
+              Back to sign in
+            </button>
+          </div>
+        </form>
+      );
+    }
+
+    if (mode === 'forgot-password') {
+      if (resetEmailSent) {
+        return (
+          <div className="text-center py-8">
+            <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
+              <Check className="w-8 h-8 text-green-600" />
+            </div>
+            <h3 className="text-lg sm:text-xl font-semibold mb-2">Check your email!</h3>
+            <p className="text-sm sm:text-base text-gray-600 mb-4 sm:mb-6">
+              We've sent a password reset link to <strong>{email}</strong>
+            </p>
+            <Button
+              variant="outline"
+              onClick={() => {
+                setMode('signin');
+                setResetEmailSent(false);
+                setEmail('');
+              }}
+              fullWidth
+            >
+              Back to sign in
+            </Button>
+          </div>
+        );
+      }
+
+      return (
+        <form onSubmit={handleForgotPassword} className="space-y-4 sm:space-y-5">
+          <div className="text-center mb-4 sm:mb-6">
+            <h3 className="text-xl sm:text-2xl font-bold mb-1 sm:mb-2">Reset your password</h3>
+            <p className="text-sm sm:text-base text-gray-600">
+              Enter your email and we'll send you a link to reset your password.
+            </p>
+          </div>
+
+          <Input
+            type="email"
+            icon={Mail}
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            placeholder="Enter your email"
+            required
+            className="w-full"
+          />
+
+          <Button
+            type="submit"
+            variant="primary"
+            fullWidth
+            size="lg"
+            isLoading={loading}
+            disabled={loading}
+          >
+            Send reset link
           </Button>
 
           <div className="text-center">
@@ -276,13 +368,35 @@ const AuthModal: React.FC<AuthModalProps> = ({
 
         {/* Alternative Actions */}
         <div className="space-y-2 sm:space-y-3 text-center">
-          <button
-            type="button"
-            onClick={() => setMode('magic-link')}
-            className="text-xs sm:text-sm text-primary-700 hover:text-primary-800 font-medium"
-          >
-            Sign in with magic link
-          </button>
+          {mode === 'signin' && (
+            <>
+              <button
+                type="button"
+                onClick={() => setMode('forgot-password')}
+                className="text-xs sm:text-sm text-primary-700 hover:text-primary-800 font-medium block w-full"
+              >
+                Forgot your password?
+              </button>
+              
+              <button
+                type="button"
+                onClick={() => setMode('magic-link')}
+                className="text-xs sm:text-sm text-primary-700 hover:text-primary-800 font-medium block w-full"
+              >
+                Sign in with magic link
+              </button>
+            </>
+          )}
+          
+          {mode !== 'signin' && (
+            <button
+              type="button"
+              onClick={() => setMode('magic-link')}
+              className="text-xs sm:text-sm text-primary-700 hover:text-primary-800 font-medium"
+            >
+              Sign in with magic link
+            </button>
+          )}
 
           <div className="text-xs sm:text-sm text-gray-600">
             {mode === 'signin' ? "Don't have an account? " : "Already have an account? "}

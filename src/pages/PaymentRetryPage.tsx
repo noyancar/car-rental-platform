@@ -16,7 +16,7 @@ const PaymentRetryPage: React.FC = () => {
 
   useEffect(() => {
     if (!user) {
-      navigate('/login');
+      navigate('/');
       return;
     }
 
@@ -27,7 +27,7 @@ const PaymentRetryPage: React.FC = () => {
     try {
       const { data, error } = await supabase
         .from('bookings')
-        .select('*, cars(make, model, year)')
+        .select('*, car:cars(make, model, year)')
         .eq('id', bookingId)
         .eq('user_id', user?.id)
         .single();
@@ -110,11 +110,11 @@ const PaymentRetryPage: React.FC = () => {
                     <span className="text-gray-600">Booking ID:</span>
                     <span className="font-medium">#{booking.id}</span>
                   </div>
-                  {booking.cars && (
+                  {booking.car && (
                     <div className="flex justify-between">
                       <span className="text-gray-600">Vehicle:</span>
                       <span className="font-medium">
-                        {booking.cars.make} {booking.cars.model} {booking.cars.year}
+                        {booking.car.make} {booking.car.model} {booking.car.year}
                       </span>
                     </div>
                   )}
