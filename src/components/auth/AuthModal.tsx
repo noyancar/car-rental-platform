@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { X, Mail, Loader2, Check } from 'lucide-react';
+import { X, Mail, Loader2, Check, Eye, EyeOff } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import { toast } from 'sonner';
 import { Button } from '../ui/Button';
@@ -35,6 +35,18 @@ const AuthModal: React.FC<AuthModalProps> = ({
   const [loading, setLoading] = useState(false);
   const [magicLinkSent, setMagicLinkSent] = useState(false);
   const [resetEmailSent, setResetEmailSent] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
+
+  // Reset form when modal closes
+  const handleClose = () => {
+    setMode('signin'); // Always reset to signin
+    setEmail('');
+    setPassword('');
+    setShowPassword(false);
+    setMagicLinkSent(false);
+    setResetEmailSent(false);
+    onClose();
+  };
 
   const handleGoogleLogin = async () => {
     try {
@@ -84,7 +96,7 @@ const AuthModal: React.FC<AuthModalProps> = ({
         
         toast.success('Account created! Please check your email to verify.');
         onSuccess?.();
-        onClose();
+        handleClose();
       } else {
         const { error } = await supabase.auth.signInWithPassword({
           email,
@@ -95,7 +107,7 @@ const AuthModal: React.FC<AuthModalProps> = ({
         
         toast.success('Signed in successfully!');
         onSuccess?.();
-        onClose();
+        handleClose();
       }
     } catch (error: any) {
       console.error('Auth error:', error);
@@ -343,15 +355,25 @@ const AuthModal: React.FC<AuthModalProps> = ({
             className="w-full"
           />
 
-          <Input
-            type="password"
-            label="Password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            placeholder="Enter your password"
-            required
-            className="w-full"
-          />
+          <div className="relative">
+            <Input
+              type={showPassword ? "text" : "password"}
+              label="Password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              placeholder="Enter your password"
+              required
+              className="w-full pr-10"
+            />
+            <button
+              type="button"
+              className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-gray-700 focus:outline-none mt-[13px]"
+              onClick={() => setShowPassword(!showPassword)}
+              aria-label={showPassword ? "Hide password" : "Show password"}
+            >
+              {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
+            </button>
+          </div>
 
           <Button
             type="submit"
@@ -372,7 +394,10 @@ const AuthModal: React.FC<AuthModalProps> = ({
             <>
               <button
                 type="button"
-                onClick={() => setMode('forgot-password')}
+                onClick={() => {
+                  setMode('forgot-password');
+                  setShowPassword(false);
+                }}
                 className="text-xs sm:text-sm text-primary-700 hover:text-primary-800 font-medium block w-full"
               >
                 Forgot your password?
@@ -380,7 +405,10 @@ const AuthModal: React.FC<AuthModalProps> = ({
               
               <button
                 type="button"
-                onClick={() => setMode('magic-link')}
+                onClick={() => {
+                  setMode('magic-link');
+                  setShowPassword(false);
+                }}
                 className="text-xs sm:text-sm text-primary-700 hover:text-primary-800 font-medium block w-full"
               >
                 Sign in with magic link
@@ -391,7 +419,10 @@ const AuthModal: React.FC<AuthModalProps> = ({
           {mode !== 'signin' && (
             <button
               type="button"
-              onClick={() => setMode('magic-link')}
+              onClick={() => {
+                setMode('magic-link');
+                setShowPassword(false);
+              }}
               className="text-xs sm:text-sm text-primary-700 hover:text-primary-800 font-medium"
             >
               Sign in with magic link
@@ -402,7 +433,12 @@ const AuthModal: React.FC<AuthModalProps> = ({
             {mode === 'signin' ? "Don't have an account? " : "Already have an account? "}
             <button
               type="button"
-              onClick={() => setMode(mode === 'signin' ? 'signup' : 'signin')}
+              onClick={() => {
+                setMode(mode === 'signin' ? 'signup' : 'signin');
+                setShowPassword(false);
+                setPassword(''); // Clear password when switching modes
+                setEmail(''); // Clear email too for better UX
+              }}
               className="text-primary-700 hover:text-primary-800 font-semibold underline"
             >
               {mode === 'signin' ? 'Sign up' : 'Sign in'}
@@ -414,10 +450,10 @@ const AuthModal: React.FC<AuthModalProps> = ({
   };
 
   return (
-    <Modal isOpen={isOpen} onClose={onClose} showCloseButton={false}>
+    <Modal isOpen={isOpen} onClose={handleClose} showCloseButton={false}>
       <div className="relative bg-white rounded-2xl shadow-xl p-4 sm:p-6 md:p-8 w-full max-w-md mx-auto">
         <button
-          onClick={onClose}
+          onClick={handleClose}
           className="absolute top-3 right-3 sm:top-6 sm:right-6 text-gray-400 hover:text-gray-600 transition-colors z-10"
           aria-label="Close modal"
         >
