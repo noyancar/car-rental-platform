@@ -1,23 +1,22 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
-import { ArrowLeft, Shield, Car, Calendar, Package, MapPin, AlertCircle } from 'lucide-react';
+import { ArrowLeft, Shield, Calendar, MapPin, AlertCircle } from 'lucide-react';
 import { format } from 'date-fns';
 import { toast } from 'sonner';
 import { Button } from '../components/ui/Button';
 import { AuthModal } from '../components/auth';
 import StripeProvider from '../components/payment/StripeProvider';
 import StripePaymentForm from '../components/payment/StripePaymentForm';
-import { useBookingStore } from '../stores/bookingStore';
 import { useAuthStore } from '../stores/authStore';
 import { supabase } from '../lib/supabase';
 import { BookingWithExtras } from '../types';
 import { useLocations } from '../hooks/useLocations';
+import { calculateRentalDuration, calculateCarRentalTotal, calculateExtrasTotal } from '../utils/booking';
 
 const PaymentPage: React.FC = () => {
   const { bookingId } = useParams();
   const navigate = useNavigate();
   const { user } = useAuthStore();
-  const { updateBookingStatus } = useBookingStore();
   const { calculateDeliveryFee, getLocationByValue } = useLocations();
   const [booking, setBooking] = useState<BookingWithExtras | null>(null);
   const [loading, setLoading] = useState(true);
@@ -139,7 +138,7 @@ const PaymentPage: React.FC = () => {
     }
   };
 
-  const handlePaymentSuccess = async (paymentIntentId: string) => {
+  const handlePaymentSuccess = async () => {
     // Webhook already updated the booking status, just show success and navigate
     toast.success('Payment successful! Your booking is confirmed.');
     navigate(`/bookings/${bookingId}`);
@@ -214,10 +213,16 @@ const PaymentPage: React.FC = () => {
     );
   }
 
-  const rentalDuration = Math.ceil((new Date(booking.end_date).getTime() - new Date(booking.start_date).getTime()) / (1000 * 60 * 60 * 24));
-  const carTotal = booking.car ? booking.car.price_per_day * rentalDuration : 0;
-  const extrasTotal = booking.booking_extras?.reduce((sum, be) => sum + be.total_price, 0) || 0;
-  const deliveryTotal = deliveryFees.requiresQuote ? 0 : deliveryFees.totalFee;
+  // Use centralized calculation functions
+  const rentalDuration = calculateRentalDuration(
+    booking.start_date,
+    booking.end_date,
+    booking.pickup_time || '10:00',
+    booking.return_time || '10:00'
+  );
+  
+  const carTotal = booking.car ? calculateCarRentalTotal(booking.car.price_per_day, rentalDuration) : 0;
+  const extrasTotal = calculateExtrasTotal(booking.booking_extras);
   // Use the booking.total_price which already includes delivery fee from booking creation
   const grandTotal = booking.total_price;
 

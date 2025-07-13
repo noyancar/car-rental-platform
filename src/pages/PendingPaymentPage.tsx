@@ -9,6 +9,7 @@ import { useAuthStore } from '../stores/authStore';
 import { useBookingStore } from '../stores/bookingStore';
 import { useCarStore } from '../stores/carStore';
 import { useExtrasStore } from '../stores/extrasStore';
+import { calculateRentalDuration, calculateCarRentalTotal, calculateExtrasTotal } from '../utils/booking';
 
 const PendingPaymentPage: React.FC = () => {
   const navigate = useNavigate();
@@ -104,10 +105,12 @@ const PendingPaymentPage: React.FC = () => {
             addExtra(item.extra, item.quantity);
           });
           
-          // Calculate rental duration
-          const rentalDuration = Math.ceil(
-            (new Date(pendingBooking.end_date).getTime() - new Date(pendingBooking.start_date).getTime()) / 
-            (1000 * 60 * 60 * 24)
+          // Calculate rental duration using centralized function
+          const rentalDuration = calculateRentalDuration(
+            pendingBooking.start_date,
+            pendingBooking.end_date,
+            pendingBooking.pickup_time || '10:00',
+            pendingBooking.return_time || '10:00'
           );
           
           // Save extras to booking
@@ -148,9 +151,11 @@ const PendingPaymentPage: React.FC = () => {
     return null;
   }
 
-  const rentalDuration = Math.ceil(
-    (new Date(pendingBooking.end_date).getTime() - new Date(pendingBooking.start_date).getTime()) / 
-    (1000 * 60 * 60 * 24)
+  const rentalDuration = calculateRentalDuration(
+    pendingBooking.start_date,
+    pendingBooking.end_date,
+    pendingBooking.pickup_time || '10:00',
+    pendingBooking.return_time || '10:00'
   );
 
   return (
