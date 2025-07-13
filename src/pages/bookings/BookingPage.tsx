@@ -356,7 +356,7 @@ const BookingPage: React.FC = () => {
           start_date: startDate,
           end_date: endDate,
           total_price: grandTotal,
-          status: 'pending',
+          status: 'draft', // Start with draft status
           pickup_location: pickupLocation,
           return_location: sameReturnLocation ? pickupLocation : returnLocation,
           pickup_time: pickupTime,

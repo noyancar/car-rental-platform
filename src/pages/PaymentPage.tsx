@@ -140,18 +140,9 @@ const PaymentPage: React.FC = () => {
   };
 
   const handlePaymentSuccess = async (paymentIntentId: string) => {
-    try {
-      // Update booking status to confirmed
-      await supabase
-        .from('bookings')
-        .update({ stripe_payment_status: 'succeeded' })
-        .eq('id', parseInt(bookingId!));
-      
-      toast.success('Payment successful! Your booking is confirmed.');
-      navigate(`/bookings/${bookingId}`);
-    } catch (error) {
-      toast.error('Payment was successful but we encountered an error. Please contact support.');
-    }
+    // Webhook already updated the booking status, just show success and navigate
+    toast.success('Payment successful! Your booking is confirmed.');
+    navigate(`/bookings/${bookingId}`);
   };
 
   const handlePaymentError = (error: string) => {

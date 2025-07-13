@@ -18,6 +18,7 @@ const BookingDetailsPage: React.FC = () => {
     }
   }, [id, fetchBookingById]);
   
+  
   const checkPaymentStatus = async () => {
     if (!currentBooking || !currentBooking.stripe_payment_intent_id) return;
     
@@ -96,6 +97,10 @@ const BookingDetailsPage: React.FC = () => {
         return 'bg-error-50 text-error-500';
       case 'completed':
         return 'bg-secondary-100 text-secondary-600';
+      case 'draft':
+        return 'bg-blue-50 text-blue-500';
+      case 'pending':
+        return 'bg-warning-50 text-warning-500';
       default:
         return 'bg-warning-50 text-warning-500';
     }
@@ -272,8 +277,8 @@ const BookingDetailsPage: React.FC = () => {
                 </>
               )}
             </div>
-            {/* Manual Payment Check for pending payments */}
-            {currentBooking.stripe_payment_intent_id && currentBooking.stripe_payment_status === 'pending' && (
+            {/* Manual Payment Check for pending/draft payments */}
+            {currentBooking.stripe_payment_intent_id && (currentBooking.stripe_payment_status === 'pending' || currentBooking.status === 'draft') && (
               <div className="mt-4">
                 <Button
                   variant="secondary"

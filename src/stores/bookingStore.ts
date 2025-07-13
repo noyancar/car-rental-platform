@@ -18,7 +18,7 @@ interface BookingState {
   checkAvailability: (carId: number, startDate: string, endDate: string, pickupTime?: string, returnTime?: string) => Promise<boolean>;
 }
 
-export const useBookingStore = create<BookingState>((set, get) => ({
+export const useBookingStore = create<BookingState>((set) => ({
   bookings: [],
   currentBooking: null,
   loading: false,
@@ -77,6 +77,10 @@ export const useBookingStore = create<BookingState>((set, get) => ({
       
       const { data: { user } } = await supabase.auth.getUser();
       console.log('Current user:', user);
+      
+      if (!user) {
+        throw new Error('User not authenticated');
+      }
       
       const { data, error } = await supabase
         .from('bookings')
@@ -160,6 +164,11 @@ export const useBookingStore = create<BookingState>((set, get) => ({
         }
       }
       
+      // Calculate expiry time for draft bookings (30 minutes from now)
+      const expiresAt = booking.status === 'draft' 
+        ? new Date(Date.now() + 30 * 60 * 1000).toISOString() 
+        : null;
+      
       // Make sure all booking fields are included - only use location IDs
       const bookingData = {
         car_id: booking.car_id,
@@ -167,12 +176,13 @@ export const useBookingStore = create<BookingState>((set, get) => ({
         start_date: booking.start_date,
         end_date: booking.end_date,
         total_price: booking.total_price,
-        status: booking.status || 'pending',
+        status: booking.status || 'draft', // Default to draft
         pickup_location_id: pickup_location_id,
         return_location_id: return_location_id,
         pickup_time: booking.pickup_time || null,
         return_time: booking.return_time || null,
-        discount_code_id: booking.discount_code_id || null
+        discount_code_id: booking.discount_code_id || null,
+        expires_at: expiresAt
       };
       
       console.log('Creating booking with data:', bookingData);

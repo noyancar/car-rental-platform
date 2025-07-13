@@ -46,6 +46,56 @@ serve(async (req) => {
       throw new Error(bookingError?.message || "Booking not found");
     }
 
+    // Check if a payment intent already exists
+    if (booking.stripe_payment_intent_id) {
+      console.log(`Existing payment intent found: ${booking.stripe_payment_intent_id}`);
+      
+      // Retrieve the existing payment intent from Stripe
+      try {
+        const stripeSecretKey = Deno.env.get("STRIPE_SECRET_KEY");
+        if (!stripeSecretKey) {
+          throw new Error("Stripe secret key not configured");
+        }
+        
+        const stripe = new Stripe(stripeSecretKey, {
+          apiVersion: '2023-10-16',
+        });
+        
+        const existingIntent = await stripe.paymentIntents.retrieve(booking.stripe_payment_intent_id);
+        
+        // Check if the payment intent is still valid (not succeeded, canceled, or failed)
+        if (existingIntent.status === 'requires_payment_method' || 
+            existingIntent.status === 'requires_confirmation' ||
+            existingIntent.status === 'requires_action' ||
+            existingIntent.status === 'processing') {
+          
+          console.log(`Returning existing payment intent with status: ${existingIntent.status}`);
+          
+          return new Response(
+            JSON.stringify({
+              success: true,
+              payment_intent_id: existingIntent.id,
+              client_secret: existingIntent.client_secret,
+              amount: existingIntent.amount,
+              currency: existingIntent.currency,
+            }),
+            {
+              headers: {
+                ...corsHeaders,
+                "Content-Type": "application/json",
+              },
+              status: 200,
+            }
+          );
+        } else {
+          console.log(`Existing payment intent has status: ${existingIntent.status}, creating new one`);
+        }
+      } catch (error) {
+        console.error('Error retrieving existing payment intent:', error);
+        // Continue to create a new payment intent
+      }
+    }
+
     // Calculate total amount including extras
     let totalAmount = booking.total_price;
     if (booking.booking_extras && booking.booking_extras.length > 0) {

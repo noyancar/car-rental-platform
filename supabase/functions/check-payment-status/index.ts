@@ -4,7 +4,7 @@ import Stripe from "npm:stripe@11.1.0";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-application-name",
   "Access-Control-Allow-Methods": "POST, OPTIONS",
 };
 
@@ -67,6 +67,7 @@ serve(async (req) => {
           status: 'confirmed',
           stripe_payment_status: 'succeeded',
           stripe_payment_method_id: paymentIntent.payment_method as string,
+          expires_at: null // Clear expiry date when confirmed
         };
         break;
       case 'processing':

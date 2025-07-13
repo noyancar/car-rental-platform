@@ -21,6 +21,10 @@ const BookingsListPage: React.FC = () => {
         return 'text-error-500';
       case 'completed':
         return 'text-secondary-500';
+      case 'draft':
+        return 'text-blue-500';
+      case 'pending':
+        return 'text-warning-500';
       default:
         return 'text-warning-500';
     }
@@ -34,6 +38,10 @@ const BookingsListPage: React.FC = () => {
         return <XCircle className="h-5 w-5" />;
       case 'completed':
         return <CheckCircle className="h-5 w-5" />;
+      case 'draft':
+        return <Clock className="h-5 w-5" />;
+      case 'pending':
+        return <AlertCircle className="h-5 w-5" />;
       default:
         return <AlertCircle className="h-5 w-5" />;
     }
