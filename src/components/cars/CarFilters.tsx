@@ -46,7 +46,7 @@ const CarFilters: React.FC<CarFiltersProps> = ({ onClose }) => {
       
       // Use predefined categories to ensure all are visible
       // These must match the database values (lowercase)
-      const predefinedCategories = ['electric', 'sports', 'suv', 'luxury', 'convertible'];
+      const predefinedCategories = ['sports', 'suv', 'luxury', 'convertible'];
       setCategories(predefinedCategories);
       
       // Find price range

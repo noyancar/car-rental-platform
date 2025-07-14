@@ -17,10 +17,9 @@ const CarsPage: React.FC = () => {
       // Apply the category filter from URL
       setFilters({ category });
       
-      // If no search has been performed yet, trigger a search
-      if (!isSearchPerformed) {
-        searchCars();
-      }
+      // If no search has been performed yet, don't trigger search
+      // Let the user select dates and locations first
+      // The category filter will be pre-selected for them
     }
   }, [searchParams]);
   
