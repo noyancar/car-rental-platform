@@ -356,32 +356,22 @@ const BookingPage: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Hero Section with Car Image - Desktop Only */}
-      <div className="hidden lg:block relative h-96 bg-gradient-to-br from-gray-900 to-gray-700">
-        <img 
-          src={currentCar.image_url} 
-          alt={`${currentCar.make} ${currentCar.model}`}
-          className="w-full h-full object-cover opacity-40"
-        />
-        <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
-        
-        {/* Breadcrumb and Title Overlay */}
-        <div className="absolute bottom-0 left-0 right-0 text-white p-8">
-          <div className="container-custom">
-            <nav className="flex items-center space-x-2 text-sm mb-4">
-              <Link to="/" className="hover:text-white/80">Home</Link>
-              <span>/</span>
-              <Link to="/cars" className="hover:text-white/80">Cars</Link>
-              <span>/</span>
-              <Link to={`/cars/${carId}`} className="hover:text-white/80">
-                {currentCar.make} {currentCar.model}
-              </Link>
-              <span>/</span>
-              <span>Book Now</span>
-            </nav>
-            <h1 className="text-4xl font-bold mb-2">Complete Your Booking</h1>
-            <p className="text-xl">{currentCar.make} {currentCar.model} {currentCar.year}</p>
-          </div>
+      {/* Compact Header - Desktop Only */}
+      <div className="hidden lg:block bg-white border-b">
+        <div className="container-custom py-6">
+          <nav className="flex items-center space-x-2 text-sm mb-4 text-gray-600">
+            <Link to="/" className="hover:text-gray-800">Home</Link>
+            <span>/</span>
+            <Link to="/cars" className="hover:text-gray-800">Cars</Link>
+            <span>/</span>
+            <Link to={`/cars/${carId}`} className="hover:text-gray-800">
+              {currentCar.make} {currentCar.model}
+            </Link>
+            <span>/</span>
+            <span className="text-gray-900">Book Now</span>
+          </nav>
+          <h1 className="text-3xl font-bold text-gray-900">Complete Your Booking</h1>
+          <p className="text-lg text-gray-600 mt-1">{currentCar.make} {currentCar.model} {currentCar.year}</p>
         </div>
       </div>
 
@@ -650,7 +640,7 @@ const BookingPage: React.FC = () => {
           {/* Right Column - Price Summary (Desktop) / Collapsible (Mobile) */}
           <div className="lg:col-span-1 order-1 lg:order-2">
             {/* Desktop Sticky Summary */}
-            <div className="hidden lg:block sticky top-24">
+            <div className="hidden lg:block sticky top-8">
               <div className="bg-white rounded-xl shadow-sm overflow-hidden">
                 {/* Car Image */}
                 <div className="relative h-48">
