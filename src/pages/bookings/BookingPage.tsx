@@ -5,8 +5,8 @@ import { format, isBefore, isValid, parseISO } from 'date-fns';
 import { toast } from 'sonner';
 import { Button } from '../../components/ui/Button';
 import { Input } from '../../components/ui/Input';
-import { LocationSelector } from '../../components/ui/LocationSelector';
 import { useLocations } from '../../hooks/useLocations';
+import { LocationSelector } from '../../components/ui/LocationSelector';
 import { QuoteRequestModal, type QuoteRequestData } from '../../components/ui/QuoteRequestModal';
 import { useCarStore } from '../../stores/carStore';
 import { useBookingStore } from '../../stores/bookingStore';
@@ -30,7 +30,7 @@ const BookingPage: React.FC = () => {
   } = useBookingStore();
   const { searchParams, isSearchPerformed, updateSearchParams } = useSearchStore();
   const { saveBookingExtras, calculateTotal } = useExtrasStore();
-  const { calculateDeliveryFee, getLocationByValue, DEFAULT_LOCATION } = useLocations();
+  const { calculateDeliveryFee, getLocationByValue, DEFAULT_LOCATION, locations, loading: locationsLoading } = useLocations();
   
   // Initialize dates from searchParams if available, otherwise use default values
   const today = new Date();
@@ -46,16 +46,18 @@ const BookingPage: React.FC = () => {
   const [isAvailable, setIsAvailable] = useState<boolean | null>(null);
   const [validationMessage, setValidationMessage] = useState('');
   const [isEditingDates, setIsEditingDates] = useState(false);
+  const [isEditingLocations, setIsEditingLocations] = useState(false);
+  const [hasCheckedAvailability, setHasCheckedAvailability] = useState(false);
   const [showExtrasModal, setShowExtrasModal] = useState(false);
   const [showQuoteModal, setShowQuoteModal] = useState(false);
   const [showMobileDetails, setShowMobileDetails] = useState(false);
   
   // Location states
   const [pickupLocation, setPickupLocation] = useState(
-    searchParams.pickupLocation || DEFAULT_LOCATION?.value || ''
+    searchParams.pickupLocation || ''
   );
   const [returnLocation, setReturnLocation] = useState(
-    searchParams.returnLocation || DEFAULT_LOCATION?.value || ''
+    searchParams.returnLocation || ''
   );
   const [sameReturnLocation, setSameReturnLocation] = useState(
     pickupLocation === returnLocation
@@ -81,6 +83,18 @@ const BookingPage: React.FC = () => {
       setReturnLocation(pickupLocation);
     }
   }, [pickupLocation, sameReturnLocation]);
+  
+  // Set default locations when locations are loaded and no location is selected
+  useEffect(() => {
+    if (!locationsLoading && locations.length > 0) {
+      if (!pickupLocation && DEFAULT_LOCATION) {
+        setPickupLocation(DEFAULT_LOCATION.value);
+      }
+      if (!returnLocation && DEFAULT_LOCATION) {
+        setReturnLocation(DEFAULT_LOCATION.value);
+      }
+    }
+  }, [locationsLoading, locations, DEFAULT_LOCATION]);
   
   // Fetch car details on mount
   useEffect(() => {
@@ -149,6 +163,7 @@ const BookingPage: React.FC = () => {
           returnTime
         );
         setIsAvailable(available);
+        setHasCheckedAvailability(true);
         
         // Calculate price only if available
         if (available) {
@@ -164,10 +179,12 @@ const BookingPage: React.FC = () => {
       } catch (error) {
         console.error('Error checking availability:', error);
         setIsAvailable(false);
+        setHasCheckedAvailability(true);
       }
     };
     
-    if (!isEditingDates && currentCar) {
+    // Only check availability if dates have been changed or it's the first check from search
+    if (!isEditingDates && currentCar && (hasCheckedAvailability || isSearchPerformed)) {
       checkCarAvailability();
     }
   }, [currentCar, startDate, endDate, pickupTime, returnTime, isEditingDates, validateDates, checkAvailability, calculatePrice]);
@@ -355,6 +372,13 @@ const BookingPage: React.FC = () => {
 
       {/* Main Content */}
       <div className="container-custom py-8">
+        {/* Desktop Back Button */}
+        <div className="hidden lg:block mb-6">
+          <Link to={`/cars/${carId}`} className="inline-flex items-center text-gray-600 hover:text-gray-800">
+            <ArrowLeft size={20} className="mr-2" />
+            Back to Car Details
+          </Link>
+        </div>
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           {/* Left Column - Booking Form */}
           <div className="lg:col-span-2 order-2 lg:order-1">
@@ -368,7 +392,13 @@ const BookingPage: React.FC = () => {
                       type="button"
                       variant="ghost" 
                       size="sm"
-                      onClick={() => setIsEditingDates(!isEditingDates)}
+                      onClick={() => {
+                        setIsEditingDates(!isEditingDates);
+                        if (isEditingDates) {
+                          // When clicking "Done", enable availability check
+                          setHasCheckedAvailability(true);
+                        }
+                      }}
                     >
                       {isEditingDates ? 'Done' : 'Edit Dates'}
                     </Button>
@@ -433,36 +463,66 @@ const BookingPage: React.FC = () => {
 
                 {/* Pickup & Return Locations */}
                 <div className="p-6 border-b">
-                  <h2 className="text-xl font-semibold mb-4">Pickup & Return Locations</h2>
-                  
-                  <div className="space-y-4">
-                    <LocationSelector
-                      label="Pickup Location"
-                      value={pickupLocation}
-                      onChange={setPickupLocation}
-                    />
-                    
-                    <div className="flex items-center">
-                      <input
-                        type="checkbox"
-                        id="sameReturn"
-                        checked={sameReturnLocation}
-                        onChange={(e) => setSameReturnLocation(e.target.checked)}
-                        className="h-4 w-4 text-primary-600 rounded"
-                      />
-                      <label htmlFor="sameReturn" className="ml-2 text-sm">
-                        Return to same location
-                      </label>
-                    </div>
-                    
-                    {!sameReturnLocation && (
-                      <LocationSelector
-                        label="Return Location"
-                        value={returnLocation}
-                        onChange={setReturnLocation}
-                      />
-                    )}
+                  <div className="flex justify-between items-center mb-4">
+                    <h2 className="text-xl font-semibold">Pickup & Return Locations</h2>
+                    <Button 
+                      type="button"
+                      variant="ghost" 
+                      size="sm"
+                      onClick={() => setIsEditingLocations(!isEditingLocations)}
+                    >
+                      {isEditingLocations ? 'Done' : 'Edit Locations'}
+                    </Button>
                   </div>
+                  
+                  {isEditingLocations ? (
+                    <div className="space-y-4">
+                      <LocationSelector
+                        label="Pickup Location"
+                        value={pickupLocation}
+                        onChange={setPickupLocation}
+                      />
+                      
+                      <div className="flex items-center">
+                        <input
+                          type="checkbox"
+                          id="sameReturn"
+                          checked={sameReturnLocation}
+                          onChange={(e) => setSameReturnLocation(e.target.checked)}
+                          className="h-4 w-4 text-primary-600 rounded"
+                        />
+                        <label htmlFor="sameReturn" className="ml-2 text-sm">
+                          Return to same location
+                        </label>
+                      </div>
+                      
+                      {!sameReturnLocation && (
+                        <LocationSelector
+                          label="Return Location"
+                          value={returnLocation}
+                          onChange={setReturnLocation}
+                        />
+                      )}
+                    </div>
+                  ) : (
+                    <div className="space-y-3">
+                      <div className="flex items-center">
+                        <MapPin className="w-5 h-5 text-gray-400 mr-3" />
+                        <div>
+                          <p className="text-sm text-gray-500">Pickup Location</p>
+                          <p className="font-medium">{getLocationByValue(pickupLocation)?.label || 'Not specified'}</p>
+                        </div>
+                      </div>
+                      
+                      <div className="flex items-center">
+                        <MapPin className="w-5 h-5 text-gray-400 mr-3" />
+                        <div>
+                          <p className="text-sm text-gray-500">Return Location</p>
+                          <p className="font-medium">{getLocationByValue(returnLocation)?.label || 'Not specified'}</p>
+                        </div>
+                      </div>
+                    </div>
+                  )}
 
                   {/* Delivery Service Info */}
                   {deliveryFees.totalFee > 0 && !deliveryFees.requiresQuote && (
@@ -533,7 +593,7 @@ const BookingPage: React.FC = () => {
                     fullWidth
                     size="lg"
                     isLoading={bookingLoading}
-                    disabled={(!isAvailable && !deliveryFees.requiresQuote) || bookingLoading || !startDate || !endDate || isEditingDates}
+                    disabled={(!isAvailable && !deliveryFees.requiresQuote) || bookingLoading || !startDate || !endDate || isEditingDates || isEditingLocations}
                   >
                     {deliveryFees.requiresQuote ? 'Request Quote' : 'Complete Booking'}
                   </Button>

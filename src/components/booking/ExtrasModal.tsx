@@ -7,7 +7,7 @@ import { Button } from '../ui/Button';
 interface ExtrasModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onContinue: () => void;
+  onContinue: (selectedExtras: Map<string, { extra: any; quantity: number }>) => void;
   pickupDate: string;
   returnDate: string;
   rentalDays: number;
@@ -299,14 +299,14 @@ export default function ExtrasModal({
             {/* Action buttons */}
             <div className="mt-6 space-y-3">
               <Button
-                onClick={onContinue}
+                onClick={() => onContinue(selectedExtras)}
                 className="w-full py-3 shadow-lg hover:shadow-xl"
                 variant="accent"
               >
                 {breakdown.length > 0 ? 'Add Extras & Continue' : 'Continue to Payment'}
               </Button>
               <button
-                onClick={onContinue}
+                onClick={() => onContinue(selectedExtras)}
                 className="w-full py-3 text-volcanic-600 hover:text-volcanic-800 transition-all duration-200 font-medium"
               >
                 Skip & Continue

@@ -17,7 +17,7 @@ const PaymentPage: React.FC = () => {
   const { bookingId } = useParams();
   const navigate = useNavigate();
   const { user } = useAuthStore();
-  const { calculateDeliveryFee, getLocationByValue } = useLocations();
+  const { calculateDeliveryFee, getLocationByValue, locations } = useLocations();
   const [booking, setBooking] = useState<BookingWithExtras | null>(null);
   const [loading, setLoading] = useState(true);
   const [paymentClientSecret, setPaymentClientSecret] = useState<string | null>(null);
