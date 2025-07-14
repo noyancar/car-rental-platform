@@ -5,6 +5,7 @@ import { format, isBefore, isValid, parseISO } from 'date-fns';
 import { toast } from 'sonner';
 import { Button } from '../../components/ui/Button';
 import { Input } from '../../components/ui/Input';
+import { Select } from '../../components/ui/Select';
 import { useLocations } from '../../hooks/useLocations';
 import { LocationSelector } from '../../components/ui/LocationSelector';
 import { QuoteRequestModal, type QuoteRequestData } from '../../components/ui/QuoteRequestModal';
@@ -15,6 +16,21 @@ import { useSearchStore } from '../../stores/searchStore';
 import { useExtrasStore } from '../../stores/extrasStore';
 import ExtrasModal from '../../components/booking/ExtrasModal';
 import { cn } from '../../lib/utils';
+
+const HOURS = Array.from({ length: 24 }, (_, i) => {
+  const hour = i.toString().padStart(2, '0');
+  return { value: `${hour}:00`, label: `${hour}:00` };
+});
+
+// Helper function to check if a time should be disabled
+const isTimeDisabled = (time: string, pickupTime: string, isSameDay: boolean): boolean => {
+  if (!isSameDay) return false;
+  
+  const [timeHour] = time.split(':').map(Number);
+  const [pickupHour] = pickupTime.split(':').map(Number);
+  
+  return timeHour <= pickupHour;
+};
 
 const BookingPage: React.FC = () => {
   const { carId } = useParams();
@@ -83,6 +99,17 @@ const BookingPage: React.FC = () => {
       setReturnLocation(pickupLocation);
     }
   }, [pickupLocation, sameReturnLocation]);
+  
+  // Auto-adjust return time when dates change
+  useEffect(() => {
+    if (startDate === endDate && pickupTime >= returnTime) {
+      // Find the next available time slot
+      const nextHour = HOURS.find(hour => !isTimeDisabled(hour.value, pickupTime, true));
+      if (nextHour) {
+        setReturnTime(nextHour.value);
+      }
+    }
+  }, [startDate, endDate, pickupTime, returnTime]);
   
   // Set default locations when locations are loaded and no location is selected
   useEffect(() => {
@@ -415,11 +442,11 @@ const BookingPage: React.FC = () => {
                           min={format(new Date(), 'yyyy-MM-dd')}
                           leftIcon={<Calendar size={18} />}
                         />
-                        <Input
-                          type="time"
+                        <Select
                           label="Pickup Time"
                           value={pickupTime}
                           onChange={(e) => setPickupTime(e.target.value)}
+                          options={HOURS}
                           className="mt-2"
                           leftIcon={<Clock size={18} />}
                         />
@@ -433,11 +460,14 @@ const BookingPage: React.FC = () => {
                           min={startDate}
                           leftIcon={<Calendar size={18} />}
                         />
-                        <Input
-                          type="time"
+                        <Select
                           label="Return Time"
                           value={returnTime}
                           onChange={(e) => setReturnTime(e.target.value)}
+                          options={HOURS.map((hour) => ({
+                            ...hour,
+                            disabled: isTimeDisabled(hour.value, pickupTime, startDate === endDate)
+                          }))}
                           className="mt-2"
                           leftIcon={<Clock size={18} />}
                         />
