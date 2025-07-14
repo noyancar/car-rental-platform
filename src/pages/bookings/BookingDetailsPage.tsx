@@ -107,7 +107,7 @@ const BookingDetailsPage: React.FC = () => {
   };
   
   return (
-    <div className="min-h-screen pt-16 pb-12 bg-secondary-50">
+    <div className="min-h-screen pt-2 pb-12 bg-secondary-50">
       <div className="container-custom">
         <div className="mb-6">
           <Link to="/bookings" className="inline-flex items-center text-primary-700 hover:text-primary-800">
