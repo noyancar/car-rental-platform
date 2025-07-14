@@ -142,9 +142,23 @@ const BookingsListPage: React.FC = () => {
                       </div>
                       
                       <div className="mt-4">
-                        <Link to={`/bookings/${booking.id}`}>
-                          <Button variant="outline">View Details</Button>
-                        </Link>
+                        {booking.status === 'draft' && booking.expires_at && (
+                          <div className="bg-blue-50 text-blue-700 p-3 rounded-lg mb-3">
+                            <p className="text-sm font-medium">
+                              This booking is reserved until {format(new Date(booking.expires_at), 'h:mm a')}
+                            </p>
+                          </div>
+                        )}
+                        <div className="flex gap-2">
+                          <Link to={`/bookings/${booking.id}`}>
+                            <Button variant="outline">View Details</Button>
+                          </Link>
+                          {booking.status === 'draft' && (
+                            <Link to={`/payment/${booking.id}`}>
+                              <Button variant="primary">Continue to Payment</Button>
+                            </Link>
+                          )}
+                        </div>
                       </div>
                     </div>
                   </div>

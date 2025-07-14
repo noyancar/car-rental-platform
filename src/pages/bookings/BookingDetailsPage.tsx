@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { ArrowLeft, Calendar, Clock, Car as CarIcon, CreditCard, CheckCircle, XCircle, RefreshCw } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import { format } from 'date-fns';
 import { Button } from '../../components/ui/Button';
 import { useBookingStore } from '../../stores/bookingStore';
@@ -9,6 +10,7 @@ import { toast } from 'sonner';
 
 const BookingDetailsPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
+  const navigate = useNavigate();
   const { currentBooking, loading, error, fetchBookingById } = useBookingStore();
   const [isCheckingPayment, setIsCheckingPayment] = useState(false);
   
@@ -159,13 +161,6 @@ const BookingDetailsPage: React.FC = () => {
                 <p className="text-secondary-600 mt-1">
                   Category: {currentBooking.car?.category}
                 </p>
-                <div className="mt-2">
-                  <Link to={`/cars/${currentBooking.car?.id}`}>
-                    <Button variant="outline" size="sm">
-                      View Car Details
-                    </Button>
-                  </Link>
-                </div>
               </div>
             </div>
           </div>
@@ -203,7 +198,7 @@ const BookingDetailsPage: React.FC = () => {
                 <CreditCard size={20} className="mr-2" />
                 Payment Status
               </h2>
-              {currentBooking.stripe_payment_status !== 'succeeded' && currentBooking.stripe_payment_status !== 'canceled' && currentBooking.stripe_payment_status !== 'failed' && (
+              {currentBooking.status !== 'draft' && currentBooking.stripe_payment_status !== 'succeeded' && currentBooking.stripe_payment_status !== 'canceled' && currentBooking.stripe_payment_status !== 'failed' && (
                 <button
                   onClick={() => fetchBookingById(parseInt(id!))}
                   className="text-primary-600 hover:text-primary-700 flex items-center text-sm"
@@ -277,8 +272,25 @@ const BookingDetailsPage: React.FC = () => {
                 </>
               )}
             </div>
-            {/* Manual Payment Check for pending/draft payments */}
-            {currentBooking.stripe_payment_intent_id && (currentBooking.stripe_payment_status === 'pending' || currentBooking.status === 'draft') && (
+            {/* Continue to Payment for draft bookings */}
+            {currentBooking.status === 'draft' && (
+              <div className="mt-4">
+                <Button
+                  variant="primary"
+                  size="sm"
+                  onClick={() => navigate(`/payment/${currentBooking.id}`)}
+                >
+                  Continue to Payment
+                </Button>
+                {currentBooking.expires_at && (
+                  <p className="text-sm text-secondary-500 mt-2">
+                    This booking is reserved until {format(new Date(currentBooking.expires_at), 'h:mm a')}
+                  </p>
+                )}
+              </div>
+            )}
+            {/* Manual Payment Check for pending payments with payment intent */}
+            {currentBooking.stripe_payment_intent_id && currentBooking.stripe_payment_status === 'pending' && currentBooking.status !== 'draft' && (
               <div className="mt-4">
                 <Button
                   variant="secondary"

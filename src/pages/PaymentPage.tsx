@@ -156,11 +156,11 @@ const PaymentPage: React.FC = () => {
           <div className="container-custom">
             <div className="mb-6">
               <button 
-                onClick={() => navigate(-1)} 
+                onClick={() => navigate('/bookings')} 
                 className="inline-flex items-center text-primary-700 hover:text-primary-800"
               >
                 <ArrowLeft size={20} className="mr-2" />
-                Back
+                Back to My Bookings
               </button>
             </div>
 
@@ -231,11 +231,11 @@ const PaymentPage: React.FC = () => {
       <div className="container-custom">
         <div className="mb-6">
           <button 
-            onClick={() => navigate(-1)} 
+            onClick={() => navigate('/bookings')} 
             className="inline-flex items-center text-primary-700 hover:text-primary-800"
           >
             <ArrowLeft size={20} className="mr-2" />
-            Back
+            Back to My Bookings
           </button>
         </div>
 

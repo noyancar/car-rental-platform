@@ -558,7 +558,22 @@ const BookingPage: React.FC = () => {
                       ) : (
                         <>
                           <AlertCircle size={20} className="mr-2 flex-shrink-0" />
-                          <span>Car is not available for these dates. Please select different dates.</span>
+                          <div className="flex-1">
+                            <span className="block">Car is not available for these dates.</span>
+                            {user && (
+                              <div className="mt-2">
+                                <span className="block text-sm">
+                                  Have a pending booking? 
+                                </span>
+                                <Link 
+                                  to="/bookings" 
+                                  className="text-sm text-red-800 underline hover:text-red-900"
+                                >
+                                  Check your bookings →
+                                </Link>
+                              </div>
+                            )}
+                          </div>
                         </>
                       )}
                     </div>
