@@ -122,7 +122,9 @@ export const useBookingStore = create<BookingState>((set) => ({
           booking_extras (
             *,
             extra:extras (*)
-          )
+          ),
+          pickup_location:locations!bookings_pickup_location_id_fkey (*),
+          return_location:locations!bookings_return_location_id_fkey (*)
         `)
         .eq('id', id)
         .single();

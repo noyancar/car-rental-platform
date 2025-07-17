@@ -7,18 +7,38 @@ import { Button } from '../../components/ui/Button';
 import { useBookingStore } from '../../stores/bookingStore';
 import { supabase } from '../../lib/supabase';
 import { toast } from 'sonner';
+import { useLocations } from '../../hooks/useLocations';
+import { calculateRentalDuration, calculateCarRentalTotal, calculateExtrasTotal } from '../../utils/booking';
 
 const BookingDetailsPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { currentBooking, loading, error, fetchBookingById } = useBookingStore();
+  const { calculateDeliveryFee } = useLocations();
   const [isCheckingPayment, setIsCheckingPayment] = useState(false);
+  const [deliveryFees, setDeliveryFees] = useState({ 
+    pickupFee: 0, 
+    returnFee: 0, 
+    totalFee: 0, 
+    requiresQuote: false 
+  });
   
   useEffect(() => {
     if (id) {
       fetchBookingById(parseInt(id));
     }
   }, [id, fetchBookingById]);
+  
+  // Calculate delivery fees when booking data is loaded
+  useEffect(() => {
+    if (currentBooking && currentBooking.pickup_location && currentBooking.return_location) {
+      const fees = calculateDeliveryFee(
+        currentBooking.pickup_location.value,
+        currentBooking.return_location.value
+      );
+      setDeliveryFees(fees);
+    }
+  }, [currentBooking]); // calculateDeliveryFee removed to prevent infinite loop
   
   
   const checkPaymentStatus = async () => {
@@ -194,35 +214,60 @@ const BookingDetailsPage: React.FC = () => {
           </div>
           
           {/* Price Breakdown */}
-          {(currentBooking.booking_extras && currentBooking.booking_extras.length > 0) && (
-            <div className="p-6 border-t">
-              <h2 className="text-lg font-semibold mb-4">Price Breakdown</h2>
-              <div className="space-y-2">
-                <div className="flex justify-between">
-                  <span className="text-secondary-600">Car Rental</span>
-                  <span>${currentBooking.total_price}</span>
-                </div>
+          <div className="p-6 border-t">
+            <h2 className="text-lg font-semibold mb-4">Price Breakdown</h2>
+            <div className="space-y-2">
+              {(() => {
+                // Calculate rental duration and car total
+                const rentalDuration = calculateRentalDuration(
+                  currentBooking.start_date,
+                  currentBooking.end_date,
+                  currentBooking.pickup_time || '10:00',
+                  currentBooking.return_time || '10:00'
+                );
+                const carTotal = currentBooking.car ? calculateCarRentalTotal(currentBooking.car.price_per_day, rentalDuration) : 0;
                 
-                {/* Extras section */}
-                <div className="text-sm font-medium text-secondary-700 mt-3">Extras</div>
-                {currentBooking.booking_extras.map((extra: any) => (
-                  <div key={extra.id} className="flex justify-between text-sm">
-                    <span className="text-secondary-600 pl-4">
-                      {extra.extra?.name || 'Extra'} × {extra.quantity}
-                    </span>
-                    <span>${extra.total_price}</span>
-                  </div>
-                ))}
-                
-                <div className="flex justify-between font-semibold text-lg pt-2 border-t">
-                  <span>Total</span>
-                  <span className="text-primary-800">
-                    ${currentBooking.grand_total || currentBooking.total_price}
-                  </span>
-                </div>
-              </div>
+                return (
+                  <>
+                    <div className="flex justify-between">
+                      <span className="text-secondary-600">Car Rental</span>
+                      <span>${carTotal.toFixed(2)}</span>
+                    </div>
+                    
+                    {/* Delivery Fee */}
+                    {deliveryFees.totalFee > 0 && !deliveryFees.requiresQuote && (
+                      <div className="flex justify-between">
+                        <span className="text-secondary-600">Delivery Fee</span>
+                        <span>${deliveryFees.totalFee.toFixed(2)}</span>
+                      </div>
+                    )}
+                    
+                    {/* Extras section */}
+                    {currentBooking.booking_extras && currentBooking.booking_extras.length > 0 && (
+                      <>
+                        <div className="text-sm font-medium text-secondary-700 mt-3">Extras</div>
+                        {currentBooking.booking_extras.map((extra: any) => (
+                          <div key={extra.id} className="flex justify-between text-sm">
+                            <span className="text-secondary-600 pl-4">
+                              {extra.extra?.name || 'Extra'} × {extra.quantity}
+                            </span>
+                            <span>${extra.total_price.toFixed(2)}</span>
+                          </div>
+                        ))}
+                      </>
+                    )}
+                    
+                    <div className="flex justify-between font-semibold text-lg pt-2 border-t">
+                      <span>Total</span>
+                      <span className="text-primary-800">
+                        ${(currentBooking.grand_total || currentBooking.total_price).toFixed(2)}
+                      </span>
+                    </div>
+                  </>
+                );
+              })()}
             </div>
-          )}
+          </div>
           
           {/* Payment Status */}
           <div className="p-6">

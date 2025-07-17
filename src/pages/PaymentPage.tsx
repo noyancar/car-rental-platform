@@ -17,8 +17,8 @@ const PaymentPage: React.FC = () => {
   const { bookingId } = useParams();
   const navigate = useNavigate();
   const { user } = useAuthStore();
-  const { calculateDeliveryFee, getLocationByValue, locations } = useLocations();
-  const [booking, setBooking] = useState<BookingWithExtras | null>(null);
+  const { calculateDeliveryFee } = useLocations();
+  const [booking, setBooking] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [paymentClientSecret, setPaymentClientSecret] = useState<string | null>(null);
   const [paymentError, setPaymentError] = useState<string | null>(null);
@@ -58,7 +58,7 @@ const PaymentPage: React.FC = () => {
     try {
       setLoading(true);
       
-      // Fetch booking with extras
+      // Fetch booking with extras and locations
       const { data: bookingData, error: bookingError } = await supabase
         .from('bookings')
         .select(`
@@ -67,7 +67,9 @@ const PaymentPage: React.FC = () => {
           booking_extras (
             *,
             extras (*)
-          )
+          ),
+          pickup_location:locations!bookings_pickup_location_id_fkey (*),
+          return_location:locations!bookings_return_location_id_fkey (*)
         `)
         .eq('id', bookingId)
         .single();
@@ -81,21 +83,30 @@ const PaymentPage: React.FC = () => {
         return;
       }
 
-      // Format the data
+      // Format the data - keep location data for display
       const formattedBooking = {
         ...bookingData,
         car: bookingData.cars,
         booking_extras: bookingData.booking_extras?.map((be: any) => ({
           ...be,
           extra: be.extras
-        }))
+        })),
+        // Keep location IDs for compatibility
+        pickup_location: bookingData.pickup_location_id,
+        return_location: bookingData.return_location_id,
+        // Store location objects for display
+        pickup_location_data: bookingData.pickup_location,
+        return_location_data: bookingData.return_location
       };
 
       setBooking(formattedBooking);
       
-      // Calculate delivery fees
-      if (formattedBooking.pickup_location && formattedBooking.return_location) {
-        const fees = calculateDeliveryFee(formattedBooking.pickup_location, formattedBooking.return_location);
+      // Calculate delivery fees based on location data
+      if (bookingData.pickup_location && bookingData.return_location) {
+        const fees = calculateDeliveryFee(
+          bookingData.pickup_location.value, 
+          bookingData.return_location.value
+        );
         setDeliveryFees(fees);
       }
 
@@ -343,20 +354,20 @@ const PaymentPage: React.FC = () => {
                         <MapPin className="w-4 h-4 mr-2 text-green-600" />
                         <div>
                           <span className="font-medium">Pickup: </span>
-                          {getLocationByValue(booking.pickup_location || '')?.label || booking.pickup_location || 'Not specified'}
+                          {booking.pickup_location_data?.label || 'Not specified'}
                         </div>
                       </div>
                       
                       {/* Return Location */}
-                      {booking.pickup_location !== booking.return_location && (
-                        <div className="flex items-center">
-                          <MapPin className="w-4 h-4 mr-2 text-blue-600" />
-                          <div>
-                            <span className="font-medium">Return: </span>
-                            {getLocationByValue(booking.return_location || '')?.label || booking.return_location || 'Not specified'}
-                          </div>
+                      <div className="flex items-center">
+                        <MapPin className="w-4 h-4 mr-2 text-blue-600" />
+                        <div>
+                          <span className="font-medium">Return: </span>
+                          {booking.pickup_location === booking.return_location 
+                            ? 'Same as pickup location' 
+                            : (booking.return_location_data?.label || 'Not specified')}
                         </div>
-                      )}
+                      </div>
                     </div>
 
                     {/* Price Breakdown */}
@@ -366,11 +377,19 @@ const PaymentPage: React.FC = () => {
                         <span>${carTotal.toFixed(2)}</span>
                       </div>
 
+                      {/* Delivery Fee */}
+                      {deliveryFees.totalFee > 0 && !deliveryFees.requiresQuote && (
+                        <div className="flex justify-between">
+                          <span className="text-gray-600">Delivery Fee</span>
+                          <span>${deliveryFees.totalFee.toFixed(2)}</span>
+                        </div>
+                      )}
+
                       {/* Extras */}
                       {booking.booking_extras && booking.booking_extras.length > 0 && (
                         <>
                           <div className="text-sm font-medium text-gray-700 mt-3 mb-2">Extras</div>
-                          {booking.booking_extras.map((be) => (
+                          {booking.booking_extras.map((be: any) => (
                             <div key={be.id} className="flex justify-between text-sm">
                               <span className="text-gray-600">
                                 {be.extra?.name} × {be.quantity}
