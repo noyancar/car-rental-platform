@@ -3,6 +3,7 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { supabase } from '../../lib/supabase';
 import { Loader2, AlertCircle } from 'lucide-react';
 import { Button } from '../../components/ui/Button';
+import { toast } from 'sonner';
 
 const AuthCallback: React.FC = () => {
   const navigate = useNavigate();
@@ -55,7 +56,8 @@ const AuthCallback: React.FC = () => {
             navigate('/');
           }
         } else {
-          navigate('/login');
+          // No session, redirect to home and let user sign in via modal
+          navigate('/');
         }
       } catch (error) {
         console.error('Auth callback error:', error);
@@ -79,16 +81,20 @@ const AuthCallback: React.FC = () => {
             <Button
               variant="primary"
               fullWidth
-              onClick={() => navigate('/forgot-password')}
+              onClick={() => {
+                // Close this error and navigate to home
+                navigate('/');
+                toast.info('Please try signing in again');
+              }}
             >
-              Request New Link
+              Try Again
             </Button>
             <Button
               variant="outline"
               fullWidth
-              onClick={() => navigate('/login')}
+              onClick={() => navigate('/')}
             >
-              Back to Sign In
+              Back to Home
             </Button>
           </div>
         </div>

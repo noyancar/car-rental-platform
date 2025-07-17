@@ -9,6 +9,7 @@ import { useAuthStore } from '../stores/authStore';
 import { useBookingStore } from '../stores/bookingStore';
 import { useCarStore } from '../stores/carStore';
 import { useExtrasStore } from '../stores/extrasStore';
+import { calculateRentalDuration, calculateCarRentalTotal, calculateExtrasTotal } from '../utils/booking';
 
 const PendingPaymentPage: React.FC = () => {
   const navigate = useNavigate();
@@ -85,7 +86,7 @@ const PendingPaymentPage: React.FC = () => {
         start_date: pendingBooking.start_date,
         end_date: pendingBooking.end_date,
         total_price: pendingBooking.total_price,
-        status: 'pending',
+        status: 'draft', // Start with draft status
         pickup_location: pendingBooking.pickup_location || 'base-office',
         return_location: pendingBooking.return_location || pendingBooking.pickup_location || 'base-office',
         pickup_time: pendingBooking.pickup_time || '10:00',
@@ -104,10 +105,12 @@ const PendingPaymentPage: React.FC = () => {
             addExtra(item.extra, item.quantity);
           });
           
-          // Calculate rental duration
-          const rentalDuration = Math.ceil(
-            (new Date(pendingBooking.end_date).getTime() - new Date(pendingBooking.start_date).getTime()) / 
-            (1000 * 60 * 60 * 24)
+          // Calculate rental duration using centralized function
+          const rentalDuration = calculateRentalDuration(
+            pendingBooking.start_date,
+            pendingBooking.end_date,
+            pendingBooking.pickup_time || '10:00',
+            pendingBooking.return_time || '10:00'
           );
           
           // Save extras to booking
@@ -119,7 +122,8 @@ const PendingPaymentPage: React.FC = () => {
         
         // Navigate to payment page
         console.log('Navigating to payment page:', `/payment/${booking.id}`);
-        toast.success('Booking created successfully!');
+        // Don't show success toast here - it's just a draft booking
+        // The actual success message will appear after payment
         navigate(`/payment/${booking.id}`);
       } else {
         console.error('No booking returned from createBooking');
@@ -148,9 +152,11 @@ const PendingPaymentPage: React.FC = () => {
     return null;
   }
 
-  const rentalDuration = Math.ceil(
-    (new Date(pendingBooking.end_date).getTime() - new Date(pendingBooking.start_date).getTime()) / 
-    (1000 * 60 * 60 * 24)
+  const rentalDuration = calculateRentalDuration(
+    pendingBooking.start_date,
+    pendingBooking.end_date,
+    pendingBooking.pickup_time || '10:00',
+    pendingBooking.return_time || '10:00'
   );
 
   return (
@@ -180,7 +186,7 @@ const PendingPaymentPage: React.FC = () => {
                     />
                     <div className="flex-1">
                       <h3 className="text-lg font-semibold">
-                        {car.year} {car.make} {car.model}
+                        {car.make} {car.model} {car.year}
                       </h3>
                       <div className="flex items-center gap-4 text-sm text-gray-600 mt-2">
                         <div className="flex items-center">

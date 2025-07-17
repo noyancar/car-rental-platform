@@ -1,24 +1,23 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
-import { ArrowLeft, Shield, Car, Calendar, Package, MapPin, AlertCircle } from 'lucide-react';
+import { ArrowLeft, Shield, Calendar, MapPin, AlertCircle } from 'lucide-react';
 import { format } from 'date-fns';
 import { toast } from 'sonner';
 import { Button } from '../components/ui/Button';
 import { AuthModal } from '../components/auth';
 import StripeProvider from '../components/payment/StripeProvider';
 import StripePaymentForm from '../components/payment/StripePaymentForm';
-import { useBookingStore } from '../stores/bookingStore';
 import { useAuthStore } from '../stores/authStore';
 import { supabase } from '../lib/supabase';
 import { BookingWithExtras } from '../types';
 import { useLocations } from '../hooks/useLocations';
+import { calculateRentalDuration, calculateCarRentalTotal, calculateExtrasTotal } from '../utils/booking';
 
 const PaymentPage: React.FC = () => {
   const { bookingId } = useParams();
   const navigate = useNavigate();
   const { user } = useAuthStore();
-  const { updateBookingStatus } = useBookingStore();
-  const { calculateDeliveryFee, getLocationByValue } = useLocations();
+  const { calculateDeliveryFee, getLocationByValue, locations } = useLocations();
   const [booking, setBooking] = useState<BookingWithExtras | null>(null);
   const [loading, setLoading] = useState(true);
   const [paymentClientSecret, setPaymentClientSecret] = useState<string | null>(null);
@@ -128,8 +127,17 @@ const PaymentPage: React.FC = () => {
         throw error;
       }
 
-      if (data && data.success && data.client_secret) {
-        setPaymentClientSecret(data.client_secret);
+      if (data && data.success) {
+        if (data.status === 'succeeded') {
+          // Payment already completed
+          toast.info('This booking has already been paid');
+          navigate(`/bookings/${bookingId}`);
+          return;
+        } else if (data.client_secret) {
+          setPaymentClientSecret(data.client_secret);
+        } else {
+          throw new Error(data?.error || 'Failed to create payment intent');
+        }
       } else {
         throw new Error(data?.error || 'Failed to create payment intent');
       }
@@ -139,24 +147,24 @@ const PaymentPage: React.FC = () => {
     }
   };
 
-  const handlePaymentSuccess = async (paymentIntentId: string) => {
-    try {
-      // Update booking status to confirmed
-      await supabase
-        .from('bookings')
-        .update({ stripe_payment_status: 'succeeded' })
-        .eq('id', parseInt(bookingId!));
-      
-      toast.success('Payment successful! Your booking is confirmed.');
-      navigate(`/bookings/${bookingId}`);
-    } catch (error) {
-      toast.error('Payment was successful but we encountered an error. Please contact support.');
-    }
+  const handlePaymentSuccess = async () => {
+    // Webhook already updated the booking status, just show success and navigate
+    toast.success('Payment successful! Your booking is confirmed.');
+    navigate(`/bookings/${bookingId}`);
   };
 
-  const handlePaymentError = (error: string) => {
+  const handlePaymentError = async (error: string) => {
     toast.error(error);
     setPaymentError(error);
+    
+    // Create a new payment intent for retry
+    if (booking) {
+      try {
+        await createPaymentIntent(booking);
+      } catch (retryError) {
+        console.error('Failed to create new payment intent for retry:', retryError);
+      }
+    }
   };
 
   if (!user) {
@@ -166,11 +174,11 @@ const PaymentPage: React.FC = () => {
           <div className="container-custom">
             <div className="mb-6">
               <button 
-                onClick={() => navigate(-1)} 
+                onClick={() => navigate('/bookings')} 
                 className="inline-flex items-center text-primary-700 hover:text-primary-800"
               >
                 <ArrowLeft size={20} className="mr-2" />
-                Back
+                Back to My Bookings
               </button>
             </div>
 
@@ -223,10 +231,16 @@ const PaymentPage: React.FC = () => {
     );
   }
 
-  const rentalDuration = Math.ceil((new Date(booking.end_date).getTime() - new Date(booking.start_date).getTime()) / (1000 * 60 * 60 * 24));
-  const carTotal = booking.car ? booking.car.price_per_day * rentalDuration : 0;
-  const extrasTotal = booking.booking_extras?.reduce((sum, be) => sum + be.total_price, 0) || 0;
-  const deliveryTotal = deliveryFees.requiresQuote ? 0 : deliveryFees.totalFee;
+  // Use centralized calculation functions
+  const rentalDuration = calculateRentalDuration(
+    booking.start_date,
+    booking.end_date,
+    booking.pickup_time || '10:00',
+    booking.return_time || '10:00'
+  );
+  
+  const carTotal = booking.car ? calculateCarRentalTotal(booking.car.price_per_day, rentalDuration) : 0;
+  const extrasTotal = calculateExtrasTotal(booking.booking_extras);
   // Use the booking.total_price which already includes delivery fee from booking creation
   const grandTotal = booking.total_price;
 
@@ -235,11 +249,11 @@ const PaymentPage: React.FC = () => {
       <div className="container-custom">
         <div className="mb-6">
           <button 
-            onClick={() => navigate(-1)} 
+            onClick={() => navigate('/bookings')} 
             className="inline-flex items-center text-primary-700 hover:text-primary-800"
           >
             <ArrowLeft size={20} className="mr-2" />
-            Back
+            Back to My Bookings
           </button>
         </div>
 
@@ -313,7 +327,7 @@ const PaymentPage: React.FC = () => {
                   
                   <div className="p-6">
                     <h2 className="text-xl font-semibold mb-1">
-                      {booking.car.year} {booking.car.make} {booking.car.model}
+                      {booking.car.make} {booking.car.model} {booking.car.year}
                     </h2>
                     
                     <div className="space-y-2 text-sm text-gray-600 mb-4">

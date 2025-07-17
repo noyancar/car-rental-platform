@@ -6,8 +6,7 @@ import {
   HeroSection,
   FeaturesSection,
   FeaturedCarsSection,
-  TestimonialsSection,
-  CallToActionSection
+  TestimonialsSection
 } from '../components/home';
 
 export const HomePage: React.FC = () => {
@@ -27,8 +26,6 @@ export const HomePage: React.FC = () => {
         featuredCars={featuredCars}
         loading={loading}
       />
-      
-      <CallToActionSection />
       
       <TestimonialsSection />
     </div>

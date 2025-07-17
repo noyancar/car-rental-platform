@@ -10,7 +10,7 @@ const CallToActionSection: React.FC = () => {
           Ready for Your Next Adventure?
         </h2>
         <p className="text-base sm:text-lg md:text-xl text-white/90 mb-6 sm:mb-8 max-w-2xl mx-auto px-4 sm:px-0">
-          Join thousands of satisfied customers who have experienced the DriveLuxe difference.
+          Join thousands of satisfied customers who have experienced the NoyanCar difference.
         </p>
         <Link to="/register">
           <Button 

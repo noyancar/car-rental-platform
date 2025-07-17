@@ -1,15 +1,16 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { Toaster } from 'sonner';
 
 // Layout components
 import { Navbar } from './components/layout/Navbar';
 import { Footer } from './components/layout/Footer';
+import ScrollToTop from './components/utils/ScrollToTop';
+
+// Auth components
+import { AuthModal } from './components/auth';
 
 // Auth pages
-import Login from './pages/auth/Login';
-import Register from './pages/auth/Register';
-import ForgotPassword from './pages/auth/ForgotPassword';
 import AuthCallback from './pages/auth/AuthCallback';
 
 // Main pages
@@ -20,6 +21,7 @@ import BookingPage from './pages/bookings/BookingPage';
 import BookingsListPage from './pages/bookings/BookingsListPage';
 import BookingDetailsPage from './pages/bookings/BookingDetailsPage';
 import PaymentPage from './pages/PaymentPage';
+import PaymentCallbackPage from './pages/PaymentCallbackPage';
 import PendingPaymentPage from './pages/PendingPaymentPage';
 import HowItWorksPage from './pages/HowItWorksPage';
 import DealsPage from './pages/DealsPage';
@@ -43,13 +45,38 @@ const ProtectedRoute: React.FC<{ element: React.ReactElement; adminOnly?: boolea
   adminOnly = false 
 }) => {
   const { user, isAdmin, loading } = useAuthStore();
+  const [showAuthModal, setShowAuthModal] = useState(false);
   
+  // Show loading state while checking authentication
   if (loading) {
     return <div className="min-h-screen flex items-center justify-center">Loading...</div>;
   }
   
-  if (!user) {
-    return <Navigate to="/login" />;
+  // Show auth modal if user is not authenticated
+  if (!loading && !user) {
+    return (
+      <>
+        <div className="min-h-screen flex items-center justify-center">
+          <div className="text-center">
+            <h2 className="text-2xl font-bold mb-4">Authentication Required</h2>
+            <p className="text-gray-600 mb-6">Please sign in to access this page</p>
+            <button
+              onClick={() => setShowAuthModal(true)}
+              className="px-6 py-2 bg-primary text-white rounded-lg hover:bg-primary-dark"
+            >
+              Sign In
+            </button>
+          </div>
+        </div>
+        {showAuthModal && (
+          <AuthModal
+            isOpen={showAuthModal}
+            onClose={() => setShowAuthModal(false)}
+            mode="signin"
+          />
+        )}
+      </>
+    );
   }
   
   if (adminOnly && !isAdmin) {
@@ -68,15 +95,13 @@ function App() {
   
   return (
     <Router>
+      <ScrollToTop />
       <div className="flex flex-col min-h-screen">
         <Navbar />
         <main className="flex-grow pt-14 sm:pt-16 md:pt-20">
           <Routes>
             {/* Public routes */}
             <Route path="/" element={<HomePage />} />
-            <Route path="/login" element={<Login />} />
-            <Route path="/register" element={<Register />} />
-            <Route path="/forgot-password" element={<ForgotPassword />} />
             <Route path="/auth/callback" element={<AuthCallback />} />
             <Route path="/cars" element={<CarsPage />} />
             <Route path="/cars/:id" element={<CarDetailsPage />} />
@@ -87,6 +112,7 @@ function App() {
             <Route path="/booking/:carId" element={<BookingPage />} />
             <Route path="/payment/pending" element={<PendingPaymentPage />} />
             <Route path="/payment/:bookingId" element={<PaymentPage />} />
+            <Route path="/payment/callback" element={<PaymentCallbackPage />} />
             
             {/* Protected routes */}
             <Route path="/bookings" element={

@@ -33,7 +33,7 @@ const HowItWorksPage: React.FC = () => {
         {/* Hero Section */}
         <div className="text-center mb-16">
           <h1 className="text-4xl md:text-5xl font-display font-bold text-primary-800 mb-4">
-            How DriveLuxe Works
+            How NoyanCar Works
           </h1>
           <p className="text-xl text-secondary-600 max-w-2xl mx-auto">
             Renting a luxury car has never been easier. Follow these simple steps to get started with your premium driving experience.

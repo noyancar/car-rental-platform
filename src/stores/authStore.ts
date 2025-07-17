@@ -18,7 +18,7 @@ interface AuthState {
 export const useAuthStore = create<AuthState>((set) => ({
   user: null,
   isAdmin: false,
-  loading: false,
+  loading: true, // Start with loading true to prevent premature redirects
   error: null,
 
   signUp: async (email: string, password: string) => {
@@ -154,15 +154,19 @@ export const useAuthStore = create<AuthState>((set) => ({
         
         set({ 
           user: { ...session.user, ...profile } as User,
-          isAdmin: session.user.email === 'admin@example.com'
+          isAdmin: session.user.email === 'admin@example.com',
+          loading: false
+        });
+      } else {
+        // No session found, ensure we set loading to false
+        set({ 
+          user: null, 
+          isAdmin: false,
+          loading: false 
         });
       }
     } catch (error) {
-      set({ error: (error as Error).message });
-    } finally {
-      // Add a small delay before setting loading to false
-      await new Promise(resolve => setTimeout(resolve, 300));
-      set({ loading: false });
+      set({ error: (error as Error).message, loading: false });
     }
   },
 

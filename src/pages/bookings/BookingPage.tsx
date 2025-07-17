@@ -1,13 +1,13 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
-import { ArrowLeft, Calendar, CreditCard, AlertCircle, CheckCircle, Clock, Users, Gauge, MapPin, Info } from 'lucide-react';
+import { ArrowLeft, Calendar, CreditCard, AlertCircle, CheckCircle, Clock, Users, Gauge, MapPin, Info, ChevronDown, ChevronUp, Shield } from 'lucide-react';
 import { format, isBefore, isValid, parseISO } from 'date-fns';
 import { toast } from 'sonner';
 import { Button } from '../../components/ui/Button';
 import { Input } from '../../components/ui/Input';
-import { PageHeader } from '../../components/ui/PageHeader';
-import { LocationSelector } from '../../components/ui/LocationSelector';
+import { Select } from '../../components/ui/Select';
 import { useLocations } from '../../hooks/useLocations';
+import { LocationSelector } from '../../components/ui/LocationSelector';
 import { QuoteRequestModal, type QuoteRequestData } from '../../components/ui/QuoteRequestModal';
 import { useCarStore } from '../../stores/carStore';
 import { useBookingStore } from '../../stores/bookingStore';
@@ -15,6 +15,22 @@ import { useAuthStore } from '../../stores/authStore';
 import { useSearchStore } from '../../stores/searchStore';
 import { useExtrasStore } from '../../stores/extrasStore';
 import ExtrasModal from '../../components/booking/ExtrasModal';
+import { cn } from '../../lib/utils';
+
+const HOURS = Array.from({ length: 24 }, (_, i) => {
+  const hour = i.toString().padStart(2, '0');
+  return { value: `${hour}:00`, label: `${hour}:00` };
+});
+
+// Helper function to check if a time should be disabled
+const isTimeDisabled = (time: string, pickupTime: string, isSameDay: boolean): boolean => {
+  if (!isSameDay) return false;
+  
+  const [timeHour] = time.split(':').map(Number);
+  const [pickupHour] = pickupTime.split(':').map(Number);
+  
+  return timeHour <= pickupHour;
+};
 
 const BookingPage: React.FC = () => {
   const { carId } = useParams();
@@ -30,7 +46,7 @@ const BookingPage: React.FC = () => {
   } = useBookingStore();
   const { searchParams, isSearchPerformed, updateSearchParams } = useSearchStore();
   const { saveBookingExtras, calculateTotal } = useExtrasStore();
-  const { calculateDeliveryFee, getLocationByValue, DEFAULT_LOCATION } = useLocations();
+  const { calculateDeliveryFee, getLocationByValue, DEFAULT_LOCATION, locations, loading: locationsLoading } = useLocations();
   
   // Initialize dates from searchParams if available, otherwise use default values
   const today = new Date();
@@ -46,16 +62,18 @@ const BookingPage: React.FC = () => {
   const [isAvailable, setIsAvailable] = useState<boolean | null>(null);
   const [validationMessage, setValidationMessage] = useState('');
   const [isEditingDates, setIsEditingDates] = useState(false);
-  const [showPriceSummary, setShowPriceSummary] = useState(false);
+  const [isEditingLocations, setIsEditingLocations] = useState(false);
+  const [hasCheckedAvailability, setHasCheckedAvailability] = useState(false);
   const [showExtrasModal, setShowExtrasModal] = useState(false);
   const [showQuoteModal, setShowQuoteModal] = useState(false);
+  const [showMobileDetails, setShowMobileDetails] = useState(false);
   
   // Location states
   const [pickupLocation, setPickupLocation] = useState(
-    searchParams.pickupLocation || DEFAULT_LOCATION?.value || ''
+    searchParams.pickupLocation || ''
   );
   const [returnLocation, setReturnLocation] = useState(
-    searchParams.returnLocation || DEFAULT_LOCATION?.value || ''
+    searchParams.returnLocation || ''
   );
   const [sameReturnLocation, setSameReturnLocation] = useState(
     pickupLocation === returnLocation
@@ -82,6 +100,29 @@ const BookingPage: React.FC = () => {
     }
   }, [pickupLocation, sameReturnLocation]);
   
+  // Auto-adjust return time when dates change
+  useEffect(() => {
+    if (startDate === endDate && pickupTime >= returnTime) {
+      // Find the next available time slot
+      const nextHour = HOURS.find(hour => !isTimeDisabled(hour.value, pickupTime, true));
+      if (nextHour) {
+        setReturnTime(nextHour.value);
+      }
+    }
+  }, [startDate, endDate, pickupTime, returnTime]);
+  
+  // Set default locations when locations are loaded and no location is selected
+  useEffect(() => {
+    if (!locationsLoading && locations.length > 0) {
+      if (!pickupLocation && DEFAULT_LOCATION) {
+        setPickupLocation(DEFAULT_LOCATION.value);
+      }
+      if (!returnLocation && DEFAULT_LOCATION) {
+        setReturnLocation(DEFAULT_LOCATION.value);
+      }
+    }
+  }, [locationsLoading, locations, DEFAULT_LOCATION]);
+  
   // Fetch car details on mount
   useEffect(() => {
     if (carId) {
@@ -98,303 +139,151 @@ const BookingPage: React.FC = () => {
   // Validate dates and return status
   const validateDates = useCallback(() => {
     if (!startDate || !endDate) {
-      setValidationMessage('Please select both dates');
+      setValidationMessage('Please select both pickup and return dates');
       return false;
     }
-
-    const start = parseISO(startDate);
-    const end = parseISO(endDate);
     
-    if (!isValid(start) || !isValid(end)) {
+    try {
+      const start = parseISO(startDate);
+      const end = parseISO(endDate);
+      
+      if (!isValid(start) || !isValid(end)) {
+        setValidationMessage('Invalid date format');
+        return false;
+      }
+      
+      const now = new Date();
+      now.setHours(0, 0, 0, 0); // Set to start of day for comparison
+      
+      if (isBefore(start, now)) {
+        setValidationMessage('Pickup date cannot be in the past');
+        return false;
+      }
+      
+      if (isBefore(end, start)) {
+        setValidationMessage('Return date must be after pickup date');
+        return false;
+      }
+      
+      setValidationMessage('');
+      return true;
+    } catch (error) {
       setValidationMessage('Invalid date format');
       return false;
     }
-
-    if (isBefore(end, start)) {
-      setValidationMessage('Return date cannot be before pickup date');
-      return false;
-    }
-    
-    // For same-day rentals, validate time
-    if (startDate === endDate) {
-      const [pickupHour, pickupMinute] = pickupTime.split(':').map(Number);
-      const [returnHour, returnMinute] = returnTime.split(':').map(Number);
-      const pickupTimeInMinutes = pickupHour * 60 + pickupMinute;
-      const returnTimeInMinutes = returnHour * 60 + returnMinute;
-      
-      if (returnTimeInMinutes <= pickupTimeInMinutes) {
-        setValidationMessage('For same-day rentals, return time must be after pickup time');
-        return false;
-      }
-    }
-
-    setValidationMessage('');
-    return true;
-  }, [startDate, endDate, pickupTime, returnTime]);
-
-  // Handle start date change
-  const handleStartDateChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const newStartDate = e.target.value;
-    setStartDate(newStartDate);
-    
-    // If end date is before new start date, set it to next day by default
-    if (endDate && isBefore(parseISO(endDate), parseISO(newStartDate))) {
-      const nextDay = new Date(newStartDate);
-      nextDay.setDate(nextDay.getDate() + 1);
-      setEndDate(format(nextDay, 'yyyy-MM-dd'));
-    }
-    // If no end date set, default to next day
-    else if (!endDate) {
-      const nextDay = new Date(newStartDate);
-      nextDay.setDate(nextDay.getDate() + 1);
-      setEndDate(format(nextDay, 'yyyy-MM-dd'));
-    }
-    
-    // Reset availability status
-    setIsAvailable(null);
-    setShowPriceSummary(false);
-  };
-
-  // Handle end date change
-  const handleEndDateChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const newEndDate = e.target.value;
-    setEndDate(newEndDate);
-    setIsAvailable(null);
-    setShowPriceSummary(false);
-    
-    // If switching to same-day rental, validate return time
-    if (startDate === newEndDate) {
-      const [pickupHour] = pickupTime.split(':').map(Number);
-      const [returnHour] = returnTime.split(':').map(Number);
-      
-      if (returnHour <= pickupHour) {
-        // Auto-adjust return time to be at least 1 hour after pickup
-        const newReturnHour = pickupHour + 1;
-        if (newReturnHour < 24) {
-          setReturnTime(`${newReturnHour.toString().padStart(2, '0')}:00`);
-        } else {
-          // Can't do same-day rental if pickup is too late
-          toast.info('Same-day rental not available for late pickup times');
-          const nextDay = new Date(startDate);
-          nextDay.setDate(nextDay.getDate() + 1);
-          setEndDate(format(nextDay, 'yyyy-MM-dd'));
-        }
-      }
-    }
-  };
-
-  // Handle time changes
-  const handlePickupTimeChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-    const newPickupTime = e.target.value;
-    setPickupTime(newPickupTime);
-    
-    // If same-day rental, ensure return time is still valid
-    if (startDate === endDate) {
-      const [newPickupHour] = newPickupTime.split(':').map(Number);
-      const [returnHour] = returnTime.split(':').map(Number);
-      
-      if (returnHour <= newPickupHour) {
-        // Auto-adjust return time to be at least 1 hour after pickup
-        const newReturnHour = newPickupHour + 1;
-        if (newReturnHour < 24) {
-          setReturnTime(`${newReturnHour.toString().padStart(2, '0')}:00`);
-        } else {
-          // If it would go past midnight, set return to next day
-          const nextDay = new Date(startDate);
-          nextDay.setDate(nextDay.getDate() + 1);
-          setEndDate(format(nextDay, 'yyyy-MM-dd'));
-          setReturnTime('10:00');
-        }
-      }
-    }
-  };
-
-  const handleReturnTimeChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-    const newReturnTime = e.target.value;
-    
-    // If same-day rental, validate return time is after pickup time
-    if (startDate === endDate) {
-      const [pickupHour] = pickupTime.split(':').map(Number);
-      const [returnHour] = newReturnTime.split(':').map(Number);
-      
-      if (returnHour <= pickupHour) {
-        // This shouldn't happen with disabled options, but keep as fallback
-        toast.error('Return time must be after pickup time for same-day rentals');
-        // Set to first available time
-        const firstAvailableHour = pickupHour + 1;
-        if (firstAvailableHour < 24) {
-          setReturnTime(`${firstAvailableHour.toString().padStart(2, '0')}:00`);
-        }
-        return;
-      }
-    }
-    
-    setReturnTime(newReturnTime);
-  };
+  }, [startDate, endDate]);
   
-  // Update price when dates change
-  useEffect(() => {
-    const updatePrice = async () => {
-      if (!carId || !startDate || !endDate || !validateDates()) {
-        setTotalPrice(0);
-        return;
-      }
-      
-      const price = await calculatePrice(parseInt(carId), startDate, endDate, pickupTime, returnTime);
-      setTotalPrice(price);
-      setShowPriceSummary(true);
-    };
-    
-    const timeoutId = setTimeout(updatePrice, 300);
-    return () => clearTimeout(timeoutId);
-  }, [carId, startDate, endDate, pickupTime, returnTime, calculatePrice, validateDates]);
-  
-  // Check availability with debouncing
+  // Check availability when dates change
   useEffect(() => {
     const checkCarAvailability = async () => {
-      if (!carId || !startDate || !endDate || !validateDates()) {
+      if (!validateDates() || !currentCar) {
         setIsAvailable(null);
         return;
       }
       
-      const available = await checkAvailability(parseInt(carId), startDate, endDate, pickupTime, returnTime);
-      setIsAvailable(available);
+      try {
+        const available = await checkAvailability(
+          currentCar.id,
+          startDate,
+          endDate,
+          pickupTime,
+          returnTime
+        );
+        setIsAvailable(available);
+        setHasCheckedAvailability(true);
+        
+        // Calculate price only if available
+        if (available) {
+          const price = await calculatePrice(
+            currentCar.id,
+            startDate,
+            endDate,
+            pickupTime,
+            returnTime
+          );
+          setTotalPrice(price);
+        }
+      } catch (error) {
+        console.error('Error checking availability:', error);
+        setIsAvailable(false);
+        setHasCheckedAvailability(true);
+      }
     };
     
-    const timeoutId = setTimeout(checkCarAvailability, 500);
-    return () => clearTimeout(timeoutId);
-  }, [carId, startDate, endDate, pickupTime, returnTime, checkAvailability, validateDates]);
-
-  // Toggle date editing mode
-  const toggleEditDates = () => {
-    setIsEditingDates(!isEditingDates);
-    // Don't reset availability when just viewing dates
-    if (!isEditingDates) {
-      setIsAvailable(null);
-      setValidationMessage('');
+    // Only check availability if dates have been changed or it's the first check from search
+    if (!isEditingDates && currentCar && (hasCheckedAvailability || isSearchPerformed)) {
+      checkCarAvailability();
     }
-  };
-
-  // Save date changes
-  const saveDateChanges = async () => {
-    // First validate the dates
-    if (!validateDates()) {
-      toast.error(validationMessage);
-      return;
-    }
-    
-    // Update search params with new dates
-    updateSearchParams({
-      pickupDate: startDate,
-      returnDate: endDate,
-      pickupTime: pickupTime,
-      returnTime: returnTime
-    });
-    
-    // Exit edit mode
-    setIsEditingDates(false);
-    
-    // Show success message
-    toast.success("Dates updated successfully");
-    
-    // Check availability immediately after saving
-    const available = await checkAvailability(parseInt(carId!), startDate, endDate, pickupTime, returnTime);
-    setIsAvailable(available);
-  };
-
+  }, [currentCar, startDate, endDate, pickupTime, returnTime, isEditingDates, validateDates, checkAvailability, calculatePrice]);
+  
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    // Remove login requirement here - allow anonymous users to proceed
-    
-    if (!validateDates()) {
-      toast.error(validationMessage);
+    if (!validateDates() || !isAvailable || !currentCar) {
       return;
     }
     
-    // Check if locations are selected
-    if (!pickupLocation || pickupLocation === 'select location') {
-      toast.error('Please select a pickup location');
-      return;
-    }
+    // Update search params
+    updateSearchParams({
+      pickupDate: startDate,
+      returnDate: endDate,
+      pickupTime,
+      returnTime,
+      pickupLocation,
+      returnLocation
+    });
     
-    const finalReturnLocation = sameReturnLocation ? pickupLocation : returnLocation;
-    if (!finalReturnLocation || finalReturnLocation === 'select location') {
-      toast.error('Please select a return location');
-      return;
-    }
-    
-    // Check if quote is required
-    if (deliveryFees.requiresQuote) {
-      setShowQuoteModal(true);
-      return;
-    }
-    
-    if (!isAvailable) {
-      toast.info('Please select dates when the car is available');
-      // Scroll to the availability message for better visibility
-      document.querySelector('.bg-secondary-50.text-secondary-700')?.scrollIntoView({ behavior: 'smooth' });
-      return;
-    }
-    
-    // Open extras modal instead of creating booking directly
     setShowExtrasModal(true);
   };
-
-  const handleExtrasModalContinue = async () => {
+  
+  const handleExtrasModalContinue = async (selectedExtras: Map<string, { extra: any; quantity: number }>) => {
+    if (!currentCar || !user) {
+      // Store booking info and navigate to pending payment
+      const bookingData = {
+        car_id: currentCar?.id,
+        start_date: startDate,
+        end_date: endDate,
+        pickup_time: pickupTime,
+        return_time: returnTime,
+        pickup_location: pickupLocation,
+        return_location: returnLocation,
+        total_price: totalPrice + (deliveryFees.requiresQuote ? 0 : deliveryFees.totalFee),
+        extras: Array.from(selectedExtras.entries()).map(([id, { extra, quantity }]) => ({
+          id,
+          extra,
+          quantity
+        }))
+      };
+      
+      localStorage.setItem('pendingBooking', JSON.stringify(bookingData));
+      
+      // Navigate to payment page which will handle authentication
+      navigate('/payment/pending');
+      return;
+    }
+    
     try {
+      // Create booking with authenticated user
+      const booking = await createBooking({
+        car_id: currentCar.id,
+        user_id: user.id,
+        start_date: startDate,
+        end_date: endDate,
+        pickup_location: pickupLocation,
+        return_location: returnLocation,
+        pickup_time: pickupTime,
+        return_time: returnTime,
+        total_price: totalPrice + (deliveryFees.requiresQuote ? 0 : deliveryFees.totalFee),
+        status: 'draft'
+      });
       
-      // Calculate extras total
-      const { extrasTotal } = calculateTotal(rentalDuration);
-      const grandTotal = totalPrice + extrasTotal + (deliveryFees.requiresQuote ? 0 : deliveryFees.totalFee);
-      
-      // Create booking with draft status - if no user, we'll store the booking data temporarily
-      if (user) {
-        const booking = await createBooking({
-          car_id: currentCar!.id,
-          user_id: user.id,
-          start_date: startDate,
-          end_date: endDate,
-          total_price: grandTotal,
-          status: 'pending',
-          pickup_location: pickupLocation,
-          return_location: sameReturnLocation ? pickupLocation : returnLocation,
-          pickup_time: pickupTime,
-          return_time: returnTime
-        });
+      if (booking) {
+        // Save extras
+        const rentalDays = Math.ceil((new Date(endDate).getTime() - new Date(startDate).getTime()) / (1000 * 60 * 60 * 24));
+        await saveBookingExtras(booking.id, rentalDays);
         
-        if (booking) {
-          // Save selected extras to the booking
-          await saveBookingExtras(booking.id, rentalDuration);
-          
-          // Navigate to payment page
-          navigate(`/payment/${booking.id}`);
-        }
-      } else {
-        // Get selected extras from the store
-        const { selectedExtras } = useExtrasStore.getState();
-        
-        // Store booking data in localStorage for anonymous users
-        const bookingData = {
-          car_id: currentCar!.id,
-          start_date: startDate,
-          end_date: endDate,
-          total_price: grandTotal,
-          pickup_location: pickupLocation,
-          return_location: sameReturnLocation ? pickupLocation : returnLocation,
-          pickup_time: pickupTime,
-          return_time: returnTime,
-          extras: Array.from(selectedExtras.entries()).map(([id, { extra, quantity }]) => ({
-            id,
-            extra,
-            quantity
-          }))
-        };
-        
-        localStorage.setItem('pendingBooking', JSON.stringify(bookingData));
-        
-        // Navigate to payment page which will handle authentication
-        navigate('/payment/pending');
+        // Navigate to payment page
+        navigate(`/payment/${booking.id}`);
       }
     } catch (error) {
       toast.error((error as Error).message || 'Failed to create booking');
@@ -464,274 +353,265 @@ const BookingPage: React.FC = () => {
         return Math.ceil(diffMs / (1000 * 60 * 60 * 24));
       })()
     : 0;
-  
-  // Generate breadcrumb items
-  const breadcrumbItems = currentCar ? [
-    { label: 'Cars', path: '/cars' },
-    { label: `${currentCar.year} ${currentCar.make} ${currentCar.model}`, path: `/cars/${carId}` },
-    { label: 'Book Now', path: `/booking/${carId}` }
-  ] : [];
 
   return (
-    <div className="min-h-screen pt-16 pb-12 bg-secondary-50">
-      <div className="container-custom">
-        <PageHeader
-          title="Complete Your Booking"
-          subtitle={currentCar ? `${currentCar.year} ${currentCar.make} ${currentCar.model}` : ''}
-          breadcrumbItems={breadcrumbItems}
-          fallbackPath={`/cars/${carId}`}
-        />
-        
+    <div className="min-h-screen bg-gray-50">
+      {/* Compact Header - Desktop Only */}
+      <div className="hidden lg:block bg-white border-b">
+        <div className="container-custom py-6">
+          <nav className="flex items-center space-x-2 text-sm mb-4 text-gray-600">
+            <Link to="/" className="hover:text-gray-800">Home</Link>
+            <span>/</span>
+            <Link to="/cars" className="hover:text-gray-800">Cars</Link>
+            <span>/</span>
+            <Link to={`/cars/${carId}`} className="hover:text-gray-800">
+              {currentCar.make} {currentCar.model}
+            </Link>
+            <span>/</span>
+            <span className="text-gray-900">Book Now</span>
+          </nav>
+          <h1 className="text-3xl font-bold text-gray-900">Complete Your Booking</h1>
+          <p className="text-lg text-gray-600 mt-1">{currentCar.make} {currentCar.model} {currentCar.year}</p>
+        </div>
+      </div>
+
+      {/* Mobile Header */}
+      <div className="lg:hidden bg-white shadow-sm sticky top-16 z-40">
+        <div className="container-custom py-4">
+          <Link to={`/cars/${carId}`} className="flex items-center text-gray-600 mb-3">
+            <ArrowLeft size={20} className="mr-2" />
+            Back
+          </Link>
+          <h1 className="text-2xl font-bold">Complete Your Booking</h1>
+          <p className="text-gray-600">{currentCar.make} {currentCar.model} {currentCar.year}</p>
+        </div>
+      </div>
+
+      {/* Main Content */}
+      <div className="container-custom py-8">
+        {/* Desktop Back Button */}
+        <div className="hidden lg:block mb-6">
+          <Link to={`/cars/${carId}`} className="inline-flex items-center text-gray-600 hover:text-gray-800">
+            <ArrowLeft size={20} className="mr-2" />
+            Back to Car Details
+          </Link>
+        </div>
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          {/* Booking Form */}
-          <div className="lg:col-span-2">
-            <div className="bg-white rounded-lg shadow-md p-6">
-              <h1 className="text-2xl font-semibold mb-6">Book Your Rental</h1>
-              
-              <form onSubmit={handleSubmit} className="space-y-6">
-                {/* Rental Dates Section with Edit Toggle */}
-                <div className="bg-secondary-50 p-4 rounded-lg">
+          {/* Left Column - Booking Form */}
+          <div className="lg:col-span-2 order-2 lg:order-1">
+            <div className="bg-white rounded-xl shadow-sm">
+              <form onSubmit={handleSubmit}>
+                {/* Rental Dates Section */}
+                <div className="p-6 border-b">
                   <div className="flex justify-between items-center mb-4">
-                    <h3 className="font-semibold">Rental Dates</h3>
+                    <h2 className="text-xl font-semibold">Rental Dates</h2>
                     <Button 
+                      type="button"
                       variant="ghost" 
                       size="sm"
-                      onClick={toggleEditDates}
+                      onClick={() => {
+                        setIsEditingDates(!isEditingDates);
+                        if (isEditingDates) {
+                          // When clicking "Done", enable availability check
+                          setHasCheckedAvailability(true);
+                        }
+                      }}
                     >
-                      {isEditingDates ? 'Cancel' : 'Edit Dates'}
+                      {isEditingDates ? 'Done' : 'Edit Dates'}
                     </Button>
                   </div>
-                  
+
                   {isEditingDates ? (
-                    // Date Edit Form
-                    <div className="space-y-4">
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div>
-                          <Input
-                            label="Pickup Date"
-                            type="date"
-                            value={startDate}
-                            onChange={handleStartDateChange}
-                            min={format(new Date(), 'yyyy-MM-dd')}
-                            leftIcon={<Calendar size={20} />}
-                          />
-                        </div>
-                        
-                        <div>
-                          <Input
-                            label="Return Date"
-                            type="date"
-                            value={endDate}
-                            onChange={handleEndDateChange}
-                            min={startDate}
-                            leftIcon={<Calendar size={20} />}
-                            disabled={!startDate}
-                          />
-                        </div>
-                        
-                        <div>
-                          <label className="block text-sm font-medium text-secondary-700 mb-1">
-                            Pickup Time
-                          </label>
-                          <div className="relative">
-                            <Clock size={20} className="absolute left-3 top-1/2 transform -translate-y-1/2 text-secondary-500" />
-                            <select
-                              value={pickupTime}
-                              onChange={handlePickupTimeChange}
-                              className="pl-10 pr-4 py-2 w-full border border-secondary-300 rounded-md focus:ring-primary-500 focus:border-primary-500"
-                            >
-                              {Array.from({ length: 24 }, (_, i) => {
-                                const hour = i.toString().padStart(2, '0');
-                                return (
-                                  <option key={hour} value={`${hour}:00`}>
-                                    {`${hour}:00`}
-                                  </option>
-                                );
-                              })}
-                            </select>
-                          </div>
-                        </div>
-                        
-                        <div>
-                          <label className="block text-sm font-medium text-secondary-700 mb-1">
-                            Return Time
-                          </label>
-                          <div className="relative">
-                            <Clock size={20} className="absolute left-3 top-1/2 transform -translate-y-1/2 text-secondary-500" />
-                            <select
-                              value={returnTime}
-                              onChange={handleReturnTimeChange}
-                              className="pl-10 pr-4 py-2 w-full border border-secondary-300 rounded-md focus:ring-primary-500 focus:border-primary-500"
-                            >
-                              {Array.from({ length: 24 }, (_, i) => {
-                                const hour = i.toString().padStart(2, '0');
-                                const hourValue = `${hour}:00`;
-                                const isSameDay = startDate === endDate;
-                                const isDisabled = isSameDay && parseInt(hour) <= parseInt(pickupTime.split(':')[0]);
-                                
-                                return (
-                                  <option 
-                                    key={hour} 
-                                    value={hourValue}
-                                    disabled={isDisabled}
-                                    style={isDisabled ? { color: '#9CA3AF', backgroundColor: '#F3F4F6' } : {}}
-                                  >
-                                    {hourValue}
-                                  </option>
-                                );
-                              })}
-                            </select>
-                          </div>
-                        </div>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div>
+                        <Input
+                          type="date"
+                          label="Pickup Date"
+                          value={startDate}
+                          onChange={(e) => setStartDate(e.target.value)}
+                          min={format(new Date(), 'yyyy-MM-dd')}
+                          leftIcon={<Calendar size={18} />}
+                        />
+                        <Select
+                          label="Pickup Time"
+                          value={pickupTime}
+                          onChange={(e) => setPickupTime(e.target.value)}
+                          options={HOURS}
+                          className="mt-2"
+                          leftIcon={<Clock size={18} />}
+                        />
                       </div>
-                      
-                      <div className="flex justify-end">
-                        <Button 
-                          variant="primary" 
-                          size="sm"
-                          onClick={saveDateChanges}
-                          disabled={!startDate || !endDate}
-                        >
-                          Save Changes
-                        </Button>
+                      <div>
+                        <Input
+                          type="date"
+                          label="Return Date"
+                          value={endDate}
+                          onChange={(e) => setEndDate(e.target.value)}
+                          min={startDate}
+                          leftIcon={<Calendar size={18} />}
+                        />
+                        <Select
+                          label="Return Time"
+                          value={returnTime}
+                          onChange={(e) => setReturnTime(e.target.value)}
+                          options={HOURS.map((hour) => ({
+                            ...hour,
+                            disabled: isTimeDisabled(hour.value, pickupTime, startDate === endDate)
+                          }))}
+                          className="mt-2"
+                          leftIcon={<Clock size={18} />}
+                        />
                       </div>
                     </div>
                   ) : (
-                    // Date Summary
-                    <div className="flex flex-col md:flex-row justify-between">
-                      <div className="mb-2 md:mb-0">
-                        <div className="text-sm text-secondary-600">Pickup Date</div>
-                        <div className="font-medium">{format(new Date(startDate), 'MMM d, yyyy')} at {pickupTime}</div>
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
+                      <div>
+                        <p className="text-gray-500 mb-1">Pickup Date</p>
+                        <p className="font-medium">{format(parseISO(startDate), 'MMM d, yyyy')} at {pickupTime}</p>
                       </div>
                       <div>
-                        <div className="text-sm text-secondary-600">Return Date</div>
-                        <div className="font-medium">{format(new Date(endDate), 'MMM d, yyyy')} at {returnTime}</div>
+                        <p className="text-gray-500 mb-1">Return Date</p>
+                        <p className="font-medium">{format(parseISO(endDate), 'MMM d, yyyy')} at {returnTime}</p>
                       </div>
                       <div>
-                        <div className="text-sm text-secondary-600">Duration</div>
-                        <div className="font-medium">{rentalDuration} days</div>
+                        <p className="text-gray-500 mb-1">Duration</p>
+                        <p className="font-medium">{rentalDuration} days</p>
                       </div>
                     </div>
                   )}
                 </div>
-                
+
                 {/* Pickup & Return Locations */}
-                <div className="space-y-4">
-                  <h3 className="font-semibold">Pickup & Return Locations</h3>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <LocationSelector
-                      label="Pickup Location"
-                      value={pickupLocation}
-                      onChange={setPickupLocation}
-                      showCategories={true}
-                      hideFeesInOptions={true}
-                      excludeCustom={true}
-                    />
-                    
-                    <LocationSelector
-                      label="Return Location"
-                      value={returnLocation}
-                      onChange={setReturnLocation}
-                      showCategories={true}
-                      hideFeesInOptions={true}
-                      excludeCustom={true}
-                    />
+                <div className="p-6 border-b">
+                  <div className="flex justify-between items-center mb-4">
+                    <h2 className="text-xl font-semibold">Pickup & Return Locations</h2>
+                    <Button 
+                      type="button"
+                      variant="ghost" 
+                      size="sm"
+                      onClick={() => setIsEditingLocations(!isEditingLocations)}
+                    >
+                      {isEditingLocations ? 'Done' : 'Edit Locations'}
+                    </Button>
                   </div>
                   
-                  {/* Same Return Location Checkbox */}
-                  <div className="flex items-center gap-2">
-                    <input
-                      type="checkbox"
-                      id="same-return-booking"
-                      checked={sameReturnLocation}
-                      onChange={(e) => setSameReturnLocation(e.target.checked)}
-                      className="w-4 h-4 text-primary-600 bg-white border-gray-300 rounded focus:ring-primary-500"
-                    />
-                    <label htmlFor="same-return-booking" className="text-sm text-gray-700">
-                      Return to same location
-                    </label>
-                  </div>
-                  
-                  {/* Delivery Fee Display */}
-                  {(deliveryFees.totalFee > 0 || deliveryFees.requiresQuote) && (
-                    <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-xl p-4">
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-3">
-                          <div className="bg-blue-100 p-2 rounded-lg">
-                            <Info className="w-5 h-5 text-blue-600" />
-                          </div>
-                          <div>
-                            {deliveryFees.requiresQuote ? (
-                              <>
-                                <p className="text-blue-900 font-semibold">Custom Location Quote</p>
-                                <p className="text-blue-700 text-sm">We'll contact you with delivery pricing</p>
-                              </>
-                            ) : (
-                              <>
-                                <p className="text-blue-900 font-semibold">
-                                  {sameReturnLocation ? 'Delivery Service' : 'Pickup & Return Service'}
-                                </p>
-                                <p className="text-blue-700 text-sm">
-                                  {sameReturnLocation 
-                                    ? `Same location pickup & return`
-                                    : `Split delivery: Pickup + Return`
-                                  }
-                                </p>
-                              </>
+                  {isEditingLocations ? (
+                    <div className="space-y-4">
+                      <LocationSelector
+                        label="Pickup Location"
+                        value={pickupLocation}
+                        onChange={setPickupLocation}
+                      />
+                      
+                      <div className="flex items-center">
+                        <input
+                          type="checkbox"
+                          id="sameReturn"
+                          checked={sameReturnLocation}
+                          onChange={(e) => setSameReturnLocation(e.target.checked)}
+                          className="h-4 w-4 text-primary-600 rounded"
+                        />
+                        <label htmlFor="sameReturn" className="ml-2 text-sm">
+                          Return to same location
+                        </label>
+                      </div>
+                      
+                      {!sameReturnLocation && (
+                        <LocationSelector
+                          label="Return Location"
+                          value={returnLocation}
+                          onChange={setReturnLocation}
+                        />
+                      )}
+                    </div>
+                  ) : (
+                    <div className="space-y-3">
+                      <div className="flex items-center">
+                        <MapPin className="w-5 h-5 text-gray-400 mr-3" />
+                        <div>
+                          <p className="text-sm text-gray-500">Pickup Location</p>
+                          <p className="font-medium">{getLocationByValue(pickupLocation)?.label || 'Not specified'}</p>
+                        </div>
+                      </div>
+                      
+                      <div className="flex items-center">
+                        <MapPin className="w-5 h-5 text-gray-400 mr-3" />
+                        <div>
+                          <p className="text-sm text-gray-500">Return Location</p>
+                          <p className="font-medium">{getLocationByValue(returnLocation)?.label || 'Not specified'}</p>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Delivery Service Info */}
+                  {deliveryFees.totalFee > 0 && !deliveryFees.requiresQuote && (
+                    <div className="mt-4 p-4 bg-blue-50 rounded-lg">
+                      <div className="flex items-start">
+                        <Info className="w-5 h-5 text-blue-600 mt-0.5 mr-2 flex-shrink-0" />
+                        <div className="text-sm">
+                          <p className="font-medium text-blue-900">Delivery Service</p>
+                          <p className="text-blue-700">
+                            {sameReturnLocation ? 'Same location pickup & return' : 'Different return location'}
+                          </p>
+                          <p className="font-semibold text-blue-900 mt-1">${deliveryFees.totalFee}</p>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                {/* Availability Status */}
+                {isAvailable !== null && !isEditingDates && (
+                  <div className="px-6 py-4 border-b">
+                    <div className={cn(
+                      "flex items-center p-4 rounded-lg",
+                      isAvailable 
+                        ? "bg-green-50 text-green-700" 
+                        : "bg-red-50 text-red-700"
+                    )}>
+                      {isAvailable ? (
+                        <>
+                          <CheckCircle size={20} className="mr-2 flex-shrink-0" />
+                          <span>Car is available for your selected dates</span>
+                        </>
+                      ) : (
+                        <>
+                          <AlertCircle size={20} className="mr-2 flex-shrink-0" />
+                          <div className="flex-1">
+                            <span className="block">Car is not available for these dates.</span>
+                            {user && (
+                              <div className="mt-2">
+                                <span className="block text-sm">
+                                  Have a pending booking? 
+                                </span>
+                                <Link 
+                                  to="/bookings" 
+                                  className="text-sm text-red-800 underline hover:text-red-900"
+                                >
+                                  Check your bookings →
+                                </Link>
+                              </div>
                             )}
                           </div>
-                        </div>
-                        <div className="text-right">
-                          {deliveryFees.requiresQuote ? (
-                            <span className="text-lg font-bold text-orange-600">Quote</span>
-                          ) : (
-                            <span className="text-2xl font-bold text-blue-900">${deliveryFees.totalFee}</span>
-                          )}
-                        </div>
-                      </div>
+                        </>
+                      )}
                     </div>
-                  )}
-                </div>
-                
-                {/* Availability Status - Only show when not editing and after check */}
-                {!isEditingDates && isAvailable !== null && (
-                  <div className={`flex items-center justify-center p-3 rounded-md ${
-                    isAvailable 
-                      ? 'bg-success-50 text-success-700' 
-                      : 'bg-secondary-50 text-secondary-700'
-                  }`}>
-                    {isAvailable ? (
-                      <>
-                        <CheckCircle size={20} className="mr-2" />
-                        Car is available for your selected dates
-                      </>
-                    ) : (
-                      <>
-                        <AlertCircle size={20} className="mr-2" />
-                        Car is not available for these dates. Please select different dates.
-                      </>
-                    )}
                   </div>
                 )}
-                
+
                 {/* Validation Message */}
                 {validationMessage && (
-                  <div className="text-error-500 text-sm flex items-center">
-                    <AlertCircle size={16} className="mr-1" />
-                    {validationMessage}
+                  <div className="px-6 py-2">
+                    <div className="text-red-500 text-sm flex items-center">
+                      <AlertCircle size={16} className="mr-1" />
+                      {validationMessage}
+                    </div>
                   </div>
                 )}
-                
-                {/* Loading Indicator */}
-                {isCheckingAvailability && (
-                  <div className="flex items-center justify-center text-secondary-600">
-                    <div className="animate-spin rounded-full h-5 w-5 border-t-2 border-b-2 border-primary-800 mr-2"></div>
-                    Checking availability...
-                  </div>
-                )}
-                
+
                 {/* Discount Code */}
-                <div>
+                <div className="p-6 border-b">
                   <Input
                     label="Discount Code (Optional)"
                     value={discountCode}
@@ -739,128 +619,194 @@ const BookingPage: React.FC = () => {
                     placeholder="Enter discount code"
                   />
                 </div>
-                
-                {/* Price Summary - Show only when available */}
-                {showPriceSummary && isAvailable && !isEditingDates && (
-                  <div className="bg-secondary-50 p-4 rounded-lg">
-                    <h3 className="font-semibold mb-2">Price Summary</h3>
-                    <div className="space-y-2">
-                      <div className="flex justify-between">
-                        <span className="text-secondary-600">Daily Rate:</span>
-                        <span>${currentCar.price_per_day}</span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span className="text-secondary-600">Duration:</span>
-                        <span>{rentalDuration} days</span>
-                      </div>
-                      {discountCode && (
-                        <div className="flex justify-between text-success-600">
-                          <span>Discount:</span>
-                          <span>Applied</span>
-                        </div>
-                      )}
-                      {deliveryFees.totalFee > 0 && !deliveryFees.requiresQuote && (
-                        <div className="flex justify-between">
-                          <span className="text-secondary-600">Delivery Fee:</span>
-                          <span>${deliveryFees.totalFee}</span>
-                        </div>
-                      )}
-                      <div className="flex justify-between font-semibold text-lg pt-2 border-t border-secondary-200">
-                        <span>Total:</span>
-                        <span>${totalPrice + (deliveryFees.requiresQuote ? 0 : deliveryFees.totalFee)}</span>
-                      </div>
-                    </div>
-                  </div>
-                )}
-                
+
                 {/* Submit Button */}
-                <Button
-                  type="submit"
-                  variant="primary"
-                  fullWidth
-                  size="lg"
-                  isLoading={bookingLoading}
-                  disabled={(!isAvailable && !deliveryFees.requiresQuote) || bookingLoading || !startDate || !endDate || isEditingDates}
-                >
-                  {deliveryFees.requiresQuote ? 'Request Quote' : 'Complete Booking'}
-                </Button>
+                <div className="p-6">
+                  <Button
+                    type="submit"
+                    variant="primary"
+                    fullWidth
+                    size="lg"
+                    isLoading={bookingLoading}
+                    disabled={(!isAvailable && !deliveryFees.requiresQuote) || bookingLoading || !startDate || !endDate || isEditingDates || isEditingLocations}
+                  >
+                    {deliveryFees.requiresQuote ? 'Request Quote' : 'Complete Booking'}
+                  </Button>
+                </div>
               </form>
             </div>
           </div>
-          
-          {/* Car Summary */}
-          <div className="lg:col-span-1">
-            <div className="bg-white rounded-lg shadow-md overflow-hidden">
-              <div className="relative h-48">
-                <img 
-                  src={currentCar.image_url} 
-                  alt={`${currentCar.make} ${currentCar.model}`}
-                  className="w-full h-full object-cover"
-                />
-              </div>
-              
-              <div className="p-6">
-                <h2 className="text-xl font-semibold mb-1">
-                  {currentCar.year} {currentCar.make} {currentCar.model}
-                </h2>
-                <p className="text-primary-800 font-semibold mb-4">
-                  ${currentCar.price_per_day}/day
-                </p>
-                
-                <div className="border-t border-secondary-200 py-4 my-4">
-                  <div className="grid grid-cols-2 gap-3">
-                    <div className="flex items-center">
-                      <Users className="h-5 w-5 text-primary-700 mr-2" />
-                      <div>
-                        <p className="text-xs text-secondary-600">Seats</p>
-                        <p className="text-sm font-medium">{currentCar.seats || 5}</p>
-                      </div>
-                    </div>
-                    
-                    <div className="flex items-center">
-                      <Gauge className="h-5 w-5 text-primary-700 mr-2" />
-                      <div>
-                        <p className="text-xs text-secondary-600">Mileage</p>
-                        <p className="text-sm font-medium">{currentCar.mileage_type || 'Unlimited'}</p>
-                      </div>
-                    </div>
-                  </div>
+
+          {/* Right Column - Price Summary (Desktop) / Collapsible (Mobile) */}
+          <div className="lg:col-span-1 order-1 lg:order-2">
+            {/* Desktop Sticky Summary */}
+            <div className="hidden lg:block sticky top-8">
+              <div className="bg-white rounded-xl shadow-sm overflow-hidden">
+                {/* Car Image */}
+                <div className="relative h-48">
+                  <img 
+                    src={currentCar.image_url} 
+                    alt={`${currentCar.make} ${currentCar.model}`}
+                    className="w-full h-full object-cover"
+                  />
                 </div>
-                
-                <div className="text-sm text-secondary-600 space-y-2">
-                  <div>
-                    <p className="font-medium text-secondary-800 mb-1">Pickup Location:</p>
-                    <div className="flex items-center gap-2">
-                      <MapPin size={16} className="text-primary-600" />
-                      <span>{getLocationByValue(pickupLocation)?.label || 'Not specified'}</span>
+
+                {/* Car Details */}
+                <div className="p-6">
+                  <h3 className="text-2xl font-bold mb-1">
+                    {currentCar.make} {currentCar.model} {currentCar.year}
+                  </h3>
+                  <p className="text-3xl font-bold text-primary-600 mb-4">
+                    ${currentCar.price_per_day}<span className="text-base font-normal text-gray-500">/day</span>
+                  </p>
+
+                  {/* Features */}
+                  <div className="grid grid-cols-2 gap-3 mb-6">
+                    <div className="flex items-center text-sm">
+                      <Users className="w-4 h-4 text-gray-400 mr-2" />
+                      <span>{currentCar.seats || 5} Seats</span>
+                    </div>
+                    <div className="flex items-center text-sm">
+                      <Gauge className="w-4 h-4 text-gray-400 mr-2" />
+                      <span>200 miles/day</span>
                     </div>
                   </div>
-                  
-                  <div>
-                    <p className="font-medium text-secondary-800 mb-1">Return Location:</p>
-                    <div className="flex items-center gap-2">
-                      <MapPin size={16} className="text-primary-600" />
-                      <span>{getLocationByValue(returnLocation)?.label || 'Not specified'}</span>
+
+                  {/* Location Info */}
+                  <div className="space-y-3 text-sm mb-6">
+                    <div>
+                      <p className="text-gray-500 mb-1">Pickup Location:</p>
+                      <div className="flex items-center">
+                        <MapPin size={16} className="text-gray-400 mr-2" />
+                        <span className="font-medium">{getLocationByValue(pickupLocation)?.label || 'Not specified'}</span>
+                      </div>
+                    </div>
+                    <div>
+                      <p className="text-gray-500 mb-1">Return Location:</p>
+                      <div className="flex items-center">
+                        <MapPin size={16} className="text-gray-400 mr-2" />
+                        <span className="font-medium">{getLocationByValue(returnLocation)?.label || 'Not specified'}</span>
+                      </div>
                     </div>
                   </div>
-                  
-                  {deliveryFees.totalFee > 0 && !deliveryFees.requiresQuote && (
-                    <div className="pt-2 border-t border-secondary-200">
-                      <span className="font-medium text-secondary-800">Delivery Fee: </span>
-                      <span className="text-green-600 font-medium">${deliveryFees.totalFee}</span>
+
+                  {/* Price Breakdown */}
+                  {isAvailable && !isEditingDates && (
+                    <div className="border-t pt-4">
+                      <h4 className="font-semibold mb-3">Price Summary</h4>
+                      <div className="space-y-2 text-sm">
+                        <div className="flex justify-between">
+                          <span className="text-gray-600">Daily Rate:</span>
+                          <span>${currentCar.price_per_day}</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-gray-600">Duration:</span>
+                          <span>{rentalDuration} days</span>
+                        </div>
+                        {deliveryFees.totalFee > 0 && !deliveryFees.requiresQuote && (
+                          <div className="flex justify-between">
+                            <span className="text-gray-600">Delivery Fee:</span>
+                            <span>${deliveryFees.totalFee}</span>
+                          </div>
+                        )}
+                        <div className="flex justify-between font-bold text-lg pt-2 border-t">
+                          <span>Total:</span>
+                          <span>${totalPrice + (deliveryFees.requiresQuote ? 0 : deliveryFees.totalFee)}</span>
+                        </div>
+                      </div>
                     </div>
                   )}
-                  
-                  <div className="pt-2 flex items-center gap-2">
-                    <CreditCard size={16} className="text-green-600" />
-                    <span className="text-green-600 font-medium">Secure online payment</span>
+
+                  {/* Trust Badges */}
+                  <div className="mt-6 pt-6 border-t">
+                    <div className="flex items-center text-sm text-green-600">
+                      <Shield className="w-4 h-4 mr-2" />
+                      <span className="font-medium">Secure online payment</span>
+                    </div>
                   </div>
                 </div>
               </div>
+            </div>
+
+            {/* Mobile Collapsible Summary */}
+            <div className="lg:hidden bg-white rounded-xl shadow-sm overflow-hidden">
+              <button
+                type="button"
+                onClick={() => setShowMobileDetails(!showMobileDetails)}
+                className="w-full p-4 flex items-center justify-between hover:bg-gray-50"
+              >
+                <div className="flex items-center">
+                  <img 
+                    src={currentCar.image_url} 
+                    alt={`${currentCar.make} ${currentCar.model}`}
+                    className="w-16 h-16 object-cover rounded-lg mr-4"
+                  />
+                  <div className="text-left">
+                    <h3 className="font-semibold">{currentCar.make} {currentCar.model}</h3>
+                    <p className="text-primary-600 font-bold">${currentCar.price_per_day}/day</p>
+                  </div>
+                </div>
+                {showMobileDetails ? <ChevronUp size={20} /> : <ChevronDown size={20} />}
+              </button>
+
+              {showMobileDetails && (
+                <div className="p-4 border-t">
+                  {/* Features */}
+                  <div className="grid grid-cols-2 gap-3 mb-4">
+                    <div className="flex items-center text-sm">
+                      <Users className="w-4 h-4 text-gray-400 mr-2" />
+                      <span>{currentCar.seats || 5} Seats</span>
+                    </div>
+                    <div className="flex items-center text-sm">
+                      <Gauge className="w-4 h-4 text-gray-400 mr-2" />
+                      <span>200 miles/day</span>
+                    </div>
+                  </div>
+
+                  {/* Locations */}
+                  <div className="space-y-2 text-sm mb-4">
+                    <div>
+                      <p className="text-gray-500">Pickup: <span className="font-medium text-gray-900">{getLocationByValue(pickupLocation)?.label}</span></p>
+                    </div>
+                    <div>
+                      <p className="text-gray-500">Return: <span className="font-medium text-gray-900">{getLocationByValue(returnLocation)?.label}</span></p>
+                    </div>
+                  </div>
+
+                  {/* Price Summary */}
+                  {isAvailable && !isEditingDates && (
+                    <div className="border-t pt-4">
+                      <div className="space-y-2 text-sm">
+                        <div className="flex justify-between">
+                          <span className="text-gray-600">Car Rental ({rentalDuration} days):</span>
+                          <span>${totalPrice}</span>
+                        </div>
+                        {deliveryFees.totalFee > 0 && !deliveryFees.requiresQuote && (
+                          <div className="flex justify-between">
+                            <span className="text-gray-600">Delivery Fee:</span>
+                            <span>${deliveryFees.totalFee}</span>
+                          </div>
+                        )}
+                        <div className="flex justify-between font-bold text-lg pt-2 border-t">
+                          <span>Total:</span>
+                          <span className="text-primary-600">${totalPrice + (deliveryFees.requiresQuote ? 0 : deliveryFees.totalFee)}</span>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  <div className="mt-4 flex items-center text-sm text-green-600">
+                    <Shield className="w-4 h-4 mr-2" />
+                    <span className="font-medium">Secure online payment</span>
+                  </div>
+                </div>
+              )}
             </div>
           </div>
         </div>
       </div>
+
+      {/* Modals */}
       {showExtrasModal && (
         <ExtrasModal
           isOpen={showExtrasModal}

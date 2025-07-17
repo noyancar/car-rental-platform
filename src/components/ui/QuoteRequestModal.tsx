@@ -107,7 +107,7 @@ export function QuoteRequestModal({
             <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
               <h3 className="font-medium text-blue-900 mb-2">Booking Summary</h3>
               <div className="text-sm text-blue-800 space-y-1">
-                <p><span className="font-medium">Vehicle:</span> {carDetails.year} {carDetails.make} {carDetails.model}</p>
+                <p><span className="font-medium">Vehicle:</span> {carDetails.make} {carDetails.model} {carDetails.year}</p>
                 {pickupDate && <p><span className="font-medium">Pickup Date:</span> {pickupDate}</p>}
                 {returnDate && <p><span className="font-medium">Return Date:</span> {returnDate}</p>}
               </div>

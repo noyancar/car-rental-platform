@@ -37,11 +37,6 @@ export const Footer: React.FC = () => {
             <h3 className="text-base sm:text-lg font-semibold mb-3 sm:mb-4 text-white">Quick Links</h3>
             <ul className="space-y-1.5 sm:space-y-2 text-sm sm:text-base">
               <li>
-                <Link to="/cars" className="text-secondary-300 hover:text-white transition-colors">
-                  Browse Cars
-                </Link>
-              </li>
-              <li>
                 <Link to="/how-it-works" className="text-secondary-300 hover:text-white transition-colors">
                   How It Works
                 </Link>
@@ -66,33 +61,15 @@ export const Footer: React.FC = () => {
           
           {/* Categories */}
           <div>
-            <h3 className="text-base sm:text-lg font-semibold mb-3 sm:mb-4 text-white">Car Categories</h3>
+            <h3 className="text-base sm:text-lg font-semibold mb-3 sm:mb-4 text-white">Available Categories</h3>
+            <p className="text-secondary-300 text-sm sm:text-base mb-2">
+              Search by dates to explore our fleet:
+            </p>
             <ul className="space-y-1.5 sm:space-y-2 text-sm sm:text-base">
-              <li>
-                <Link to="/cars?category=luxury" className="text-secondary-300 hover:text-white transition-colors">
-                  Luxury Cars
-                </Link>
-              </li>
-              <li>
-                <Link to="/cars?category=suv" className="text-secondary-300 hover:text-white transition-colors">
-                  SUVs
-                </Link>
-              </li>
-              <li>
-                <Link to="/cars?category=sports" className="text-secondary-300 hover:text-white transition-colors">
-                  Sports Cars
-                </Link>
-              </li>
-              <li>
-                <Link to="/cars?category=convertible" className="text-secondary-300 hover:text-white transition-colors">
-                  Convertibles
-                </Link>
-              </li>
-              <li>
-                <Link to="/cars?category=electric" className="text-secondary-300 hover:text-white transition-colors">
-                  Electric Vehicles
-                </Link>
-              </li>
+              <li className="text-secondary-300">• Luxury Cars</li>
+              <li className="text-secondary-300">• SUVs</li>
+              <li className="text-secondary-300">• Sports Cars</li>
+              <li className="text-secondary-300">• Convertibles</li>
             </ul>
           </div>
           
@@ -115,8 +92,8 @@ export const Footer: React.FC = () => {
               </li>
               <li className="flex items-center">
                 <Mail className="h-5 w-5 mr-2 text-secondary-300" />
-                <a href="mailto:info@driveluxe.com" className="text-secondary-300 hover:text-white transition-colors">
-                  info@driveluxe.com
+                <a href="mailto:info@noyancar.com" className="text-secondary-300 hover:text-white transition-colors">
+                  info@noyancar.com
                 </a>
               </li>
             </ul>
@@ -124,7 +101,7 @@ export const Footer: React.FC = () => {
         </div>
         
         <div className="border-t border-secondary-700 mt-8 sm:mt-12 pt-6 sm:pt-8 text-center text-secondary-400">
-          <p className="text-sm sm:text-base">© {new Date().getFullYear()} DriveLuxe. All rights reserved.</p>
+          <p className="text-sm sm:text-base">© {new Date().getFullYear()} NoyanCar. All rights reserved.</p>
           <div className="mt-2 space-x-3 sm:space-x-4 text-sm sm:text-base">
             <Link to="/terms" className="text-secondary-400 hover:text-white transition-colors">
               Terms of Service

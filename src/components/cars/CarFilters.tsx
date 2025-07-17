@@ -5,7 +5,11 @@ import { Input } from '../ui/Input';
 import { Button } from '../ui/Button';
 import { useSearchStore } from '../../stores/searchStore';
 
-const CarFilters: React.FC = () => {
+interface CarFiltersProps {
+  onClose?: () => void;
+}
+
+const CarFilters: React.FC<CarFiltersProps> = ({ onClose }) => {
   const { searchResults, filters, setFilters, resetFilters } = useSearchStore();
   
   // Extracted unique values from search results for filter options
@@ -21,6 +25,18 @@ const CarFilters: React.FC = () => {
   const [selectedMinPrice, setSelectedMinPrice] = useState<number | undefined>(filters.minPrice);
   const [selectedMaxPrice, setSelectedMaxPrice] = useState<number | undefined>(filters.maxPrice);
   
+  // Available categories based on current make/model selection
+  const [availableCategories, setAvailableCategories] = useState<string[]>([]);
+  
+  // Update local state when filters change (e.g., from URL parameters)
+  useEffect(() => {
+    setSelectedCategory(filters.category || '');
+    setSelectedMake(filters.make || '');
+    setSelectedModel(filters.model || '');
+    setSelectedMinPrice(filters.minPrice);
+    setSelectedMaxPrice(filters.maxPrice);
+  }, [filters]);
+  
   // Extract filter options from search results
   useEffect(() => {
     if (searchResults.length > 0) {
@@ -29,7 +45,8 @@ const CarFilters: React.FC = () => {
       setMakes(uniqueMakes);
       
       // Use predefined categories to ensure all are visible
-      const predefinedCategories = ['SUV', 'Sedan', 'Luxury', 'Convertible'];
+      // These must match the database values (lowercase)
+      const predefinedCategories = ['sports', 'suv', 'luxury', 'convertible'];
       setCategories(predefinedCategories);
       
       // Find price range
@@ -58,6 +75,25 @@ const CarFilters: React.FC = () => {
     }
   }, [selectedMake, searchResults]);
   
+  // Update available categories based on make/model selection
+  useEffect(() => {
+    let carsToCheck = searchResults;
+    
+    // Filter by make if selected
+    if (selectedMake) {
+      carsToCheck = carsToCheck.filter(car => car.make === selectedMake);
+    }
+    
+    // Further filter by model if selected
+    if (selectedModel) {
+      carsToCheck = carsToCheck.filter(car => car.model === selectedModel);
+    }
+    
+    // Extract available categories from filtered cars
+    const categoriesInFilteredCars = [...new Set(carsToCheck.map(car => car.category))];
+    setAvailableCategories(categoriesInFilteredCars);
+  }, [selectedMake, selectedModel, searchResults]);
+  
   // Apply filters
   const handleApplyFilters = () => {
     setFilters({
@@ -67,6 +103,11 @@ const CarFilters: React.FC = () => {
       minPrice: selectedMinPrice,
       maxPrice: selectedMaxPrice
     });
+    
+    // Close filters on mobile after applying
+    if (onClose && window.innerWidth < 1024) {
+      onClose();
+    }
   };
   
   // Reset filters
@@ -103,9 +144,21 @@ const CarFilters: React.FC = () => {
             label="Make"
             value={selectedMake}
             onChange={(e) => {
-              setSelectedMake(e.target.value);
+              const newMake = e.target.value;
+              setSelectedMake(newMake);
               // Reset model when make changes
               setSelectedModel('');
+              
+              // Check if current category is still valid with new make
+              if (newMake && selectedCategory) {
+                const carsForMake = searchResults.filter(car => car.make === newMake);
+                const categoriesForMake = [...new Set(carsForMake.map(car => car.category))];
+                
+                // Clear category if it's not available for the new make
+                if (!categoriesForMake.includes(selectedCategory)) {
+                  setSelectedCategory('');
+                }
+              }
             }}
             options={[
               { value: '', label: 'All Makes' },
@@ -136,7 +189,11 @@ const CarFilters: React.FC = () => {
             onChange={(e) => setSelectedCategory(e.target.value)}
             options={[
               { value: '', label: 'All Categories' },
-              ...categories.map(category => ({ value: category, label: category }))
+              ...categories.map(category => ({ 
+                value: category, 
+                label: category.charAt(0).toUpperCase() + category.slice(1),
+                disabled: Boolean((selectedMake || selectedModel) && !availableCategories.includes(category))
+              }))
             ]}
           />
         </div>

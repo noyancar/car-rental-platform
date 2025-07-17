@@ -95,7 +95,7 @@ const CarGrid: React.FC = () => {
           </div>
           <div className="p-4 sm:p-5 md:p-6 flex flex-col flex-grow">
             <h3 className="text-base sm:text-lg md:text-xl font-display font-semibold text-volcanic-900 mb-1.5 sm:mb-2">
-              {car.year} {car.make} {car.model}
+              {car.make} {car.model} {car.year}
             </h3>
             <div className="flex items-center text-accent-500 mb-2 sm:mb-3">
               <Star className="w-3 h-3 sm:w-4 sm:h-4 fill-current" />

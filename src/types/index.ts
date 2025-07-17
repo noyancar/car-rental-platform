@@ -37,7 +37,7 @@ export type Car = {
   gas_grade?: string;
 }
 
-export type BookingStatus = 'pending' | 'confirmed' | 'cancelled' | 'completed';
+export type BookingStatus = 'draft' | 'pending' | 'confirmed' | 'cancelled' | 'completed';
 
 export interface Booking {
   id: number;
@@ -60,6 +60,7 @@ export interface Booking {
   stripe_payment_intent_id?: string;
   stripe_payment_status?: 'pending' | 'processing' | 'succeeded' | 'failed' | 'canceled';
   stripe_payment_method_id?: string;
+  expires_at?: string | null; // Expiry timestamp for draft bookings
 }
 
 export type DiscountCode = {

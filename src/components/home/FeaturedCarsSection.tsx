@@ -1,5 +1,4 @@
 import React from 'react';
-import { Link } from 'react-router-dom';
 import { Star } from 'lucide-react';
 import { Button } from '../ui/Button';
 import type { Car } from '../../types';
@@ -10,16 +9,20 @@ interface FeaturedCarsSectionProps {
 }
 
 const FeaturedCarsSection: React.FC<FeaturedCarsSectionProps> = ({ featuredCars, loading }) => {
+  const scrollToSearch = () => {
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
   return (
     <section className="py-10 sm:py-16 md:py-20 bg-secondary-50">
       <div className="container-custom">
-        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-8 sm:mb-10 md:mb-12">
-          <h2 className="text-2xl sm:text-3xl md:text-4xl font-display">
+        <div className="mb-8 sm:mb-10 md:mb-12">
+          <h2 className="text-2xl sm:text-3xl md:text-4xl font-display mb-2">
             Featured Vehicles
           </h2>
-          <Link to="/cars">
-            <Button variant="outline">View All Cars</Button>
-          </Link>
+          <p className="text-secondary-600 text-sm sm:text-base">
+            Hand-picked premium vehicles for your adventure
+          </p>
         </div>
         
         {loading ? (
@@ -44,7 +47,7 @@ const FeaturedCarsSection: React.FC<FeaturedCarsSectionProps> = ({ featuredCars,
                 </div>
                 <div className="p-3 sm:p-4">
                   <h3 className="text-base sm:text-lg font-semibold">
-                    {car.year} {car.make} {car.model}
+                    {car.make} {car.model} {car.year}
                   </h3>
                   <div className="flex items-center text-accent-500 mt-1 mb-2 sm:mb-3">
                     <Star className="w-3 h-3 sm:w-4 sm:h-4 fill-current" />
@@ -57,11 +60,13 @@ const FeaturedCarsSection: React.FC<FeaturedCarsSectionProps> = ({ featuredCars,
                   <p className="text-secondary-600 text-xs sm:text-sm line-clamp-2 mb-3 sm:mb-4">
                     {car.description}
                   </p>
-                  <Link to={`/cars/${car.id}`}>
-                    <Button variant="primary" fullWidth>
-                      View Details
-                    </Button>
-                  </Link>
+                  <Button 
+                    variant="primary" 
+                    fullWidth
+                    onClick={scrollToSearch}
+                  >
+                    Check Availability
+                  </Button>
                 </div>
               </div>
             ))}

@@ -105,17 +105,25 @@ serve(async (req) => {
 
       // All cars are available at all locations - no need to check location availability
 
-      // Check for overlapping bookings
+      // Check for overlapping bookings including draft bookings
       const { data: bookings, error: bookingsError } = await supabase
         .from("bookings")
-        .select("start_date, end_date, pickup_time, return_time, status")
+        .select("start_date, end_date, pickup_time, return_time, status, expires_at")
         .eq("car_id", carId)
-        .in("status", ["confirmed", "pending"]);
+        .in("status", ["confirmed", "pending", "draft"]);
 
       if (bookingsError) throw new Error(bookingsError.message);
 
-      // Check for overlaps
+      // Check for overlaps (filter out expired draft bookings)
       const isOverlapping = bookings.some((booking) => {
+        // Skip expired draft bookings
+        if (booking.status === 'draft' && booking.expires_at) {
+          const expiryDate = new Date(booking.expires_at);
+          if (expiryDate < new Date()) {
+            return false; // This draft booking has expired
+          }
+        }
+        
         const bookingStart = new Date(`${booking.start_date}T${booking.pickup_time || "10:00"}:00`);
         const bookingEnd = new Date(`${booking.end_date}T${booking.return_time || "10:00"}:00`);
         
@@ -164,13 +172,13 @@ serve(async (req) => {
         });
       }
 
-      // Get all active bookings for these cars
+      // Get all active bookings for these cars including draft bookings
       const carIds = availableCars.map(car => car.id);
       const { data: bookings, error: bookingsError } = await supabase
         .from("bookings")
-        .select("car_id, start_date, end_date, pickup_time, return_time")
+        .select("car_id, start_date, end_date, pickup_time, return_time, status, expires_at")
         .in("car_id", carIds)
-        .in("status", ["confirmed", "pending"]);
+        .in("status", ["confirmed", "pending", "draft"]);
 
       if (bookingsError) throw new Error(bookingsError.message);
 
@@ -179,6 +187,14 @@ serve(async (req) => {
       
       if (bookings && bookings.length > 0) {
         bookings.forEach(booking => {
+          // Skip expired draft bookings
+          if (booking.status === 'draft' && booking.expires_at) {
+            const expiryDate = new Date(booking.expires_at);
+            if (expiryDate < new Date()) {
+              return; // This draft booking has expired
+            }
+          }
+          
           const bookingStart = new Date(`${booking.start_date}T${booking.pickup_time || "10:00"}:00`);
           const bookingEnd = new Date(`${booking.end_date}T${booking.return_time || "10:00"}:00`);
           

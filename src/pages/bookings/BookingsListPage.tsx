@@ -21,6 +21,10 @@ const BookingsListPage: React.FC = () => {
         return 'text-error-500';
       case 'completed':
         return 'text-secondary-500';
+      case 'draft':
+        return 'text-blue-500';
+      case 'pending':
+        return 'text-warning-500';
       default:
         return 'text-warning-500';
     }
@@ -34,6 +38,10 @@ const BookingsListPage: React.FC = () => {
         return <XCircle className="h-5 w-5" />;
       case 'completed':
         return <CheckCircle className="h-5 w-5" />;
+      case 'draft':
+        return <Clock className="h-5 w-5" />;
+      case 'pending':
+        return <AlertCircle className="h-5 w-5" />;
       default:
         return <AlertCircle className="h-5 w-5" />;
     }
@@ -106,7 +114,7 @@ const BookingsListPage: React.FC = () => {
                       <div className="flex flex-wrap justify-between items-start gap-4">
                         <div>
                           <h3 className="text-xl font-semibold">
-                            {booking.car?.year} {booking.car?.make} {booking.car?.model}
+                            {booking.car?.make} {booking.car?.model} {booking.car?.year}
                           </h3>
                           <p className="text-secondary-600">{booking.car?.category}</p>
                         </div>
@@ -134,9 +142,23 @@ const BookingsListPage: React.FC = () => {
                       </div>
                       
                       <div className="mt-4">
-                        <Link to={`/bookings/${booking.id}`}>
-                          <Button variant="outline">View Details</Button>
-                        </Link>
+                        {booking.status === 'draft' && booking.expires_at && (
+                          <div className="bg-blue-50 text-blue-700 p-3 rounded-lg mb-3">
+                            <p className="text-sm font-medium">
+                              This booking is reserved until {format(new Date(booking.expires_at), 'h:mm a')}
+                            </p>
+                          </div>
+                        )}
+                        <div className="flex gap-2">
+                          <Link to={`/bookings/${booking.id}`}>
+                            <Button variant="outline">View Details</Button>
+                          </Link>
+                          {booking.status === 'draft' && (
+                            <Link to={`/payment/${booking.id}`}>
+                              <Button variant="primary">Continue to Payment</Button>
+                            </Link>
+                          )}
+                        </div>
                       </div>
                     </div>
                   </div>
