@@ -8,6 +8,7 @@ import { Select } from '../ui/Select';
 import { useSearchStore } from '../../stores/searchStore';
 import { LocationSelector } from '../ui/LocationSelector';
 import { useLocations } from '../../hooks/useLocations';
+import { useDeliveryFees } from '../../hooks/useDeliveryFees';
 
 const HOURS = Array.from({ length: 24 }, (_, i) => {
   const hour = i.toString().padStart(2, '0');
@@ -31,7 +32,7 @@ const HeroSection: React.FC = () => {
     updateSearchParams,
     searchCars
   } = useSearchStore();
-  const { calculateDeliveryFee, DEFAULT_LOCATION } = useLocations();
+  const { DEFAULT_LOCATION } = useLocations();
   
   const [pickupLocation, setPickupLocation] = useState(
     searchParams.pickupLocation || DEFAULT_LOCATION?.value || ''
@@ -42,19 +43,11 @@ const HeroSection: React.FC = () => {
   const [sameReturnLocation, setSameReturnLocation] = useState(
     pickupLocation === returnLocation
   );
-  const [deliveryFees, setDeliveryFees] = useState({ 
-    pickupFee: 0, 
-    returnFee: 0, 
-    totalFee: 0, 
-    requiresQuote: false 
-  });
   
-  // Calculate delivery fees when locations change
-  useEffect(() => {
-    const returnLoc = sameReturnLocation ? pickupLocation : returnLocation;
-    const fees = calculateDeliveryFee(pickupLocation, returnLoc);
-    setDeliveryFees(fees);
-  }, [pickupLocation, returnLocation, sameReturnLocation]);
+  // Use custom hook for delivery fees
+  const effectiveReturnLocation = sameReturnLocation ? pickupLocation : returnLocation;
+  const deliveryFees = useDeliveryFees(pickupLocation, effectiveReturnLocation);
+  
   
   // Update return location when pickup changes and same location is checked
   useEffect(() => {

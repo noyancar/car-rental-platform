@@ -61,7 +61,7 @@ export default function ExtrasModal({
   if (!isOpen) return null;
 
   const { extrasTotal, breakdown } = calculateTotal(rentalDays);
-  const grandTotal = carTotal + extrasTotal + (requiresQuote ? 0 : deliveryFee);
+  const grandTotal = carTotal + extrasTotal + deliveryFee;
 
   const categories = Object.keys(categoryInfo) as ExtraCategory[];
   const filteredExtras = extras.filter(extra => extra.category === activeCategory);
@@ -287,11 +287,7 @@ export default function ExtrasModal({
               <div className="flex justify-between text-xl font-bold text-volcanic-900 pt-3 border-t border-sandy-300">
                 <span>Total</span>
                 <span className="text-accent-500">
-                  {requiresQuote ? (
-                    <span className="text-base">${(carTotal + extrasTotal).toFixed(2)} + quote</span>
-                  ) : (
-                    `$${grandTotal.toFixed(2)}`
-                  )}
+                  ${grandTotal.toFixed(2)}
                 </span>
               </div>
             </div>

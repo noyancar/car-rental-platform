@@ -10,24 +10,16 @@ import StripePaymentForm from '../components/payment/StripePaymentForm';
 import { useAuthStore } from '../stores/authStore';
 import { supabase } from '../lib/supabase';
 import { BookingWithExtras } from '../types';
-import { useLocations } from '../hooks/useLocations';
-import { calculateRentalDuration, calculateCarRentalTotal, calculateExtrasTotal } from '../utils/booking';
+import { calculateBookingPriceBreakdown } from '../utils/bookingPriceCalculations';
 
 const PaymentPage: React.FC = () => {
   const { bookingId } = useParams();
   const navigate = useNavigate();
   const { user } = useAuthStore();
-  const { calculateDeliveryFee } = useLocations();
   const [booking, setBooking] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [paymentClientSecret, setPaymentClientSecret] = useState<string | null>(null);
   const [paymentError, setPaymentError] = useState<string | null>(null);
-  const [deliveryFees, setDeliveryFees] = useState({ 
-    pickupFee: 0, 
-    returnFee: 0, 
-    totalFee: 0, 
-    requiresQuote: false 
-  });
   const [showAuthModal, setShowAuthModal] = useState(false);
 
   useEffect(() => {
@@ -100,15 +92,6 @@ const PaymentPage: React.FC = () => {
       };
 
       setBooking(formattedBooking);
-      
-      // Calculate delivery fees based on location data
-      if (bookingData.pickup_location && bookingData.return_location) {
-        const fees = calculateDeliveryFee(
-          bookingData.pickup_location.value, 
-          bookingData.return_location.value
-        );
-        setDeliveryFees(fees);
-      }
 
       // Create payment intent
       await createPaymentIntent(formattedBooking);
@@ -242,20 +225,15 @@ const PaymentPage: React.FC = () => {
     );
   }
 
-  // Use centralized calculation functions
-  const rentalDuration = calculateRentalDuration(
-    booking.start_date,
-    booking.end_date,
-    booking.pickup_time || '10:00',
-    booking.return_time || '10:00'
+  // Use centralized price breakdown calculation
+  const priceBreakdown = calculateBookingPriceBreakdown(booking);
+  const { carRentalSubtotal: carTotal, extrasTotal, grandTotal } = priceBreakdown;
+  
+  // Calculate rental duration for display
+  const rentalDuration = Math.ceil(
+    (new Date(booking.end_date).getTime() - new Date(booking.start_date).getTime()) / 
+    (1000 * 60 * 60 * 24)
   );
-  
-  const carTotal = booking.car ? calculateCarRentalTotal(booking.car.price_per_day, rentalDuration) : 0;
-  const extrasTotal = calculateExtrasTotal(booking.booking_extras);
-  
-  // Calculate the correct grand total
-  // If booking has grand_total use it, otherwise calculate from components
-  const grandTotal = booking.grand_total || (booking.total_price + extrasTotal);
 
   return (
     <div className="min-h-screen pt-16 pb-12 bg-secondary-50">
@@ -378,10 +356,10 @@ const PaymentPage: React.FC = () => {
                       </div>
 
                       {/* Delivery Fee */}
-                      {deliveryFees.totalFee > 0 && !deliveryFees.requiresQuote && (
+                      {priceBreakdown.totalDeliveryFee > 0 && (
                         <div className="flex justify-between">
                           <span className="text-gray-600">Delivery Fee</span>
-                          <span>${deliveryFees.totalFee.toFixed(2)}</span>
+                          <span>${priceBreakdown.totalDeliveryFee.toFixed(2)}</span>
                         </div>
                       )}
 

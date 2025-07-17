@@ -1,12 +1,14 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
-import { ArrowLeft, Calendar, CreditCard, AlertCircle, CheckCircle, Clock, Users, Gauge, MapPin, Info, ChevronDown, ChevronUp, Shield } from 'lucide-react';
+import { ArrowLeft, Calendar, AlertCircle, CheckCircle, Clock, Users, Gauge, MapPin, Info, ChevronDown, ChevronUp, Shield } from 'lucide-react';
 import { format, isBefore, isValid, parseISO } from 'date-fns';
 import { toast } from 'sonner';
 import { Button } from '../../components/ui/Button';
 import { Input } from '../../components/ui/Input';
 import { Select } from '../../components/ui/Select';
 import { useLocations } from '../../hooks/useLocations';
+import { useDeliveryFees } from '../../hooks/useDeliveryFees';
+import { calculateRentalDuration } from '../../utils/bookingPriceCalculations';
 import { LocationSelector } from '../../components/ui/LocationSelector';
 import { QuoteRequestModal, type QuoteRequestData } from '../../components/ui/QuoteRequestModal';
 import { useCarStore } from '../../stores/carStore';
@@ -42,11 +44,10 @@ const BookingPage: React.FC = () => {
     calculatePrice, 
     checkAvailability,
     loading: bookingLoading,
-    isCheckingAvailability
   } = useBookingStore();
   const { searchParams, isSearchPerformed, updateSearchParams } = useSearchStore();
   const { saveBookingExtras, calculateTotal } = useExtrasStore();
-  const { calculateDeliveryFee, getLocationByValue, DEFAULT_LOCATION, locations, loading: locationsLoading } = useLocations();
+  const { getLocationByValue, DEFAULT_LOCATION, locations, loading: locationsLoading } = useLocations();
   
   // Initialize dates from searchParams if available, otherwise use default values
   const today = new Date();
@@ -78,20 +79,11 @@ const BookingPage: React.FC = () => {
   const [sameReturnLocation, setSameReturnLocation] = useState(
     pickupLocation === returnLocation
   );
-  const [deliveryFees, setDeliveryFees] = useState({ 
-    pickupFee: 0, 
-    returnFee: 0, 
-    totalFee: 0, 
-    requiresQuote: false 
-  });
   
-  // Calculate delivery fees when locations change
-  useEffect(() => {
-    const returnLoc = sameReturnLocation ? pickupLocation : returnLocation;
-    const fees = calculateDeliveryFee(pickupLocation, returnLoc);
-    
-    setDeliveryFees(fees);
-  }, [pickupLocation, returnLocation, sameReturnLocation]);
+  // Use custom hook for delivery fees
+  const effectiveReturnLocation = sameReturnLocation ? pickupLocation : returnLocation;
+  const deliveryFees = useDeliveryFees(pickupLocation, effectiveReturnLocation);
+  
   
   // Update return location when pickup changes and same location is checked
   useEffect(() => {
@@ -238,11 +230,15 @@ const BookingPage: React.FC = () => {
   
   const handleExtrasModalContinue = async (selectedExtras: Map<string, { extra: any; quantity: number }>) => {
     // Calculate extras total
-    const rentalDays = Math.ceil((new Date(endDate).getTime() - new Date(startDate).getTime()) / (1000 * 60 * 60 * 24));
+    const rentalDays = calculateRentalDuration(startDate, endDate, pickupTime, returnTime);
     const { extrasTotal } = calculateTotal(rentalDays);
     
-    // Total price includes: car rental + delivery fees (no extras here)
-    const baseTotal = totalPrice + (deliveryFees.requiresQuote ? 0 : deliveryFees.totalFee);
+    // Use our price breakdown
+    const carRentalSubtotal = totalPrice; // totalPrice is just car rental
+    const pickupDeliveryFee = deliveryFees.pickupFee;
+    const returnDeliveryFee = deliveryFees.returnFee;
+    const totalDeliveryFee = deliveryFees.totalFee;
+    const grandTotal = carRentalSubtotal + totalDeliveryFee + extrasTotal;
     
     if (!currentCar || !user) {
       // Store booking info and navigate to pending payment
@@ -254,9 +250,12 @@ const BookingPage: React.FC = () => {
         return_time: returnTime,
         pickup_location: pickupLocation,
         return_location: returnLocation,
-        total_price: baseTotal,  // This is car + delivery only
+        total_price: carRentalSubtotal + totalDeliveryFee,  // This is car + delivery only
+        car_rental_subtotal: carRentalSubtotal,
+        pickup_delivery_fee: pickupDeliveryFee,
+        return_delivery_fee: returnDeliveryFee,
         extras_total: extrasTotal,  // Store extras separately
-        grand_total: baseTotal + extrasTotal,  // Total including extras
+        grand_total: grandTotal,  // Total including extras
         extras: Array.from(selectedExtras.entries()).map(([id, { extra, quantity }]) => ({
           id,
           extra,
@@ -282,13 +281,16 @@ const BookingPage: React.FC = () => {
         return_location: returnLocation,
         pickup_time: pickupTime,
         return_time: returnTime,
-        total_price: baseTotal,  // This is car + delivery only
+        total_price: carRentalSubtotal + totalDeliveryFee,  // This is car + delivery only
+        car_rental_subtotal: carRentalSubtotal,
+        pickup_delivery_fee: pickupDeliveryFee,
+        return_delivery_fee: returnDeliveryFee,
         status: 'draft'
       });
       
       if (booking) {
         // Save extras
-        const rentalDays = Math.ceil((new Date(endDate).getTime() - new Date(startDate).getTime()) / (1000 * 60 * 60 * 24));
+        const rentalDays = calculateRentalDuration(startDate, endDate, pickupTime, returnTime);
         await saveBookingExtras(booking.id, rentalDays);
         
         // Navigate to payment page
@@ -355,12 +357,7 @@ const BookingPage: React.FC = () => {
   
   // Calculate rental duration with time consideration
   const rentalDuration = startDate && endDate 
-    ? (() => {
-        const startDateTime = new Date(`${startDate}T${pickupTime}`);
-        const endDateTime = new Date(`${endDate}T${returnTime}`);
-        const diffMs = endDateTime.getTime() - startDateTime.getTime();
-        return Math.ceil(diffMs / (1000 * 60 * 60 * 24));
-      })()
+    ? calculateRentalDuration(startDate, endDate, pickupTime, returnTime)
     : 0;
 
   return (
@@ -589,19 +586,9 @@ const BookingPage: React.FC = () => {
                           <AlertCircle size={20} className="mr-2 flex-shrink-0" />
                           <div className="flex-1">
                             <span className="block">Car is not available for these dates.</span>
-                            {user && (
-                              <div className="mt-2">
-                                <span className="block text-sm">
-                                  Have a pending booking? 
-                                </span>
-                                <Link 
-                                  to="/bookings" 
-                                  className="text-sm text-red-800 underline hover:text-red-900"
-                                >
-                                  Check your bookings →
-                                </Link>
-                              </div>
-                            )}
+                            <span className="block text-sm mt-1 text-red-600">
+                              Please select different dates or choose another vehicle.
+                            </span>
                           </div>
                         </>
                       )}
@@ -720,7 +707,7 @@ const BookingPage: React.FC = () => {
                         )}
                         <div className="flex justify-between font-bold text-lg pt-2 border-t">
                           <span>Total:</span>
-                          <span>${totalPrice + (deliveryFees.requiresQuote ? 0 : deliveryFees.totalFee)}</span>
+                          <span>${totalPrice + deliveryFees.totalFee}</span>
                         </div>
                       </div>
                     </div>
@@ -798,7 +785,7 @@ const BookingPage: React.FC = () => {
                         )}
                         <div className="flex justify-between font-bold text-lg pt-2 border-t">
                           <span>Total:</span>
-                          <span className="text-primary-600">${totalPrice + (deliveryFees.requiresQuote ? 0 : deliveryFees.totalFee)}</span>
+                          <span className="text-primary-600">${totalPrice + deliveryFees.totalFee}</span>
                         </div>
                       </div>
                     </div>

@@ -5,6 +5,7 @@ import { format } from 'date-fns';
 import { Button } from '../../components/ui/Button';
 import { PageHeader } from '../../components/ui/PageHeader';
 import { useBookingStore } from '../../stores/bookingStore';
+import { calculateRentalDuration } from '../../utils/bookingPriceCalculations';
 
 const BookingsListPage: React.FC = () => {
   const { bookings, loading, error, fetchUserBookings } = useBookingStore();
@@ -136,7 +137,7 @@ const BookingsListPage: React.FC = () => {
                         <div className="flex items-center text-secondary-600">
                           <Clock className="h-5 w-5 mr-2" />
                           <span>
-                            {Math.ceil((new Date(booking.end_date).getTime() - new Date(booking.start_date).getTime()) / (1000 * 60 * 60 * 24))} days
+                            {calculateRentalDuration(booking.start_date, booking.end_date, booking.pickup_time, booking.return_time)} days
                           </span>
                         </div>
                       </div>

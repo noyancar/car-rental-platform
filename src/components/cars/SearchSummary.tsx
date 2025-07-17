@@ -7,6 +7,7 @@ import { Select } from '../ui/Select';
 import { useSearchStore } from '../../stores/searchStore';
 import { LocationSelector, LocationDisplay } from '../ui/LocationSelector';
 import { useLocations } from '../../hooks/useLocations';
+import { useDeliveryFees } from '../../hooks/useDeliveryFees';
 
 const HOURS = Array.from({ length: 24 }, (_, i) => {
   const hour = i.toString().padStart(2, '0');
@@ -26,28 +27,22 @@ const isTimeDisabled = (time: string, pickupTime: string, isSameDay: boolean): b
 
 const SearchSummary: React.FC = () => {
   const { searchParams, updateSearchParams, searchCars, isSearchPerformed } = useSearchStore();
-  const { calculateDeliveryFee, BASE_LOCATION } = useLocations();
+  const { BASE_LOCATION } = useLocations();
   const [isEditing, setIsEditing] = useState(!isSearchPerformed);
   const [tempParams, setTempParams] = useState(searchParams);
   const [sameReturnLocation, setSameReturnLocation] = useState(
     searchParams.pickupLocation === searchParams.returnLocation
   );
-  const [deliveryFees, setDeliveryFees] = useState({ 
-    pickupFee: 0, 
-    returnFee: 0, 
-    totalFee: 0, 
-    requiresQuote: false 
-  });
   
-  // Calculate delivery fees
-  useEffect(() => {
-    if (!calculateDeliveryFee) return;
-    
-    const pickup = tempParams.pickupLocation || tempParams.location || BASE_LOCATION?.value || '';
-    const returnLoc = tempParams.returnLocation || tempParams.location || BASE_LOCATION?.value || '';
-    const fees = calculateDeliveryFee(pickup, returnLoc);
-    setDeliveryFees(fees);
-  }, [tempParams.pickupLocation, tempParams.returnLocation, tempParams.location]);
+  // Use custom hook for delivery fees (for editing mode)
+  const effectiveReturnLocation = sameReturnLocation ? tempParams.pickupLocation : tempParams.returnLocation;
+  const deliveryFees = useDeliveryFees(tempParams.pickupLocation, effectiveReturnLocation);
+  
+  // For display mode - use searchParams
+  const displayPickup = searchParams.pickupLocation || searchParams.location || BASE_LOCATION?.value || '';
+  const displayReturn = searchParams.returnLocation || searchParams.location || BASE_LOCATION?.value || '';
+  const displayDeliveryFees = useDeliveryFees(displayPickup, displayReturn);
+  
   
   const formatDate = (dateString: string): string => {
     return format(new Date(dateString), 'MMM d, yyyy');
@@ -376,20 +371,11 @@ const SearchSummary: React.FC = () => {
                   </span>
                   <span className="text-gray-500 block">
                     {searchParams.pickupTime} - {searchParams.returnTime}
-                    {(() => {
-                      const pickup = searchParams.pickupLocation || searchParams.location || BASE_LOCATION?.value || '';
-                      const returnLoc = searchParams.returnLocation || searchParams.location || BASE_LOCATION?.value || '';
-                      const fees = calculateDeliveryFee(pickup, returnLoc);
-                      
-                      if (fees.totalFee > 0) {
-                        return (
-                          <span className="text-primary-600 font-medium">
-                            {' '}• ${fees.totalFee} delivery
-                          </span>
-                        );
-                      }
-                      return null;
-                    })()}
+                    {displayDeliveryFees.totalFee > 0 && (
+                      <span className="text-primary-600 font-medium">
+                        {' '}• ${displayDeliveryFees.totalFee} delivery
+                      </span>
+                    )}
                   </span>
                 </div>
               </div>
@@ -439,24 +425,15 @@ const SearchSummary: React.FC = () => {
                 </div>
                 
                 {/* Delivery Fee */}
-                {(() => {
-                  const pickup = searchParams.pickupLocation || searchParams.location || BASE_LOCATION?.value || '';
-                  const returnLoc = searchParams.returnLocation || searchParams.location || BASE_LOCATION?.value || '';
-                  const fees = calculateDeliveryFee(pickup, returnLoc);
-                  
-                  if (fees.totalFee > 0 || fees.requiresQuote) {
-                    return (
-                      <div className="text-sm text-gray-600 ml-7">
-                        {fees.requiresQuote ? (
-                          <span className="text-orange-600 font-medium">Quote required</span>
-                        ) : (
-                          <span>Delivery fee: <span className="font-medium text-green-600">${fees.totalFee}</span></span>
-                        )}
-                      </div>
-                    );
-                  }
-                  return null;
-                })()}
+                {(displayDeliveryFees.totalFee > 0 || displayDeliveryFees.requiresQuote) && (
+                  <div className="text-sm text-gray-600 ml-7">
+                    {displayDeliveryFees.requiresQuote ? (
+                      <span className="text-orange-600 font-medium">Quote required</span>
+                    ) : (
+                      <span>Delivery fee: <span className="font-medium text-green-600">${displayDeliveryFees.totalFee}</span></span>
+                    )}
+                  </div>
+                )}
               </div>
             </div>
           </div>

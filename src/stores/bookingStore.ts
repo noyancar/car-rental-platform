@@ -2,6 +2,7 @@ import { create } from 'zustand';
 import { supabase } from '../lib/supabase';
 import type { Booking } from '../types';
 import { useLocationStore } from './locationStore';
+import { calculateRentalDuration } from '../utils/bookingPriceCalculations';
 
 interface BookingState {
   bookings: Booking[];
@@ -12,7 +13,14 @@ interface BookingState {
   
   fetchUserBookings: () => Promise<void>;
   fetchBookingById: (id: number) => Promise<void>;
-  createBooking: (booking: Pick<Booking, 'car_id' | 'user_id' | 'start_date' | 'end_date' | 'total_price' | 'status' | 'pickup_time' | 'return_time'> & { discount_code_id?: number; pickup_location?: string; return_location?: string }) => Promise<Booking | null>;
+  createBooking: (booking: Pick<Booking, 'car_id' | 'user_id' | 'start_date' | 'end_date' | 'total_price' | 'status' | 'pickup_time' | 'return_time'> & { 
+    discount_code_id?: number; 
+    pickup_location?: string; 
+    return_location?: string;
+    car_rental_subtotal?: number;
+    pickup_delivery_fee?: number;
+    return_delivery_fee?: number;
+  }) => Promise<Booking | null>;
   updateBookingStatus: (id: number, status: Booking['status']) => Promise<void>;
   calculatePrice: (carId: number, startDate: string, endDate: string, pickupTime?: string, returnTime?: string, discountCodeId?: number) => Promise<number>;
   checkAvailability: (carId: number, startDate: string, endDate: string, pickupTime?: string, returnTime?: string) => Promise<boolean>;
@@ -192,10 +200,12 @@ export const useBookingStore = create<BookingState>((set) => ({
         pickup_time: booking.pickup_time || null,
         return_time: booking.return_time || null,
         discount_code_id: booking.discount_code_id || null,
+        // Add price breakdown fields if provided
+        car_rental_subtotal: booking.car_rental_subtotal || 0,
+        pickup_delivery_fee: booking.pickup_delivery_fee || 0,
+        return_delivery_fee: booking.return_delivery_fee || 0,
         expires_at: expiresAt
       };
-      
-      console.log('Creating booking with data:', bookingData);
       
       // First insert the booking
       const { data: insertedBooking, error: insertError } = await supabase
@@ -273,19 +283,11 @@ export const useBookingStore = create<BookingState>((set) => ({
       
       if (carError || !car) return 0;
       
-      // Tarih ve saat bilgilerini birleştirerek tam tarih oluştur
-      const startDateTime = new Date(`${startDate}T${pickupTime}`);
-      const endDateTime = new Date(`${endDate}T${returnTime}`);
-      
-      // Milisaniye cinsinden farkı hesapla
-      const diffMs = endDateTime.getTime() - startDateTime.getTime();
-      
-      // Gün sayısını hesapla (yukarı yuvarlayarak)
-      // Eğer teslim saati, alış saatinden daha geç ise bir tam gün daha ekle
-      const diffDays = Math.ceil(diffMs / (1000 * 60 * 60 * 24));
+      // Calculate rental duration
+      const rentalDays = calculateRentalDuration(startDate, endDate, pickupTime, returnTime);
       
       // Fiyat hesaplama
-      let price = car.price_per_day * diffDays;
+      let price = car.price_per_day * rentalDays;
       
       if (discountCodeId) {
         const { data: discount, error: discountError } = await supabase
