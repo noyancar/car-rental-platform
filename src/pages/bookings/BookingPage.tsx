@@ -46,7 +46,7 @@ const BookingPage: React.FC = () => {
     loading: bookingLoading,
   } = useBookingStore();
   const { searchParams, isSearchPerformed, updateSearchParams } = useSearchStore();
-  const { saveBookingExtras, calculateTotal } = useExtrasStore();
+  const { saveBookingExtras, calculateTotal, clearSelectedExtras } = useExtrasStore();
   const { getLocationByValue, DEFAULT_LOCATION, locations, loading: locationsLoading } = useLocations();
   
   // Initialize dates from searchParams if available, otherwise use default values
@@ -300,6 +300,7 @@ const BookingPage: React.FC = () => {
       toast.error((error as Error).message || 'Failed to create booking');
     } finally {
       setShowExtrasModal(false);
+      clearSelectedExtras();
     }
   };
   
@@ -806,7 +807,10 @@ const BookingPage: React.FC = () => {
       {showExtrasModal && (
         <ExtrasModal
           isOpen={showExtrasModal}
-          onClose={() => setShowExtrasModal(false)}
+          onClose={() => {
+            setShowExtrasModal(false);
+            clearSelectedExtras();
+          }}
           onContinue={handleExtrasModalContinue}
           pickupDate={startDate}
           returnDate={endDate}

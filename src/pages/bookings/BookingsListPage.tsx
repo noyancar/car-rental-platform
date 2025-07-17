@@ -121,7 +121,7 @@ const BookingsListPage: React.FC = () => {
                         </div>
                         
                         <div className="text-right">
-                          <p className="text-lg font-semibold">${booking.total_price}</p>
+                          <p className="text-lg font-semibold">${booking.grand_total || booking.total_price}</p>
                           <p className="text-secondary-600">Total Price</p>
                         </div>
                       </div>
