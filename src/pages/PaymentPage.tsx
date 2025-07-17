@@ -241,8 +241,10 @@ const PaymentPage: React.FC = () => {
   
   const carTotal = booking.car ? calculateCarRentalTotal(booking.car.price_per_day, rentalDuration) : 0;
   const extrasTotal = calculateExtrasTotal(booking.booking_extras);
-  // Use the booking.total_price which already includes delivery fee from booking creation
-  const grandTotal = booking.total_price;
+  
+  // Calculate the correct grand total
+  // If booking has grand_total use it, otherwise calculate from components
+  const grandTotal = booking.grand_total || (booking.total_price + extrasTotal);
 
   return (
     <div className="min-h-screen pt-16 pb-12 bg-secondary-50">
@@ -378,22 +380,11 @@ const PaymentPage: React.FC = () => {
                           ))}
                         </>
                       )}
-                      
-                      {/* Delivery Fee - Always show if there's a difference between total and subtotal */}
-                      {(booking.total_price - carTotal - extrasTotal) > 0 && (
-                        <div className="flex justify-between">
-                          <span className="text-gray-600">Delivery Fee</span>
-                          <span>${(booking.total_price - carTotal - extrasTotal).toFixed(2)}</span>
-                        </div>
-                      )}
 
                       <div className="flex justify-between font-semibold text-lg pt-3 border-t">
                         <span>Total</span>
                         <span className="text-primary-800">
-                          ${booking.total_price.toFixed(2)}
-                          {deliveryFees.requiresQuote && (
-                            <span className="text-sm font-normal text-orange-600 block">Delivery included (quote pending)</span>
-                          )}
+                          ${grandTotal.toFixed(2)}
                         </span>
                       </div>
                     </div>

@@ -185,11 +185,44 @@ const BookingDetailsPage: React.FC = () => {
                 <p className="text-secondary-600">Total Price</p>
                 <div className="mt-1 flex items-center">
                   <CreditCard size={16} className="text-secondary-400 mr-1" />
-                  <span className="text-xl font-semibold">${currentBooking.total_price}</span>
+                  <span className="text-xl font-semibold">
+                    ${currentBooking.grand_total || currentBooking.total_price}
+                  </span>
                 </div>
               </div>
             </div>
           </div>
+          
+          {/* Price Breakdown */}
+          {(currentBooking.booking_extras && currentBooking.booking_extras.length > 0) && (
+            <div className="p-6 border-t">
+              <h2 className="text-lg font-semibold mb-4">Price Breakdown</h2>
+              <div className="space-y-2">
+                <div className="flex justify-between">
+                  <span className="text-secondary-600">Car Rental</span>
+                  <span>${currentBooking.total_price}</span>
+                </div>
+                
+                {/* Extras section */}
+                <div className="text-sm font-medium text-secondary-700 mt-3">Extras</div>
+                {currentBooking.booking_extras.map((extra: any) => (
+                  <div key={extra.id} className="flex justify-between text-sm">
+                    <span className="text-secondary-600 pl-4">
+                      {extra.extra?.name || 'Extra'} × {extra.quantity}
+                    </span>
+                    <span>${extra.total_price}</span>
+                  </div>
+                ))}
+                
+                <div className="flex justify-between font-semibold text-lg pt-2 border-t">
+                  <span>Total</span>
+                  <span className="text-primary-800">
+                    ${currentBooking.grand_total || currentBooking.total_price}
+                  </span>
+                </div>
+              </div>
+            </div>
+          )}
           
           {/* Payment Status */}
           <div className="p-6">

@@ -237,6 +237,13 @@ const BookingPage: React.FC = () => {
   };
   
   const handleExtrasModalContinue = async (selectedExtras: Map<string, { extra: any; quantity: number }>) => {
+    // Calculate extras total
+    const rentalDays = Math.ceil((new Date(endDate).getTime() - new Date(startDate).getTime()) / (1000 * 60 * 60 * 24));
+    const { extrasTotal } = calculateTotal(rentalDays);
+    
+    // Total price includes: car rental + delivery fees (no extras here)
+    const baseTotal = totalPrice + (deliveryFees.requiresQuote ? 0 : deliveryFees.totalFee);
+    
     if (!currentCar || !user) {
       // Store booking info and navigate to pending payment
       const bookingData = {
@@ -247,7 +254,9 @@ const BookingPage: React.FC = () => {
         return_time: returnTime,
         pickup_location: pickupLocation,
         return_location: returnLocation,
-        total_price: totalPrice + (deliveryFees.requiresQuote ? 0 : deliveryFees.totalFee),
+        total_price: baseTotal,  // This is car + delivery only
+        extras_total: extrasTotal,  // Store extras separately
+        grand_total: baseTotal + extrasTotal,  // Total including extras
         extras: Array.from(selectedExtras.entries()).map(([id, { extra, quantity }]) => ({
           id,
           extra,
@@ -273,7 +282,7 @@ const BookingPage: React.FC = () => {
         return_location: returnLocation,
         pickup_time: pickupTime,
         return_time: returnTime,
-        total_price: totalPrice + (deliveryFees.requiresQuote ? 0 : deliveryFees.totalFee),
+        total_price: baseTotal,  // This is car + delivery only
         status: 'draft'
       });
       

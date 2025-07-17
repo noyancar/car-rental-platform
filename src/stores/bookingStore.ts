@@ -86,7 +86,11 @@ export const useBookingStore = create<BookingState>((set) => ({
         .from('bookings')
         .select(`
           *,
-          cars (*)
+          cars (*),
+          booking_extras (
+            *,
+            extra:extras (*)
+          )
         `)
         .eq('user_id', user.id)
         .order('created_at', { ascending: false });
@@ -114,7 +118,11 @@ export const useBookingStore = create<BookingState>((set) => ({
         .from('bookings')
         .select(`
           *,
-          cars (*)
+          cars (*),
+          booking_extras (
+            *,
+            extra:extras (*)
+          )
         `)
         .eq('id', id)
         .single();
