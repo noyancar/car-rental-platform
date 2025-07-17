@@ -21,6 +21,7 @@ import BookingPage from './pages/bookings/BookingPage';
 import BookingsListPage from './pages/bookings/BookingsListPage';
 import BookingDetailsPage from './pages/bookings/BookingDetailsPage';
 import PaymentPage from './pages/PaymentPage';
+import PaymentCallbackPage from './pages/PaymentCallbackPage';
 import PendingPaymentPage from './pages/PendingPaymentPage';
 import HowItWorksPage from './pages/HowItWorksPage';
 import DealsPage from './pages/DealsPage';
@@ -111,6 +112,7 @@ function App() {
             <Route path="/booking/:carId" element={<BookingPage />} />
             <Route path="/payment/pending" element={<PendingPaymentPage />} />
             <Route path="/payment/:bookingId" element={<PaymentPage />} />
+            <Route path="/payment/callback" element={<PaymentCallbackPage />} />
             
             {/* Protected routes */}
             <Route path="/bookings" element={
