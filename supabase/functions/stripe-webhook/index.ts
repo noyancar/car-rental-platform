@@ -153,42 +153,23 @@ serve(async (req) => {
         const bookingId = paymentIntent.metadata.booking_id;
 
         if (bookingId) {
-          // Check if this is a draft booking - if so, delete it
-          const { data: booking } = await supabase
+          // NEVER delete bookings on payment failure - just update the status
+          // This allows users to retry payment with a different card
+          const { error } = await supabase
             .from("bookings")
-            .select("status")
-            .eq("id", bookingId)
-            .single();
-          
-          if (booking?.status === "draft") {
-            // Delete draft bookings on payment failure
-            const { error: deleteError } = await supabase
-              .from("bookings")
-              .delete()
-              .eq("id", bookingId);
-              
-            if (deleteError) {
-              console.error("Error deleting draft booking:", deleteError);
-            } else {
-              console.log(`Draft booking ${bookingId} deleted due to payment failure`);
-            }
-          } else {
-            // Update non-draft bookings with failed status
-            const { error } = await supabase
-              .from("bookings")
-              .update({
-                stripe_payment_status: "failed",
-              })
-              .eq("id", bookingId)
-              .eq("stripe_payment_intent_id", paymentIntent.id);
+            .update({
+              stripe_payment_status: "failed",
+              // Keep the booking in draft/pending status so user can retry
+              // Do NOT change the booking status itself
+            })
+            .eq("id", bookingId);
 
-            if (error) {
-              console.error("Error updating booking:", error);
-              throw error;
-            }
-
-            console.log(`Payment failed for booking ${bookingId}`);
+          if (error) {
+            console.error("Error updating booking payment status:", error);
+            throw error;
           }
+
+          console.log(`Payment failed for booking ${bookingId} - booking preserved for retry`);
         }
         break;
       }
@@ -198,23 +179,23 @@ serve(async (req) => {
         const bookingId = paymentIntent.metadata.booking_id;
 
         if (bookingId) {
-          // Update booking status to cancelled if payment was cancelled
+          // Only update payment status, not booking status
+          // This allows users to retry with a new payment intent
           const { error } = await supabase
             .from("bookings")
             .update({
-              status: "cancelled",
               stripe_payment_status: "canceled",
+              // Do NOT change booking status - let user retry
             })
             .eq("id", bookingId)
-            .eq("stripe_payment_intent_id", paymentIntent.id)
-            .in("status", ["pending", "draft"]); // Only cancel if still pending or draft
+            .eq("stripe_payment_intent_id", paymentIntent.id);
 
           if (error) {
             console.error("Error updating booking:", error);
             throw error;
           }
 
-          console.log(`Booking ${bookingId} cancelled due to payment cancellation`);
+          console.log(`Payment canceled for booking ${bookingId} - booking preserved for retry`);
         }
         break;
       }

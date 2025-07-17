@@ -63,12 +63,33 @@ serve(async (req) => {
         
         const existingIntent = await stripe.paymentIntents.retrieve(booking.stripe_payment_intent_id);
         
-        // Check if the payment intent is still valid (not succeeded, canceled, or failed)
-        if (existingIntent.status === 'requires_payment_method' || 
-            existingIntent.status === 'requires_confirmation' ||
-            existingIntent.status === 'requires_action' ||
-            existingIntent.status === 'processing') {
-          
+        // Check if the payment intent is still valid
+        if (existingIntent.status === 'succeeded') {
+          // Payment already succeeded, return success
+          console.log(`Payment already succeeded for booking ${booking_id}`);
+          return new Response(
+            JSON.stringify({
+              success: true,
+              payment_intent_id: existingIntent.id,
+              client_secret: existingIntent.client_secret,
+              amount: existingIntent.amount,
+              currency: existingIntent.currency,
+              status: 'succeeded',
+              message: 'Payment already completed'
+            }),
+            {
+              headers: {
+                ...corsHeaders,
+                "Content-Type": "application/json",
+              },
+              status: 200,
+            }
+          );
+        } else if (existingIntent.status === 'requires_payment_method' || 
+                   existingIntent.status === 'requires_confirmation' ||
+                   existingIntent.status === 'requires_action' ||
+                   existingIntent.status === 'processing') {
+          // Payment intent is still usable
           console.log(`Returning existing payment intent with status: ${existingIntent.status}`);
           
           return new Response(
@@ -88,6 +109,7 @@ serve(async (req) => {
             }
           );
         } else {
+          // Payment intent is canceled or failed, create a new one
           console.log(`Existing payment intent has status: ${existingIntent.status}, creating new one`);
         }
       } catch (error) {

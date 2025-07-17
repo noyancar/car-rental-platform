@@ -127,8 +127,17 @@ const PaymentPage: React.FC = () => {
         throw error;
       }
 
-      if (data && data.success && data.client_secret) {
-        setPaymentClientSecret(data.client_secret);
+      if (data && data.success) {
+        if (data.status === 'succeeded') {
+          // Payment already completed
+          toast.info('This booking has already been paid');
+          navigate(`/bookings/${bookingId}`);
+          return;
+        } else if (data.client_secret) {
+          setPaymentClientSecret(data.client_secret);
+        } else {
+          throw new Error(data?.error || 'Failed to create payment intent');
+        }
       } else {
         throw new Error(data?.error || 'Failed to create payment intent');
       }
@@ -144,9 +153,18 @@ const PaymentPage: React.FC = () => {
     navigate(`/bookings/${bookingId}`);
   };
 
-  const handlePaymentError = (error: string) => {
+  const handlePaymentError = async (error: string) => {
     toast.error(error);
     setPaymentError(error);
+    
+    // Create a new payment intent for retry
+    if (booking) {
+      try {
+        await createPaymentIntent(booking);
+      } catch (retryError) {
+        console.error('Failed to create new payment intent for retry:', retryError);
+      }
+    }
   };
 
   if (!user) {
