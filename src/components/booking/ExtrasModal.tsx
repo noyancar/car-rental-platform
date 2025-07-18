@@ -20,7 +20,7 @@ const categoryInfo: Record<ExtraCategory, { label: string; icon: React.ReactNode
   services: { label: 'Services', icon: <Sparkles className="w-4 h-4 sm:w-5 sm:h-5" /> },
   safety: { label: 'Safety', icon: <Shield className="w-4 h-4 sm:w-5 sm:h-5" /> },
   beach: { label: 'Beach', icon: <Umbrella className="w-4 h-4 sm:w-5 sm:h-5" /> },
-  tech: { label: 'Technology', icon: <Camera className="w-4 h-4 sm:w-5 sm:h-5" /> },
+  tech: { label: 'Tech', icon: <Camera className="w-4 h-4 sm:w-5 sm:h-5" /> },
   camping: { label: 'Camping', icon: <Package className="w-4 h-4 sm:w-5 sm:h-5" /> }
 };
 
@@ -56,7 +56,17 @@ export default function ExtrasModal({
   useEffect(() => {
     if (isOpen) {
       fetchExtras(pickupDate, returnDate);
+      // Prevent body scroll when modal is open
+      document.body.style.overflow = 'hidden';
+    } else {
+      // Re-enable body scroll when modal is closed
+      document.body.style.overflow = '';
     }
+
+    // Cleanup function to ensure scroll is re-enabled if component unmounts
+    return () => {
+      document.body.style.overflow = '';
+    };
   }, [isOpen, pickupDate, returnDate, fetchExtras]);
 
   if (!isOpen) return null;
