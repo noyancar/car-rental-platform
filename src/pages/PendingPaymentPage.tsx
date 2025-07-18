@@ -89,7 +89,11 @@ const PendingPaymentPage: React.FC = () => {
         pickup_location: pendingBooking.pickup_location || 'base-office',
         return_location: pendingBooking.return_location || pendingBooking.pickup_location || 'base-office',
         pickup_time: pendingBooking.pickup_time || '10:00',
-        return_time: pendingBooking.return_time || '10:00'
+        return_time: pendingBooking.return_time || '10:00',
+        // Add price breakdown fields
+        car_rental_subtotal: pendingBooking.car_rental_subtotal || 0,
+        pickup_delivery_fee: pendingBooking.pickup_delivery_fee || 0,
+        return_delivery_fee: pendingBooking.return_delivery_fee || 0
       });
 
       console.log('Booking created:', booking);

@@ -15,7 +15,7 @@ interface ExtrasState {
   updateQuantity: (extraId: string, quantity: number) => void;
   clearSelectedExtras: () => void;
   calculateTotal: (rentalDays: number) => { extrasTotal: number; breakdown: Array<{ name: string; price: number; quantity: number; total: number }> };
-  saveBookingExtras: (bookingId: number, rentalDays: number) => Promise<void>;
+  saveBookingExtras: (bookingId: string, rentalDays: number) => Promise<void>;
   checkAvailability: (extraId: string, quantity: number, pickupDate: string, returnDate: string) => Promise<boolean>;
 }
 
@@ -121,7 +121,7 @@ export const useExtrasStore = create<ExtrasState>((set, get) => ({
     return { extrasTotal, breakdown };
   },
 
-  saveBookingExtras: async (bookingId: number, rentalDays: number) => {
+  saveBookingExtras: async (bookingId: string, rentalDays: number) => {
     const { selectedExtras, calculateTotal } = get();
     
     try {
