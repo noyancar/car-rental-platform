@@ -17,7 +17,7 @@ const BookingDetailsPage: React.FC = () => {
   
   useEffect(() => {
     if (id) {
-      fetchBookingById(parseInt(id));
+      fetchBookingById(id);
     }
   }, [id, fetchBookingById]);
   
@@ -253,7 +253,7 @@ const BookingDetailsPage: React.FC = () => {
               </h2>
               {currentBooking.status !== 'draft' && currentBooking.stripe_payment_status !== 'succeeded' && currentBooking.stripe_payment_status !== 'canceled' && currentBooking.stripe_payment_status !== 'failed' && (
                 <button
-                  onClick={() => fetchBookingById(parseInt(id!))}
+                  onClick={() => fetchBookingById(id!)}
                   className="text-primary-600 hover:text-primary-700 flex items-center text-sm"
                   disabled={loading}
                 >
@@ -335,11 +335,6 @@ const BookingDetailsPage: React.FC = () => {
                 >
                   Continue to Payment
                 </Button>
-                {currentBooking.expires_at && (
-                  <p className="text-sm text-secondary-500 mt-2">
-                    This booking is reserved until {format(new Date(currentBooking.expires_at), 'h:mm a')}
-                  </p>
-                )}
               </div>
             )}
             {/* Manual Payment Check for pending payments with payment intent */}

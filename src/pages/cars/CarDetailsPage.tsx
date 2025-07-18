@@ -18,7 +18,7 @@ const CarDetailsPage: React.FC = () => {
   
   useEffect(() => {
     if (id) {
-      fetchCarById(parseInt(id));
+      fetchCarById(id);
     }
   }, [id, fetchCarById]);
   

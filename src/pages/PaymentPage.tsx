@@ -288,7 +288,7 @@ const PaymentPage: React.FC = () => {
                 <StripeProvider clientSecret={paymentClientSecret}>
                   <StripePaymentForm
                     amount={grandTotal}
-                    bookingId={parseInt(bookingId!)}
+                    bookingId={bookingId!}
                     onSuccess={handlePaymentSuccess}
                     onError={handlePaymentError}
                   />

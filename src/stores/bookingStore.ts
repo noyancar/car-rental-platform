@@ -12,18 +12,18 @@ interface BookingState {
   isCheckingAvailability: boolean;
   
   fetchUserBookings: () => Promise<void>;
-  fetchBookingById: (id: number) => Promise<void>;
+  fetchBookingById: (id: string) => Promise<void>;
   createBooking: (booking: Pick<Booking, 'car_id' | 'user_id' | 'start_date' | 'end_date' | 'total_price' | 'status' | 'pickup_time' | 'return_time'> & { 
-    discount_code_id?: number; 
+    discount_code_id?: string; 
     pickup_location?: string; 
     return_location?: string;
     car_rental_subtotal?: number;
     pickup_delivery_fee?: number;
     return_delivery_fee?: number;
   }) => Promise<Booking | null>;
-  updateBookingStatus: (id: number, status: Booking['status']) => Promise<void>;
-  calculatePrice: (carId: number, startDate: string, endDate: string, pickupTime?: string, returnTime?: string, discountCodeId?: number) => Promise<number>;
-  checkAvailability: (carId: number, startDate: string, endDate: string, pickupTime?: string, returnTime?: string) => Promise<boolean>;
+  updateBookingStatus: (id: string, status: Booking['status']) => Promise<void>;
+  calculatePrice: (carId: string, startDate: string, endDate: string, pickupTime?: string, returnTime?: string, discountCodeId?: string) => Promise<number>;
+  checkAvailability: (carId: string, startDate: string, endDate: string, pickupTime?: string, returnTime?: string) => Promise<boolean>;
 }
 
 export const useBookingStore = create<BookingState>((set) => ({
@@ -33,7 +33,7 @@ export const useBookingStore = create<BookingState>((set) => ({
   error: null,
   isCheckingAvailability: false,
   
-  checkAvailability: async (carId: number, startDate: string, endDate: string, pickupTime: string = '10:00', returnTime: string = '10:00') => {
+  checkAvailability: async (carId: string, startDate: string, endDate: string, pickupTime: string = '10:00', returnTime: string = '10:00') => {
     try {
       set({ isCheckingAvailability: true });
       
@@ -118,7 +118,7 @@ export const useBookingStore = create<BookingState>((set) => ({
     }
   },
   
-  fetchBookingById: async (id: number) => {
+  fetchBookingById: async (id: string) => {
     try {
       set({ loading: true, error: null });
       
@@ -247,7 +247,7 @@ export const useBookingStore = create<BookingState>((set) => ({
     }
   },
   
-  updateBookingStatus: async (id: number, status: Booking['status']) => {
+  updateBookingStatus: async (id: string, status: Booking['status']) => {
     try {
       set({ loading: true, error: null });
       
@@ -273,7 +273,7 @@ export const useBookingStore = create<BookingState>((set) => ({
     }
   },
   
-  calculatePrice: async (carId: number, startDate: string, endDate: string, pickupTime: string = '10:00', returnTime: string = '10:00', discountCodeId?: number) => {
+  calculatePrice: async (carId: string, startDate: string, endDate: string, pickupTime: string = '10:00', returnTime: string = '10:00', discountCodeId?: string) => {
     try {
       const { data: car, error: carError } = await supabase
         .from('cars')

@@ -18,24 +18,24 @@ interface AdminState {
   // Car management
   fetchAllCars: () => Promise<void>;
   addCar: (car: Omit<Car, 'id'>) => Promise<void>;
-  updateCar: (id: number, car: Partial<Car>) => Promise<void>;
-  toggleCarAvailability: (id: number, available: boolean) => Promise<void>;
+  updateCar: (id: string, car: Partial<Car>) => Promise<void>;
+  toggleCarAvailability: (id: string, available: boolean) => Promise<void>;
   
   // Booking management
   fetchAllBookings: () => Promise<void>;
-  updateBookingStatus: (id: number, status: Booking['status']) => Promise<void>;
+  updateBookingStatus: (id: string, status: Booking['status']) => Promise<void>;
   
   // Discount code management
   fetchDiscountCodes: () => Promise<void>;
   addDiscountCode: (code: Omit<DiscountCode, 'id' | 'created_at' | 'current_uses'>) => Promise<void>;
-  updateDiscountCode: (id: number, code: Partial<DiscountCode>) => Promise<void>;
-  toggleDiscountCodeStatus: (id: number, active: boolean) => Promise<void>;
+  updateDiscountCode: (id: string, code: Partial<DiscountCode>) => Promise<void>;
+  toggleDiscountCodeStatus: (id: string, active: boolean) => Promise<void>;
   
   // Campaign management
   fetchCampaigns: () => Promise<void>;
   addCampaign: (campaign: Omit<Campaign, 'id' | 'created_at'>) => Promise<void>;
-  updateCampaign: (id: number, campaign: Partial<Campaign>) => Promise<void>;
-  toggleCampaignStatus: (id: number, active: boolean) => Promise<void>;
+  updateCampaign: (id: string, campaign: Partial<Campaign>) => Promise<void>;
+  toggleCampaignStatus: (id: string, active: boolean) => Promise<void>;
 }
 
 export const useAdminStore = create<AdminState>((set, get) => ({
@@ -95,7 +95,7 @@ export const useAdminStore = create<AdminState>((set, get) => ({
     }
   },
   
-  updateCar: async (id, car) => {
+  updateCar: async (id: string, car) => {
     try {
       set({ loading: true, error: null });
       
@@ -152,7 +152,7 @@ export const useAdminStore = create<AdminState>((set, get) => ({
     }
   },
   
-  toggleCarAvailability: async (id, available) => {
+  toggleCarAvailability: async (id: string, available) => {
     try {
       set({ loading: true, error: null });
       
@@ -206,7 +206,7 @@ export const useAdminStore = create<AdminState>((set, get) => ({
     }
   },
   
-  updateBookingStatus: async (id, status) => {
+  updateBookingStatus: async (id: string, status) => {
     try {
       set({ loading: true, error: null });
       
@@ -269,7 +269,7 @@ export const useAdminStore = create<AdminState>((set, get) => ({
     }
   },
   
-  updateDiscountCode: async (id, code) => {
+  updateDiscountCode: async (id: string, code) => {
     try {
       set({ loading: true, error: null });
       
@@ -288,7 +288,7 @@ export const useAdminStore = create<AdminState>((set, get) => ({
     }
   },
   
-  toggleDiscountCodeStatus: async (id, active) => {
+  toggleDiscountCodeStatus: async (id: string, active) => {
     try {
       set({ loading: true, error: null });
       
@@ -345,7 +345,7 @@ export const useAdminStore = create<AdminState>((set, get) => ({
     }
   },
   
-  updateCampaign: async (id, campaign) => {
+  updateCampaign: async (id: string, campaign) => {
     try {
       set({ loading: true, error: null });
       
@@ -364,7 +364,7 @@ export const useAdminStore = create<AdminState>((set, get) => ({
     }
   },
   
-  toggleCampaignStatus: async (id, active) => {
+  toggleCampaignStatus: async (id: string, active) => {
     try {
       set({ loading: true, error: null });
       

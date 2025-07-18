@@ -20,7 +20,7 @@ interface CarState {
   
   fetchCars: (filters?: CarFilters) => Promise<void>;
   fetchFeaturedCars: () => Promise<void>;
-  fetchCarById: (id: number) => Promise<void>;
+  fetchCarById: (id: string) => Promise<void>;
   setFilters: (filters: CarFilters) => Promise<void>;
   clearFilters: () => void;
 }
@@ -119,7 +119,7 @@ export const useCarStore = create<CarState>((set, get) => ({
     }
   },
   
-  fetchCarById: async (id: number) => {
+  fetchCarById: async (id: string) => {
     try {
       set({ loading: true, error: null });
       

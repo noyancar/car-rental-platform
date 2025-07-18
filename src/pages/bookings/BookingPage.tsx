@@ -118,7 +118,7 @@ const BookingPage: React.FC = () => {
   // Fetch car details on mount
   useEffect(() => {
     if (carId) {
-      fetchCarById(parseInt(carId));
+      fetchCarById(carId);
     }
     
     // If user navigated here without search parameters, redirect to car details
