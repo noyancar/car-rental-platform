@@ -180,7 +180,6 @@ supabase.auth.onAuthStateChange(async (event, session) => {
   
   clearTimeout(authTimeout);
   authTimeout = setTimeout(async () => {
-    console.log('Auth state change:', event, session?.user?.email);
     
     if (event === 'SIGNED_IN' && session?.user) {
       try {

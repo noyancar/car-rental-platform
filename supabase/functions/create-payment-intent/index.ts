@@ -16,16 +16,44 @@ serve(async (req) => {
 
   try {
     // Get request body
-    const { booking_id, amount, currency = 'usd', metadata = {} } = await req.json();
+    const { booking_id, currency = 'usd', metadata = {} } = await req.json();
 
     if (!booking_id) {
       throw new Error("Booking ID is required");
     }
 
-    // Initialize Supabase client
+    // Get the authorization header to verify user
+    const authHeader = req.headers.get('Authorization');
+    if (!authHeader) {
+      throw new Error("Unauthorized");
+    }
+
+    // Initialize Supabase client with user's token for RLS
     const supabaseUrl = Deno.env.get("SUPABASE_URL") || "";
-    const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") || "";
-    const supabase = createClient(supabaseUrl, supabaseKey);
+    const supabaseAnonKey = Deno.env.get("SUPABASE_ANON_KEY") || "";
+    const supabaseUser = createClient(supabaseUrl, supabaseAnonKey, {
+      global: {
+        headers: {
+          Authorization: authHeader
+        }
+      }
+    });
+
+    // First check if user owns this booking using RLS
+    const { data: userBookingCheck, error: checkError } = await supabaseUser
+      .from("bookings")
+      .select("id")
+      .eq("id", booking_id)
+      .single();
+
+    if (checkError || !userBookingCheck) {
+      console.error("Unauthorized access attempt for booking:", booking_id);
+      throw new Error("You are not authorized to pay for this booking");
+    }
+
+    // Now get full booking details with service role for payment processing
+    const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") || "";
+    const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
     // Get booking details with extras
     const { data: booking, error: bookingError } = await supabase
@@ -44,6 +72,11 @@ serve(async (req) => {
 
     if (bookingError || !booking) {
       throw new Error(bookingError?.message || "Booking not found");
+    }
+
+    // Security check: Ensure booking is in a payable state
+    if (booking.status === 'cancelled' || booking.status === 'completed') {
+      throw new Error(`Cannot process payment for ${booking.status} booking`);
     }
 
     // Initialize Stripe first
@@ -120,13 +153,17 @@ serve(async (req) => {
       }
     }
 
-    // Calculate total amount including extras
-    let totalAmount = booking.total_price;
-    if (booking.booking_extras && booking.booking_extras.length > 0) {
-      const extrasTotal = booking.booking_extras.reduce((sum: number, extra: any) => 
-        sum + extra.total_price, 0
-      );
-      totalAmount += extrasTotal;
+    // Use grand_total if available, otherwise calculate manually for backward compatibility
+    let totalAmount = booking.grand_total || booking.total_price;
+    
+    // If grand_total is not set or equals total_price, calculate extras manually
+    if (!booking.grand_total || booking.grand_total === booking.total_price) {
+      if (booking.booking_extras && booking.booking_extras.length > 0) {
+        const extrasTotal = booking.booking_extras.reduce((sum: number, extra: any) => 
+          sum + extra.total_price, 0
+        );
+        totalAmount = booking.total_price + extrasTotal;
+      }
     }
 
     // Convert to cents for Stripe

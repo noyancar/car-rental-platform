@@ -9,7 +9,6 @@ import { useAuthStore } from '../stores/authStore';
 import { useBookingStore } from '../stores/bookingStore';
 import { useCarStore } from '../stores/carStore';
 import { useExtrasStore } from '../stores/extrasStore';
-import { calculateRentalDuration, calculateCarRentalTotal, calculateExtrasTotal } from '../utils/booking';
 
 const PendingPaymentPage: React.FC = () => {
   const navigate = useNavigate();
@@ -90,7 +89,11 @@ const PendingPaymentPage: React.FC = () => {
         pickup_location: pendingBooking.pickup_location || 'base-office',
         return_location: pendingBooking.return_location || pendingBooking.pickup_location || 'base-office',
         pickup_time: pendingBooking.pickup_time || '10:00',
-        return_time: pendingBooking.return_time || '10:00'
+        return_time: pendingBooking.return_time || '10:00',
+        // Add price breakdown fields
+        car_rental_subtotal: pendingBooking.car_rental_subtotal || 0,
+        pickup_delivery_fee: pendingBooking.pickup_delivery_fee || 0,
+        return_delivery_fee: pendingBooking.return_delivery_fee || 0
       });
 
       console.log('Booking created:', booking);
@@ -105,13 +108,11 @@ const PendingPaymentPage: React.FC = () => {
             addExtra(item.extra, item.quantity);
           });
           
-          // Calculate rental duration using centralized function
-          const rentalDuration = calculateRentalDuration(
-            pendingBooking.start_date,
-            pendingBooking.end_date,
-            pendingBooking.pickup_time || '10:00',
-            pendingBooking.return_time || '10:00'
-          );
+          // Calculate rental duration
+          const start = new Date(`${pendingBooking.start_date}T${pendingBooking.pickup_time || '10:00'}`);
+          const end = new Date(`${pendingBooking.end_date}T${pendingBooking.return_time || '10:00'}`);
+          const diffMs = end.getTime() - start.getTime();
+          const rentalDuration = Math.ceil(diffMs / (1000 * 60 * 60 * 24));
           
           // Save extras to booking
           await saveBookingExtras(booking.id, rentalDuration);
@@ -152,12 +153,10 @@ const PendingPaymentPage: React.FC = () => {
     return null;
   }
 
-  const rentalDuration = calculateRentalDuration(
-    pendingBooking.start_date,
-    pendingBooking.end_date,
-    pendingBooking.pickup_time || '10:00',
-    pendingBooking.return_time || '10:00'
-  );
+  const start = new Date(`${pendingBooking.start_date}T${pendingBooking.pickup_time || '10:00'}`);
+  const end = new Date(`${pendingBooking.end_date}T${pendingBooking.return_time || '10:00'}`);
+  const diffMs = end.getTime() - start.getTime();
+  const rentalDuration = Math.ceil(diffMs / (1000 * 60 * 60 * 24));
 
   return (
     <>

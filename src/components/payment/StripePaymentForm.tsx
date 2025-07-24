@@ -12,7 +12,7 @@ interface StripePaymentFormProps {
   onSuccess: (paymentIntentId: string) => void;
   onError: (error: string) => void;
   amount: number;
-  bookingId: number;
+  bookingId: string;
 }
 
 export default function StripePaymentForm({ 

@@ -14,7 +14,7 @@ export type User = {
 }
 
 export type Car = {
-  id: number;
+  id: string;
   make: string;
   model: string;
   year: number;
@@ -40,8 +40,8 @@ export type Car = {
 export type BookingStatus = 'draft' | 'pending' | 'confirmed' | 'cancelled' | 'completed';
 
 export interface Booking {
-  id: number;
-  car_id: number;
+  id: string;
+  car_id: string;
   user_id: string;
   start_date: string;
   end_date: string;
@@ -56,7 +56,7 @@ export interface Booking {
   return_location?: any; // Location object from join
   pickup_time?: string;
   return_time?: string;
-  discount_code_id?: number;
+  discount_code_id?: string;
   stripe_payment_intent_id?: string;
   stripe_payment_status?: 'pending' | 'processing' | 'succeeded' | 'failed' | 'canceled';
   stripe_payment_method_id?: string;
@@ -64,7 +64,7 @@ export interface Booking {
 }
 
 export type DiscountCode = {
-  id: number;
+  id: string;
   code: string;
   discount_percentage: number;
   valid_from: string;
@@ -75,7 +75,7 @@ export type DiscountCode = {
 }
 
 export type Campaign = {
-  id: number;
+  id: string;
   name: string;
   description: string;
   discount_percentage: number;
@@ -121,7 +121,7 @@ export interface ExtraInventory {
 
 export interface BookingExtra {
   id: string;
-  booking_id: number;
+  booking_id: string;
   extra_id: string;
   quantity: number;
   unit_price: number;

@@ -7,6 +7,7 @@ import { Button } from '../../components/ui/Button';
 import { useBookingStore } from '../../stores/bookingStore';
 import { supabase } from '../../lib/supabase';
 import { toast } from 'sonner';
+import { calculateBookingPriceBreakdown } from '../../utils/bookingPriceCalculations';
 
 const BookingDetailsPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
@@ -16,7 +17,7 @@ const BookingDetailsPage: React.FC = () => {
   
   useEffect(() => {
     if (id) {
-      fetchBookingById(parseInt(id));
+      fetchBookingById(id);
     }
   }, [id, fetchBookingById]);
   
@@ -185,9 +186,61 @@ const BookingDetailsPage: React.FC = () => {
                 <p className="text-secondary-600">Total Price</p>
                 <div className="mt-1 flex items-center">
                   <CreditCard size={16} className="text-secondary-400 mr-1" />
-                  <span className="text-xl font-semibold">${currentBooking.total_price}</span>
+                  <span className="text-xl font-semibold">
+                    ${currentBooking.grand_total || currentBooking.total_price}
+                  </span>
                 </div>
               </div>
+            </div>
+          </div>
+          
+          {/* Price Breakdown */}
+          <div className="p-6 border-t">
+            <h2 className="text-lg font-semibold mb-4">Price Breakdown</h2>
+            <div className="space-y-2">
+              {(() => {
+                // Use centralized price breakdown calculation
+                const priceBreakdown = calculateBookingPriceBreakdown(currentBooking);
+                
+                return (
+                  <>
+                    <div className="flex justify-between">
+                      <span className="text-secondary-600">Car Rental</span>
+                      <span>${priceBreakdown.carRentalSubtotal.toFixed(2)}</span>
+                    </div>
+                    
+                    {/* Delivery Fee */}
+                    {priceBreakdown.totalDeliveryFee > 0 && (
+                      <div className="flex justify-between">
+                        <span className="text-secondary-600">Delivery Fee</span>
+                        <span>${priceBreakdown.totalDeliveryFee.toFixed(2)}</span>
+                      </div>
+                    )}
+                    
+                    {/* Extras section */}
+                    {currentBooking.booking_extras && currentBooking.booking_extras.length > 0 && (
+                      <>
+                        <div className="text-sm font-medium text-secondary-700 mt-3">Extras</div>
+                        {currentBooking.booking_extras.map((extra: any) => (
+                          <div key={extra.id} className="flex justify-between text-sm">
+                            <span className="text-secondary-600 pl-4">
+                              {extra.extra?.name || 'Extra'} × {extra.quantity}
+                            </span>
+                            <span>${extra.total_price.toFixed(2)}</span>
+                          </div>
+                        ))}
+                      </>
+                    )}
+                    
+                    <div className="flex justify-between font-semibold text-lg pt-2 border-t">
+                      <span>Total</span>
+                      <span className="text-primary-800">
+                        ${priceBreakdown.grandTotal.toFixed(2)}
+                      </span>
+                    </div>
+                  </>
+                );
+              })()}
             </div>
           </div>
           
@@ -200,7 +253,7 @@ const BookingDetailsPage: React.FC = () => {
               </h2>
               {currentBooking.status !== 'draft' && currentBooking.stripe_payment_status !== 'succeeded' && currentBooking.stripe_payment_status !== 'canceled' && currentBooking.stripe_payment_status !== 'failed' && (
                 <button
-                  onClick={() => fetchBookingById(parseInt(id!))}
+                  onClick={() => fetchBookingById(id!)}
                   className="text-primary-600 hover:text-primary-700 flex items-center text-sm"
                   disabled={loading}
                 >
@@ -282,11 +335,6 @@ const BookingDetailsPage: React.FC = () => {
                 >
                   Continue to Payment
                 </Button>
-                {currentBooking.expires_at && (
-                  <p className="text-sm text-secondary-500 mt-2">
-                    This booking is reserved until {format(new Date(currentBooking.expires_at), 'h:mm a')}
-                  </p>
-                )}
               </div>
             )}
             {/* Manual Payment Check for pending payments with payment intent */}

@@ -15,7 +15,7 @@ interface ExtrasState {
   updateQuantity: (extraId: string, quantity: number) => void;
   clearSelectedExtras: () => void;
   calculateTotal: (rentalDays: number) => { extrasTotal: number; breakdown: Array<{ name: string; price: number; quantity: number; total: number }> };
-  saveBookingExtras: (bookingId: number, rentalDays: number) => Promise<void>;
+  saveBookingExtras: (bookingId: string, rentalDays: number) => Promise<void>;
   checkAvailability: (extraId: string, quantity: number, pickupDate: string, returnDate: string) => Promise<boolean>;
 }
 
@@ -121,10 +121,13 @@ export const useExtrasStore = create<ExtrasState>((set, get) => ({
     return { extrasTotal, breakdown };
   },
 
-  saveBookingExtras: async (bookingId: number, rentalDays: number) => {
-    const { selectedExtras } = get();
+  saveBookingExtras: async (bookingId: string, rentalDays: number) => {
+    const { selectedExtras, calculateTotal } = get();
     
     try {
+      // Calculate total extras price
+      const { extrasTotal } = calculateTotal(rentalDays);
+      
       // Prepare booking extras data
       const bookingExtras = Array.from(selectedExtras.values()).map(({ extra, quantity }) => ({
         booking_id: bookingId,
@@ -150,6 +153,14 @@ export const useExtrasStore = create<ExtrasState>((set, get) => ({
 
         if (error) throw error;
       }
+      
+      // Update the booking's extras_total field
+      const { error: updateError } = await supabase
+        .from('bookings')
+        .update({ extras_total: extrasTotal })
+        .eq('id', bookingId);
+        
+      if (updateError) throw updateError;
     } catch (error) {
       console.error('Error saving booking extras:', error);
       throw error;

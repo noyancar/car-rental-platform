@@ -10,24 +10,16 @@ import StripePaymentForm from '../components/payment/StripePaymentForm';
 import { useAuthStore } from '../stores/authStore';
 import { supabase } from '../lib/supabase';
 import { BookingWithExtras } from '../types';
-import { useLocations } from '../hooks/useLocations';
-import { calculateRentalDuration, calculateCarRentalTotal, calculateExtrasTotal } from '../utils/booking';
+import { calculateBookingPriceBreakdown } from '../utils/bookingPriceCalculations';
 
 const PaymentPage: React.FC = () => {
   const { bookingId } = useParams();
   const navigate = useNavigate();
   const { user } = useAuthStore();
-  const { calculateDeliveryFee, getLocationByValue, locations } = useLocations();
-  const [booking, setBooking] = useState<BookingWithExtras | null>(null);
+  const [booking, setBooking] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [paymentClientSecret, setPaymentClientSecret] = useState<string | null>(null);
   const [paymentError, setPaymentError] = useState<string | null>(null);
-  const [deliveryFees, setDeliveryFees] = useState({ 
-    pickupFee: 0, 
-    returnFee: 0, 
-    totalFee: 0, 
-    requiresQuote: false 
-  });
   const [showAuthModal, setShowAuthModal] = useState(false);
 
   useEffect(() => {
@@ -58,7 +50,7 @@ const PaymentPage: React.FC = () => {
     try {
       setLoading(true);
       
-      // Fetch booking with extras
+      // Fetch booking with extras and locations
       const { data: bookingData, error: bookingError } = await supabase
         .from('bookings')
         .select(`
@@ -67,7 +59,9 @@ const PaymentPage: React.FC = () => {
           booking_extras (
             *,
             extras (*)
-          )
+          ),
+          pickup_location:locations!bookings_pickup_location_id_fkey (*),
+          return_location:locations!bookings_return_location_id_fkey (*)
         `)
         .eq('id', bookingId)
         .single();
@@ -81,23 +75,23 @@ const PaymentPage: React.FC = () => {
         return;
       }
 
-      // Format the data
+      // Format the data - keep location data for display
       const formattedBooking = {
         ...bookingData,
         car: bookingData.cars,
         booking_extras: bookingData.booking_extras?.map((be: any) => ({
           ...be,
           extra: be.extras
-        }))
+        })),
+        // Keep location IDs for compatibility
+        pickup_location: bookingData.pickup_location_id,
+        return_location: bookingData.return_location_id,
+        // Store location objects for display
+        pickup_location_data: bookingData.pickup_location,
+        return_location_data: bookingData.return_location
       };
 
       setBooking(formattedBooking);
-      
-      // Calculate delivery fees
-      if (formattedBooking.pickup_location && formattedBooking.return_location) {
-        const fees = calculateDeliveryFee(formattedBooking.pickup_location, formattedBooking.return_location);
-        setDeliveryFees(fees);
-      }
 
       // Create payment intent
       await createPaymentIntent(formattedBooking);
@@ -231,18 +225,15 @@ const PaymentPage: React.FC = () => {
     );
   }
 
-  // Use centralized calculation functions
-  const rentalDuration = calculateRentalDuration(
-    booking.start_date,
-    booking.end_date,
-    booking.pickup_time || '10:00',
-    booking.return_time || '10:00'
-  );
+  // Use centralized price breakdown calculation
+  const priceBreakdown = calculateBookingPriceBreakdown(booking);
+  const { carRentalSubtotal: carTotal, extrasTotal, grandTotal } = priceBreakdown;
   
-  const carTotal = booking.car ? calculateCarRentalTotal(booking.car.price_per_day, rentalDuration) : 0;
-  const extrasTotal = calculateExtrasTotal(booking.booking_extras);
-  // Use the booking.total_price which already includes delivery fee from booking creation
-  const grandTotal = booking.total_price;
+  // Calculate rental duration for display
+  const rentalDuration = Math.ceil(
+    (new Date(booking.end_date).getTime() - new Date(booking.start_date).getTime()) / 
+    (1000 * 60 * 60 * 24)
+  );
 
   return (
     <div className="min-h-screen pt-16 pb-12 bg-secondary-50">
@@ -297,7 +288,7 @@ const PaymentPage: React.FC = () => {
                 <StripeProvider clientSecret={paymentClientSecret}>
                   <StripePaymentForm
                     amount={grandTotal}
-                    bookingId={parseInt(bookingId!)}
+                    bookingId={bookingId!}
                     onSuccess={handlePaymentSuccess}
                     onError={handlePaymentError}
                   />
@@ -341,20 +332,20 @@ const PaymentPage: React.FC = () => {
                         <MapPin className="w-4 h-4 mr-2 text-green-600" />
                         <div>
                           <span className="font-medium">Pickup: </span>
-                          {getLocationByValue(booking.pickup_location || '')?.label || booking.pickup_location || 'Not specified'}
+                          {booking.pickup_location_data?.label || 'Not specified'}
                         </div>
                       </div>
                       
                       {/* Return Location */}
-                      {booking.pickup_location !== booking.return_location && (
-                        <div className="flex items-center">
-                          <MapPin className="w-4 h-4 mr-2 text-blue-600" />
-                          <div>
-                            <span className="font-medium">Return: </span>
-                            {getLocationByValue(booking.return_location || '')?.label || booking.return_location || 'Not specified'}
-                          </div>
+                      <div className="flex items-center">
+                        <MapPin className="w-4 h-4 mr-2 text-blue-600" />
+                        <div>
+                          <span className="font-medium">Return: </span>
+                          {booking.pickup_location === booking.return_location 
+                            ? 'Same as pickup location' 
+                            : (booking.return_location_data?.label || 'Not specified')}
                         </div>
-                      )}
+                      </div>
                     </div>
 
                     {/* Price Breakdown */}
@@ -364,11 +355,19 @@ const PaymentPage: React.FC = () => {
                         <span>${carTotal.toFixed(2)}</span>
                       </div>
 
+                      {/* Delivery Fee */}
+                      {priceBreakdown.totalDeliveryFee > 0 && (
+                        <div className="flex justify-between">
+                          <span className="text-gray-600">Delivery Fee</span>
+                          <span>${priceBreakdown.totalDeliveryFee.toFixed(2)}</span>
+                        </div>
+                      )}
+
                       {/* Extras */}
                       {booking.booking_extras && booking.booking_extras.length > 0 && (
                         <>
                           <div className="text-sm font-medium text-gray-700 mt-3 mb-2">Extras</div>
-                          {booking.booking_extras.map((be) => (
+                          {booking.booking_extras.map((be: any) => (
                             <div key={be.id} className="flex justify-between text-sm">
                               <span className="text-gray-600">
                                 {be.extra?.name} × {be.quantity}
@@ -378,22 +377,11 @@ const PaymentPage: React.FC = () => {
                           ))}
                         </>
                       )}
-                      
-                      {/* Delivery Fee - Always show if there's a difference between total and subtotal */}
-                      {(booking.total_price - carTotal - extrasTotal) > 0 && (
-                        <div className="flex justify-between">
-                          <span className="text-gray-600">Delivery Fee</span>
-                          <span>${(booking.total_price - carTotal - extrasTotal).toFixed(2)}</span>
-                        </div>
-                      )}
 
                       <div className="flex justify-between font-semibold text-lg pt-3 border-t">
                         <span>Total</span>
                         <span className="text-primary-800">
-                          ${booking.total_price.toFixed(2)}
-                          {deliveryFees.requiresQuote && (
-                            <span className="text-sm font-normal text-orange-600 block">Delivery included (quote pending)</span>
-                          )}
+                          ${grandTotal.toFixed(2)}
                         </span>
                       </div>
                     </div>

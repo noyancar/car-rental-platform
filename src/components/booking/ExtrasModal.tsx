@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { X, Plus, Minus, Check, AlertCircle, ShoppingCart, Shield, Umbrella, Camera, Package, Fuel, Sparkles, Baby, Armchair, Backpack, Package2, Battery } from 'lucide-react';
+import { X, Plus, Minus, Check, ShoppingCart, Shield, Umbrella, Camera, Package, Fuel, Sparkles, Baby, Armchair, Backpack, Package2, Battery, ChevronUp, ChevronDown } from 'lucide-react';
 import { useExtrasStore } from '../../stores/extrasStore';
 import { ExtraCategory } from '../../types';
 import { Button } from '../ui/Button';
@@ -7,7 +7,7 @@ import { Button } from '../ui/Button';
 interface ExtrasModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onContinue: (selectedExtras: Map<string, { extra: any; quantity: number }>) => void;
+  onContinue: (selectedExtras: Map<string, { extra: unknown; quantity: number }>) => void;
   pickupDate: string;
   returnDate: string;
   rentalDays: number;
@@ -20,7 +20,7 @@ const categoryInfo: Record<ExtraCategory, { label: string; icon: React.ReactNode
   services: { label: 'Services', icon: <Sparkles className="w-4 h-4 sm:w-5 sm:h-5" /> },
   safety: { label: 'Safety', icon: <Shield className="w-4 h-4 sm:w-5 sm:h-5" /> },
   beach: { label: 'Beach', icon: <Umbrella className="w-4 h-4 sm:w-5 sm:h-5" /> },
-  tech: { label: 'Technology', icon: <Camera className="w-4 h-4 sm:w-5 sm:h-5" /> },
+  tech: { label: 'Tech', icon: <Camera className="w-4 h-4 sm:w-5 sm:h-5" /> },
   camping: { label: 'Camping', icon: <Package className="w-4 h-4 sm:w-5 sm:h-5" /> }
 };
 
@@ -51,17 +51,28 @@ export default function ExtrasModal({
 }: ExtrasModalProps) {
   const { extras, selectedExtras, loading, fetchExtras, addExtra, removeExtra, updateQuantity, calculateTotal } = useExtrasStore();
   const [activeCategory, setActiveCategory] = useState<ExtraCategory>('services');
+  const [isSummaryExpanded, setIsSummaryExpanded] = useState(false);
   
   useEffect(() => {
     if (isOpen) {
       fetchExtras(pickupDate, returnDate);
+      // Prevent body scroll when modal is open
+      document.body.style.overflow = 'hidden';
+    } else {
+      // Re-enable body scroll when modal is closed
+      document.body.style.overflow = '';
     }
-  }, [isOpen, pickupDate, returnDate]);
+
+    // Cleanup function to ensure scroll is re-enabled if component unmounts
+    return () => {
+      document.body.style.overflow = '';
+    };
+  }, [isOpen, pickupDate, returnDate, fetchExtras]);
 
   if (!isOpen) return null;
 
   const { extrasTotal, breakdown } = calculateTotal(rentalDays);
-  const grandTotal = carTotal + extrasTotal + (requiresQuote ? 0 : deliveryFee);
+  const grandTotal = carTotal + extrasTotal + deliveryFee;
 
   const categories = Object.keys(categoryInfo) as ExtraCategory[];
   const filteredExtras = extras.filter(extra => extra.category === activeCategory);
@@ -90,10 +101,10 @@ export default function ExtrasModal({
   };
 
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-3 sm:p-4 z-50">
-      <div className="bg-white rounded-xl sm:rounded-2xl shadow-hawaii max-w-6xl w-full max-h-[90vh] overflow-hidden animate-slide-up">
+    <div className="fixed inset-0 bg-black/50 flex items-end lg:items-center justify-center lg:p-4 z-50">
+      <div className="bg-white rounded-t-2xl lg:rounded-2xl shadow-hawaii max-w-6xl w-full h-[85vh] lg:h-auto lg:max-h-[90vh] flex flex-col animate-slide-up">
         {/* Header */}
-        <div className="gradient-hawaii text-white p-4 sm:p-5 md:p-6 flex justify-between items-center">
+        <div className="gradient-hawaii text-white p-4 sm:p-5 md:p-6 flex justify-between items-center flex-shrink-0">
           <div>
             <h2 className="text-lg sm:text-xl md:text-2xl font-display font-bold">Enhance Your Island Adventure</h2>
             <p className="text-white/90 text-sm sm:text-base mt-0.5 sm:mt-1">Add extras to make your trip even better</p>
@@ -107,9 +118,9 @@ export default function ExtrasModal({
           </button>
         </div>
 
-        <div className="flex h-[calc(90vh-200px)]">
+        <div className="flex flex-col lg:flex-row flex-1 overflow-hidden">
           {/* Left side - Categories and Extras */}
-          <div className="flex-1 overflow-y-auto">
+          <div className="flex-1 overflow-y-auto lg:overflow-y-auto">
             {/* Category tabs */}
             <div className="bg-sandy-100 border-b border-sandy-200 px-3 py-3 sm:px-6 sm:py-4">
               <div className="flex gap-2 sm:gap-3 overflow-x-auto scrollbar-hide">
@@ -131,7 +142,7 @@ export default function ExtrasModal({
             </div>
 
             {/* Extras list */}
-            <div className="p-3 sm:p-4 md:p-6">
+            <div className="p-3 sm:p-4 md:p-6 pb-6">
               {loading ? (
                 <div className="text-center py-12">
                   <div className="loading-spinner h-12 w-12 mx-auto"></div>
@@ -144,28 +155,36 @@ export default function ExtrasModal({
                   {filteredExtras.map(extra => {
                     const quantity = getQuantity(extra.id);
                     const isSelected = quantity > 0;
-                    const isAvailable = extra.stock_quantity === null || (extra as any).available;
+                    const isAvailable = extra.stock_quantity === null || (extra as { available?: boolean }).available;
                     
                     return (
                       <div
                         key={extra.id}
-                        className={`p-4 sm:p-5 md:p-6 rounded-xl border-2 transition-all duration-300 ${
+                        className={`p-4 sm:p-5 md:p-6 rounded-xl border-2 transition-all duration-300 overflow-hidden ${
                           isSelected 
                             ? 'border-primary-500 bg-primary-50 shadow-lg' 
                             : 'border-sandy-200 hover:border-primary-300 hover:shadow-md bg-white'
                         } ${!isAvailable ? 'opacity-60' : ''}`}
                       >
-                        <div className="flex items-start justify-between">
-                          <div className="flex-1">
-                            <div className="flex items-center gap-3">
-                              {extra.icon_name && iconMap[extra.icon_name]}
-                              <h3 className="text-base sm:text-lg font-display font-semibold text-volcanic-900">{extra.name}</h3>
-                              {isSelected && (
-                                <span className="bg-primary-100 text-primary-700 px-3 py-1 rounded-full text-sm flex items-center gap-1 font-medium">
-                                  <Check className="w-4 h-4" />
-                                  Added
-                                </span>
+                        <div className="flex items-start justify-between gap-2">
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-start gap-2 sm:gap-3">
+                              {extra.icon_name && iconMap[extra.icon_name] && (
+                                <div className="flex-shrink-0">
+                                  {iconMap[extra.icon_name]}
+                                </div>
                               )}
+                              <div className="flex-1 min-w-0">
+                                <div className="flex items-center gap-2 flex-wrap">
+                                  <h3 className="text-base sm:text-lg font-display font-semibold text-volcanic-900">{extra.name}</h3>
+                                  {isSelected && (
+                                    <span className="bg-primary-100 text-primary-700 px-2 sm:px-3 py-0.5 sm:py-1 rounded-full text-xs sm:text-sm flex items-center gap-1 font-medium">
+                                      <Check className="w-3 h-3 sm:w-4 sm:h-4" />
+                                      Added
+                                    </span>
+                                  )}
+                                </div>
+                              </div>
                             </div>
                             {extra.description && (
                               <p className="text-volcanic-600 mt-1.5 sm:mt-2 text-sm sm:text-base">{extra.description}</p>
@@ -178,7 +197,7 @@ export default function ExtrasModal({
                                 </span>
                               </span>
                               {extra.stock_quantity !== null && (
-                                <span className={`text-sm font-medium ${isAvailable ? 'text-success-600' : 'text-error-600'}`}>
+                                <span className={`text-xs sm:text-sm font-medium ${isAvailable ? 'text-success-600' : 'text-error-600'}`}>
                                   {isAvailable ? `${extra.stock_quantity} available` : 'Out of stock'}
                                 </span>
                               )}
@@ -186,35 +205,35 @@ export default function ExtrasModal({
                           </div>
                           
                           {/* Quantity controls */}
-                          <div className="ml-3 sm:ml-4 md:ml-6">
+                          <div className="flex-shrink-0">
                             {isAvailable ? (
-                              <div className="flex items-center gap-2">
+                              <div className="flex items-center gap-1 sm:gap-2">
                                 <button
                                   onClick={() => handleQuantityChange(extra.id, -1)}
                                   disabled={quantity === 0}
-                                  className={`p-2 rounded-lg transition-all duration-200 ${
+                                  className={`p-1.5 sm:p-2 rounded-lg transition-all duration-200 ${
                                     quantity === 0 
                                       ? 'bg-sandy-100 text-sandy-400 cursor-not-allowed' 
                                       : 'bg-sandy-200 hover:bg-sandy-300 text-volcanic-700 hover:shadow-md'
                                   }`}
                                 >
-                                  <Minus className="w-4 h-4" />
+                                  <Minus className="w-3 h-3 sm:w-4 sm:h-4" />
                                 </button>
-                                <span className="w-12 text-center font-bold text-lg text-volcanic-900">{quantity}</span>
+                                <span className="w-8 sm:w-12 text-center font-bold text-base sm:text-lg text-volcanic-900">{quantity}</span>
                                 <button
                                   onClick={() => handleQuantityChange(extra.id, 1)}
                                   disabled={quantity >= extra.max_per_booking}
-                                  className={`p-2 rounded-lg transition-all duration-200 ${
+                                  className={`p-1.5 sm:p-2 rounded-lg transition-all duration-200 ${
                                     quantity >= extra.max_per_booking 
                                       ? 'bg-sandy-100 text-sandy-400 cursor-not-allowed' 
                                       : 'bg-primary-600 hover:bg-primary-700 text-white shadow-md hover:shadow-lg'
                                   }`}
                                 >
-                                  <Plus className="w-4 h-4" />
+                                  <Plus className="w-3 h-3 sm:w-4 sm:h-4" />
                                 </button>
                               </div>
                             ) : (
-                              <div className="px-4 py-2 bg-sandy-100 rounded-lg text-volcanic-500 text-sm font-medium">
+                              <div className="px-2 sm:px-4 py-1 sm:py-2 bg-sandy-100 rounded-lg text-volcanic-500 text-xs sm:text-sm font-medium">
                                 Unavailable
                               </div>
                             )}
@@ -228,8 +247,8 @@ export default function ExtrasModal({
             </div>
           </div>
 
-          {/* Right side - Summary */}
-          <div className="w-96 bg-sandy-50 border-l border-sandy-200 p-6 flex flex-col">
+          {/* Right side - Summary (Desktop) / Bottom Summary (Mobile) */}
+          <div className="hidden lg:flex lg:w-96 bg-sandy-50 border-l border-sandy-200 p-6 flex-col">
             <h3 className="text-lg font-display font-semibold text-volcanic-900 mb-4">Booking Summary</h3>
             
             {/* Selected extras */}
@@ -287,11 +306,7 @@ export default function ExtrasModal({
               <div className="flex justify-between text-xl font-bold text-volcanic-900 pt-3 border-t border-sandy-300">
                 <span>Total</span>
                 <span className="text-accent-500">
-                  {requiresQuote ? (
-                    <span className="text-base">${(carTotal + extrasTotal).toFixed(2)} + quote</span>
-                  ) : (
-                    `$${grandTotal.toFixed(2)}`
-                  )}
+                  ${grandTotal.toFixed(2)}
                 </span>
               </div>
             </div>
@@ -311,6 +326,105 @@ export default function ExtrasModal({
               >
                 Skip & Continue
               </button>
+            </div>
+          </div>
+        </div>
+
+        {/* Mobile Summary - Bottom Sheet */}
+        <div className="lg:hidden border-t border-sandy-200 bg-sandy-50 shadow-lg flex-shrink-0">
+          {/* Summary Header - Always Visible */}
+          <div
+            onClick={() => setIsSummaryExpanded(!isSummaryExpanded)}
+            className="p-4 flex items-center justify-between cursor-pointer hover:bg-sandy-100 transition-colors"
+          >
+            <div className="flex items-center gap-3">
+              <h3 className="text-base font-display font-semibold text-volcanic-900">Booking Summary</h3>
+              {breakdown.length > 0 && (
+                <span className="bg-primary-100 text-primary-700 px-2 py-0.5 rounded-full text-xs font-medium">
+                  {breakdown.length} extras
+                </span>
+              )}
+            </div>
+            <div className="flex items-center gap-2">
+              <span className="text-base font-bold text-accent-500">${grandTotal.toFixed(2)}</span>
+              {isSummaryExpanded ? <ChevronDown className="w-4 h-4" /> : <ChevronUp className="w-4 h-4" />}
+            </div>
+          </div>
+
+          {/* Action Buttons - Always Visible */}
+          <div className="px-4 pb-4 space-y-2">
+            <Button
+              onClick={() => onContinue(selectedExtras)}
+              className="w-full py-2.5 text-sm"
+              variant="accent"
+            >
+              {breakdown.length > 0 ? 'Add Extras & Continue' : 'Continue to Payment'}
+            </Button>
+            <button
+              onClick={() => onContinue(selectedExtras)}
+              className="w-full py-2 text-volcanic-600 hover:text-volcanic-800 transition-all duration-200 font-medium text-xs"
+            >
+              Skip & Continue
+            </button>
+          </div>
+
+          {/* Expandable Summary Content */}
+          <div className={`absolute bottom-full left-0 right-0 bg-sandy-50 border-t border-sandy-200 transition-all duration-300 ${isSummaryExpanded ? 'translate-y-0' : 'translate-y-full'}`}>
+            <div className="p-4 space-y-3 max-h-64 overflow-y-auto">
+              {/* Selected extras */}
+              {breakdown.length === 0 ? (
+                <div className="text-center py-3">
+                  <ShoppingCart className="w-6 h-6 text-volcanic-300 mx-auto mb-2" />
+                  <p className="text-volcanic-600 text-xs">No extras selected</p>
+                </div>
+              ) : (
+                <div className="space-y-2">
+                  {breakdown.map((item, index) => (
+                    <div key={index} className="bg-white p-2.5 rounded-lg shadow-sm">
+                      <div className="flex justify-between items-start">
+                        <div className="flex-1">
+                          <p className="font-semibold text-volcanic-900 text-xs">{item.name}</p>
+                          <p className="text-xs text-volcanic-600 mt-0.5">
+                            {item.quantity} × ${item.price.toFixed(2)}
+                            {extras.find(e => e.name === item.name)?.price_type === 'per_day' && ` × ${rentalDays}d`}
+                          </p>
+                        </div>
+                        <p className="font-bold text-volcanic-900 text-xs">${item.total.toFixed(2)}</p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {/* Totals */}
+              <div className="border-t border-sandy-300 pt-2 space-y-1">
+                <div className="flex justify-between text-xs text-volcanic-600">
+                  <span>Car Rental</span>
+                  <span className="font-medium">${carTotal.toFixed(2)}</span>
+                </div>
+                {extrasTotal > 0 && (
+                  <div className="flex justify-between text-xs text-volcanic-600">
+                    <span>Extras</span>
+                    <span className="font-medium">${extrasTotal.toFixed(2)}</span>
+                  </div>
+                )}
+                {deliveryFee > 0 && !requiresQuote && (
+                  <div className="flex justify-between text-xs text-volcanic-600">
+                    <span>Delivery Fee</span>
+                    <span className="font-medium">${deliveryFee.toFixed(2)}</span>
+                  </div>
+                )}
+                {requiresQuote && (
+                  <div className="flex justify-between text-xs text-orange-600">
+                    <span>Delivery Fee</span>
+                    <span className="font-medium italic">Quote required</span>
+                  </div>
+                )}
+                <div className="flex justify-between text-sm font-bold text-volcanic-900 pt-1">
+                  <span>Total</span>
+                  <span className="text-accent-500">${grandTotal.toFixed(2)}</span>
+                </div>
+              </div>
             </div>
           </div>
         </div>
