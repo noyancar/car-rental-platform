@@ -74,7 +74,7 @@ const AdminBookings: React.FC = () => {
     const matchesSearch = (
       booking.car?.make.toLowerCase().includes(searchTerm.toLowerCase()) ||
       booking.car?.model.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      booking.id.toString().includes(searchTerm)
+      booking.id.includes(searchTerm)
     );
     
     const matchesStatus = !statusFilter || booking.status === statusFilter;

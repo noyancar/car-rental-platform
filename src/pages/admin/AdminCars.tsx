@@ -173,7 +173,7 @@ const AdminCars: React.FC = () => {
     }
   };
   
-  const handleToggleAvailability = async (id: number, available: boolean) => {
+  const handleToggleAvailability = async (id: string, available: boolean) => {
     try {
       await toggleCarAvailability(id, available);
       toast.success(`Car ${available ? 'enabled' : 'disabled'} successfully`);

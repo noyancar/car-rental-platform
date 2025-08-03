@@ -11,6 +11,7 @@ export type User = {
   emergency_phone?: string;
   avatar_url?: string;
   created_at?: string;
+  role?: 'user' | 'admin';
 }
 
 export type Car = {

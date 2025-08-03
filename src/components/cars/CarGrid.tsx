@@ -27,7 +27,6 @@ const CarGrid: React.FC = () => {
           <div>
             <h3 className="font-semibold text-base sm:text-lg mb-1.5 sm:mb-2">Unable to Complete Your Search</h3>
             <p className="text-red-600 text-sm sm:text-base">{error}</p>
-            <p className="mt-3 sm:mt-4 text-xs sm:text-sm text-red-600">Please try adjusting your search criteria or refresh the page.</p>
           </div>
         </div>
       </div>
