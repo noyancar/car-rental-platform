@@ -119,6 +119,17 @@ const BookingDetailsPage: React.FC = () => {
           </Link>
         </div>
         
+        {/* Success Alert - Only show for confirmed bookings */}
+        {currentBooking.status === 'confirmed' && currentBooking.stripe_payment_status === 'succeeded' && (
+          <div className="mb-4 sm:mb-6 bg-green-50 border border-green-200 rounded-lg p-3 sm:p-4 flex items-start">
+            <CheckCircle className="h-5 w-5 text-green-600 mt-0.5 mr-2 sm:mr-3 flex-shrink-0" />
+            <div>
+              <h3 className="text-sm font-medium text-green-800">Payment Successful!</h3>
+              <p className="mt-1 text-xs sm:text-sm text-green-700">Your booking is confirmed. Check your email for details.</p>
+            </div>
+          </div>
+        )}
+        
         <div className="bg-white rounded-lg shadow-md overflow-hidden">
           {/* Header */}
           <div className="p-6 border-b border-secondary-200">
@@ -172,21 +183,43 @@ const BookingDetailsPage: React.FC = () => {
               <Calendar size={20} className="mr-2" />
               Booking Details
             </h2>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
+              {/* Pickup Details */}
               <div>
-                <p className="text-secondary-600">Rental Period</p>
-                <div className="mt-1 flex items-center">
-                  <Clock size={16} className="text-secondary-400 mr-1" />
-                  <span>
-                    {format(new Date(currentBooking.start_date), 'MMM d, yyyy')} - {format(new Date(currentBooking.end_date), 'MMM d, yyyy')}
-                  </span>
+                <p className="text-secondary-600 text-sm sm:text-base">Pickup</p>
+                <div className="mt-1">
+                  <p className="text-sm sm:text-base">
+                    📍 {format(new Date(currentBooking.start_date), 'MMM d, yyyy')} at {currentBooking.pickup_time || '10:00 AM'}
+                  </p>
+                  {currentBooking.pickup_location && (
+                    <p className="text-xs sm:text-sm text-secondary-500 mt-1">
+                      Location: {currentBooking.pickup_location.label}
+                    </p>
+                  )}
                 </div>
               </div>
+              
+              {/* Return Details */}
               <div>
-                <p className="text-secondary-600">Total Price</p>
+                <p className="text-secondary-600 text-sm sm:text-base">Return</p>
+                <div className="mt-1">
+                  <p className="text-sm sm:text-base">
+                    📍 {format(new Date(currentBooking.end_date), 'MMM d, yyyy')} at {currentBooking.return_time || '10:00 AM'}
+                  </p>
+                  {currentBooking.return_location && (
+                    <p className="text-xs sm:text-sm text-secondary-500 mt-1">
+                      Location: {currentBooking.return_location.label}
+                    </p>
+                  )}
+                </div>
+              </div>
+              
+              {/* Total Price - moved to end */}
+              <div className="md:col-span-2">
+                <p className="text-secondary-600 text-sm sm:text-base">Total Price</p>
                 <div className="mt-1 flex items-center">
                   <CreditCard size={16} className="text-secondary-400 mr-1" />
-                  <span className="text-xl font-semibold">
+                  <span className="text-lg sm:text-xl font-semibold">
                     ${currentBooking.grand_total || currentBooking.total_price}
                   </span>
                 </div>
@@ -269,7 +302,10 @@ const BookingDetailsPage: React.FC = () => {
                   <div>
                     <p className="font-medium">Payment Completed</p>
                     <p className="text-sm text-secondary-500">
-                      Transaction ID: {currentBooking.stripe_payment_intent_id}
+                      Reference: #{currentBooking.stripe_payment_intent_id?.slice(-8) || 'N/A'}
+                    </p>
+                    <p className="text-xs text-secondary-400 mt-1">
+                      📧 Booking confirmation sent to your email
                     </p>
                   </div>
                 </>
