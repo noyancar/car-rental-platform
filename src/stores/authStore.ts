@@ -123,9 +123,22 @@ export const useAuthStore = create<AuthState>((set) => ({
         
       if (error) throw error;
       
-      set(state => ({
-        user: state.user ? { ...state.user, ...data } : null
-      }));
+      // Fetch the updated profile from database
+      const { data: updatedProfile, error: fetchError } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', user.id)
+        .single();
+        
+      if (fetchError) throw fetchError;
+      
+      // Update local state with fresh data from database
+      set({
+        user: {
+          ...updatedProfile,
+          email: user.email || updatedProfile.email
+        }
+      });
     } catch (error) {
       set({ error: (error as Error).message });
       throw error;

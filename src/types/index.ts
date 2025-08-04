@@ -6,9 +6,9 @@ export type User = {
   phone?: string;
   address?: string;
   license_number?: string;
-  license_expiry?: string;
-  emergency_contact?: string;
-  emergency_phone?: string;
+  license_state?: string;
+  has_valid_license?: boolean;
+  license_verified_at?: string;
   avatar_url?: string;
   created_at?: string;
   role?: 'user' | 'admin';
