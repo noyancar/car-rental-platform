@@ -35,6 +35,7 @@ import AdminDiscountCodes from './pages/admin/AdminDiscountCodes';
 import AdminCampaigns from './pages/admin/AdminCampaigns';
 import AdminExtras from './pages/admin/AdminExtras';
 import LocationManagement from './pages/admin/LocationManagement';
+import AdminCustomers from './pages/admin/AdminCustomers';
 
 // Auth store
 import { useAuthStore } from './stores/authStore';
@@ -146,6 +147,9 @@ function App() {
             } />
             <Route path="/admin/locations" element={
               <ProtectedRoute element={<LocationManagement />} adminOnly />
+            } />
+            <Route path="/admin/customers" element={
+              <ProtectedRoute element={<AdminCustomers />} adminOnly />
             } />
             
             {/* Fallback route */}

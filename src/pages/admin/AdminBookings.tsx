@@ -1,11 +1,12 @@
 import React, { useEffect, useState } from 'react';
-import { Search, Filter, CheckCircle, XCircle, AlertCircle } from 'lucide-react';
+import { Search, Filter, CheckCircle, XCircle, AlertCircle, Eye } from 'lucide-react';
 import { toast } from 'sonner';
 import { Button } from '../../components/ui/Button';
 import { Input } from '../../components/ui/Input';
 import { Select } from '../../components/ui/Select';
 import { useAdminStore } from '../../stores/adminStore';
 import { useLocations } from '../../hooks/useLocations';
+import BookingDetailsModal from '../../components/admin/BookingDetailsModal';
 import type { Booking } from '../../types';
 
 const AdminBookings: React.FC = () => {
@@ -22,6 +23,7 @@ const AdminBookings: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
   const [dateFilter, setDateFilter] = useState('');
+  const [selectedBooking, setSelectedBooking] = useState<Booking | null>(null);
   
   useEffect(() => {
     fetchAllBookings();
@@ -215,16 +217,29 @@ const AdminBookings: React.FC = () => {
                       </div>
                     </td>
                     <td className="px-6 py-4 text-right">
-                      <Select
-                        value={booking.status}
-                        onChange={(e) => handleStatusChange(booking, e.target.value as Booking['status'])}
-                        options={[
-                          { value: 'pending', label: 'Mark as Pending' },
-                          { value: 'confirmed', label: 'Mark as Confirmed' },
-                          { value: 'cancelled', label: 'Mark as Cancelled' },
-                          { value: 'completed', label: 'Mark as Completed' },
-                        ]}
-                      />
+                      <div className="flex items-center justify-end gap-2">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => setSelectedBooking(booking)}
+                          leftIcon={<Eye size={16} />}
+                        >
+                          Details
+                        </Button>
+                        {booking.status !== 'completed' && booking.status !== 'cancelled' && (
+                          <Select
+                            value=""
+                            onChange={(e) => handleStatusChange(booking, e.target.value as Booking['status'])}
+                            className="w-40"
+                            options={[
+                              { value: '', label: 'Change Status', disabled: true },
+                              ...(booking.status !== 'confirmed' ? [{ value: 'confirmed', label: '✓ Confirm' }] : []),
+                              ...(booking.status !== 'cancelled' ? [{ value: 'cancelled', label: '✗ Cancel' }] : []),
+                              ...(booking.status === 'confirmed' ? [{ value: 'completed', label: '✓ Complete' }] : []),
+                            ].filter(opt => opt.value !== booking.status)}
+                          />
+                        )}
+                      </div>
                     </td>
                   </tr>
                 ))}
@@ -233,6 +248,18 @@ const AdminBookings: React.FC = () => {
           </div>
         </div>
       </div>
+      
+      {/* Booking Details Modal */}
+      <BookingDetailsModal
+        booking={selectedBooking}
+        onClose={() => setSelectedBooking(null)}
+        onStatusChange={(bookingId, status) => {
+          handleStatusChange(
+            allBookings.find(b => b.id === bookingId)!,
+            status
+          );
+        }}
+      />
     </div>
   );
 };

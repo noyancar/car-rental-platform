@@ -38,7 +38,8 @@ const AdminCars: React.FC = () => {
     fetchAllCars,
     addCar,
     updateCar,
-    toggleCarAvailability
+    toggleCarAvailability,
+    deleteCar
   } = useAdminStore();
   
   const [isAddingCar, setIsAddingCar] = useState(false);
@@ -179,6 +180,20 @@ const AdminCars: React.FC = () => {
       toast.success(`Car ${available ? 'enabled' : 'disabled'} successfully`);
     } catch (error) {
       toast.error('Failed to update car availability');
+    }
+  };
+  
+  const handleDeleteCar = async (car: Car) => {
+    if (!confirm(`Are you sure you want to delete "${car.make} ${car.model}"?\n\nThis action cannot be undone.`)) {
+      return;
+    }
+    
+    const success = await deleteCar(car.id);
+    
+    if (success) {
+      toast.success('Car deleted successfully');
+    } else {
+      toast.error(error || 'Failed to delete car. It may have active bookings.');
     }
   };
   
@@ -339,6 +354,15 @@ const AdminCars: React.FC = () => {
                           leftIcon={car.available ? <X size={16} /> : <Check size={16} />}
                         >
                           {car.available ? 'Disable' : 'Enable'}
+                        </Button>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="text-error-500 border-error-500 hover:bg-error-50"
+                          onClick={() => handleDeleteCar(car)}
+                          leftIcon={<Trash2 size={16} />}
+                        >
+                          Delete
                         </Button>
                       </div>
                     </td>

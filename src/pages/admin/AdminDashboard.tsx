@@ -1,6 +1,6 @@
 import React, { useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { Car, CalendarCheck, Tag, Megaphone, Users, TrendingUp, DollarSign, Clock, Package, MapPin } from 'lucide-react';
+import { Car, CalendarCheck, Tag, Megaphone, Users, TrendingUp, DollarSign, Clock, Package, MapPin, UserCheck } from 'lucide-react';
 import { useAdminStore } from '../../stores/adminStore';
 
 const AdminDashboard: React.FC = () => {
@@ -9,10 +9,12 @@ const AdminDashboard: React.FC = () => {
     allBookings, 
     discountCodes, 
     campaigns,
+    allCustomers,
     fetchAllCars,
     fetchAllBookings,
     fetchDiscountCodes,
     fetchCampaigns,
+    fetchAllCustomers,
     loading 
   } = useAdminStore();
   
@@ -21,7 +23,8 @@ const AdminDashboard: React.FC = () => {
     fetchAllBookings();
     fetchDiscountCodes();
     fetchCampaigns();
-  }, [fetchAllCars, fetchAllBookings, fetchDiscountCodes, fetchCampaigns]);
+    fetchAllCustomers();
+  }, [fetchAllCars, fetchAllBookings, fetchDiscountCodes, fetchCampaigns, fetchAllCustomers]);
   
   const stats = [
     {
@@ -35,6 +38,12 @@ const AdminDashboard: React.FC = () => {
       value: allBookings.filter(b => b.status === 'confirmed').length,
       icon: <CalendarCheck className="h-6 w-6 text-primary-600" />,
       link: '/admin/bookings',
+    },
+    {
+      title: 'Total Customers',
+      value: allCustomers.length,
+      icon: <Users className="h-6 w-6 text-primary-600" />,
+      link: '/admin/customers',
     },
     {
       title: 'Active Discounts',
@@ -134,7 +143,7 @@ const AdminDashboard: React.FC = () => {
           {/* Quick Actions */}
           <div className="bg-white rounded-lg shadow-md p-6">
             <h2 className="text-xl font-semibold mb-6">Quick Actions</h2>
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-2 lg:grid-cols-3 gap-4">
               <Link 
                 to="/admin/cars"
                 className="flex items-center p-4 bg-primary-50 rounded-lg hover:bg-primary-100 transition-colors"
@@ -198,6 +207,17 @@ const AdminDashboard: React.FC = () => {
                 <div>
                   <p className="font-medium">Location Management</p>
                   <p className="text-sm text-secondary-500">Delivery fees & locations</p>
+                </div>
+              </Link>
+              
+              <Link 
+                to="/admin/customers"
+                className="flex items-center p-4 bg-indigo-50 rounded-lg hover:bg-indigo-100 transition-colors"
+              >
+                <UserCheck className="h-6 w-6 text-indigo-600 mr-3" />
+                <div>
+                  <p className="font-medium">Customer Management</p>
+                  <p className="text-sm text-secondary-500">View & manage customers</p>
                 </div>
               </Link>
             </div>
