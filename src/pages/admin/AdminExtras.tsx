@@ -43,7 +43,6 @@ const AdminExtras: React.FC = () => {
     stock_quantity: '',
     max_per_booking: '99',
     icon_name: 'Package',
-    image_url: '',
     sort_order: '0',
     active: true
   });
@@ -98,7 +97,6 @@ const AdminExtras: React.FC = () => {
         stock_quantity: formData.stock_quantity ? parseInt(formData.stock_quantity) : null,
         max_per_booking: parseInt(formData.max_per_booking) || 99,
         icon_name: formData.icon_name || null,
-        image_url: formData.image_url || null,
         sort_order: parseInt(formData.sort_order) || 0,
         active: formData.active
       };
@@ -140,7 +138,6 @@ const AdminExtras: React.FC = () => {
       stock_quantity: extra.stock_quantity?.toString() || '',
       max_per_booking: extra.max_per_booking.toString(),
       icon_name: extra.icon_name || 'Package',
-      image_url: extra.image_url || '',
       sort_order: extra.sort_order.toString(),
       active: extra.active
     });
@@ -194,7 +191,6 @@ const AdminExtras: React.FC = () => {
       stock_quantity: '',
       max_per_booking: '99',
       icon_name: 'Package',
-      image_url: '',
       sort_order: '0',
       active: true
     });
@@ -337,14 +333,6 @@ const AdminExtras: React.FC = () => {
                   value={formData.icon_name}
                   onChange={(e) => setFormData(prev => ({ ...prev, icon_name: e.target.value }))}
                   options={iconOptions.map(icon => ({ value: icon, label: icon }))}
-                />
-              </div>
-              
-              <div>
-                <Input
-                  label="Image URL"
-                  value={formData.image_url}
-                  onChange={(e) => setFormData(prev => ({ ...prev, image_url: e.target.value }))}
                 />
               </div>
               

@@ -311,6 +311,7 @@ export const useAdminStore = create<AdminState>((set, get) => ({
       
       set({ allBookings: bookings, isInitialLoad: false });
     } catch (error) {
+      console.error('Error fetching bookings:', error);
       set({ error: (error as Error).message });
     } finally {
       set({ loading: false });
@@ -557,6 +558,7 @@ export const useAdminStore = create<AdminState>((set, get) => ({
       
       set({ allCustomers: customers });
     } catch (error) {
+      console.error('Error fetching customers:', error);
       set({ error: (error as Error).message });
     } finally {
       set({ loading: false });
@@ -595,6 +597,7 @@ export const useAdminStore = create<AdminState>((set, get) => ({
       
       return true;
     } catch (error) {
+      console.error('Error toggling blacklist:', error);
       set({ error: (error as Error).message });
       return false;
     } finally {
@@ -627,6 +630,7 @@ export const useAdminStore = create<AdminState>((set, get) => ({
       
       return bookings;
     } catch (error) {
+      console.error('Error fetching customer bookings:', error);
       return [];
     }
   },
@@ -643,6 +647,7 @@ export const useAdminStore = create<AdminState>((set, get) => ({
       
       return data as CustomerNote[];
     } catch (error) {
+      console.error('Error fetching customer notes:', error);
       return [];
     }
   },
@@ -664,6 +669,7 @@ export const useAdminStore = create<AdminState>((set, get) => ({
       
       return true;
     } catch (error) {
+      console.error('Error adding customer note:', error);
       return false;
     }
   },
