@@ -63,7 +63,7 @@ const CarGrid: React.FC = () => {
   
   if (filteredResults.length === 0) {
     return (
-      <div className="bg-sandy-100 p-6 sm:p-8 md:p-12 text-center rounded-2xl shadow-md">
+      <div className="bg-gray-50 p-6 sm:p-8 md:p-12 text-center rounded-2xl shadow-md">
         <CarIcon className="w-10 h-10 sm:w-12 sm:h-12 mx-auto mb-3 sm:mb-4 text-primary-600" />
         <h3 className="text-lg sm:text-xl md:text-2xl font-display font-semibold mb-2 sm:mb-3 text-volcanic-900">No Cars Found</h3>
         <p className="text-volcanic-600 text-sm sm:text-base md:text-lg mb-3 sm:mb-4">

@@ -75,8 +75,17 @@ export const useAdminStore = create<AdminState>((set, get) => ({
   
   // Car management
   fetchAllCars: async () => {
+    const state = get();
     try {
-      set({ loading: true, error: null });
+      // Check if modal is open in sessionStorage
+      const modalOpen = sessionStorage.getItem('adminCarsModalOpen') === 'true';
+      
+      // Only show loading if we don't have data yet AND modal is not open
+      if (state.allCars.length === 0 && !modalOpen) {
+        set({ loading: true, error: null });
+      } else {
+        set({ error: null });
+      }
       
       const { data, error } = await supabase
         .from('cars')
@@ -175,13 +184,13 @@ export const useAdminStore = create<AdminState>((set, get) => ({
     } catch (error) {
       set({ error: (error as Error).message });
     } finally {
-      set({ loading: false });
+      set({ isSavingData: false });
     }
   },
   
   toggleCarAvailability: async (id: string, available) => {
     try {
-      set({ loading: true, error: null });
+      set({ isSavingData: true, error: null });
       
       const { error } = await supabase
         .from('cars')
@@ -194,13 +203,13 @@ export const useAdminStore = create<AdminState>((set, get) => ({
     } catch (error) {
       set({ error: (error as Error).message });
     } finally {
-      set({ loading: false });
+      set({ isSavingData: false });
     }
   },
   
   deleteCar: async (id: string) => {
     try {
-      set({ loading: true, error: null });
+      set({ isSavingData: true, error: null });
       
       // First check if car has any active bookings
       const { data: bookings, error: bookingsError } = await supabase
@@ -229,14 +238,23 @@ export const useAdminStore = create<AdminState>((set, get) => ({
       set({ error: (error as Error).message });
       return false;
     } finally {
-      set({ loading: false });
+      set({ isSavingData: false });
     }
   },
   
   // Booking management
   fetchAllBookings: async () => {
+    const state = get();
     try {
-      set({ loading: true, error: null });
+      // Check if modal is open in sessionStorage
+      const modalOpen = sessionStorage.getItem('adminCarsModalOpen') === 'true';
+      
+      // Only show loading if we don't have data yet AND modal is not open
+      if (state.allBookings.length === 0 && !modalOpen) {
+        set({ loading: true, error: null });
+      } else {
+        set({ error: null });
+      }
       
       // Step 1: Get bookings with related data
       const { data, error } = await supabase
@@ -300,7 +318,7 @@ export const useAdminStore = create<AdminState>((set, get) => ({
           };
         });
       
-      set({ allBookings: bookings });
+      set({ allBookings: bookings, isInitialLoad: false });
     } catch (error) {
       console.error('Error fetching bookings:', error);
       set({ error: (error as Error).message });
@@ -349,8 +367,14 @@ export const useAdminStore = create<AdminState>((set, get) => ({
   
   // Discount code management
   fetchDiscountCodes: async () => {
+    const state = get();
     try {
-      set({ loading: true, error: null });
+      // Only show loading if we don't have data yet
+      if (state.discountCodes.length === 0) {
+        set({ loading: true, error: null });
+      } else {
+        set({ error: null });
+      }
       
       const { data, error } = await supabase
         .from('discount_codes')
@@ -431,8 +455,14 @@ export const useAdminStore = create<AdminState>((set, get) => ({
   
   // Campaign management
   fetchCampaigns: async () => {
+    const state = get();
     try {
-      set({ loading: true, error: null });
+      // Only show loading if we don't have data yet
+      if (state.campaigns.length === 0) {
+        set({ loading: true, error: null });
+      } else {
+        set({ error: null });
+      }
       
       const { data, error } = await supabase
         .from('campaigns')
@@ -507,8 +537,14 @@ export const useAdminStore = create<AdminState>((set, get) => ({
   
   // Customer management
   fetchAllCustomers: async () => {
+    const state = get();
     try {
-      set({ loading: true, error: null });
+      // Only show loading if we don't have data yet
+      if (state.allCustomers.length === 0) {
+        set({ loading: true, error: null });
+      } else {
+        set({ error: null });
+      }
       
       // Get all profiles with customer stats
       const { data, error } = await supabase

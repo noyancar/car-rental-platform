@@ -45,15 +45,28 @@ const AdminCars: React.FC = () => {
     deleteCar
   } = useAdminStore();
   
-  const [isAddingCar, setIsAddingCar] = useState(false);
+  // Restore modal state from sessionStorage
+  const [isAddingCar, setIsAddingCar] = useState(() => {
+    const saved = sessionStorage.getItem('adminCarsModalOpen');
+    return saved === 'true';
+  });
   const [searchTerm, setSearchTerm] = useState('');
   const [filterCategory, setFilterCategory] = useState('');
-  const [editingCar, setEditingCar] = useState<Car | null>(null);
+  const [editingCar, setEditingCar] = useState<Car | null>(() => {
+    const saved = sessionStorage.getItem('adminCarsEditingCar');
+    return saved ? JSON.parse(saved) : null;
+  });
+  const [isInitialLoad, setIsInitialLoad] = useState(() => {
+    // If modal was open, we're not in initial load
+    return sessionStorage.getItem('adminCarsModalOpen') !== 'true';
+  });
   
   const [selectedFeatures, setSelectedFeatures] = useState<string[]>([]);
   const [customFeature, setCustomFeature] = useState('');
   
-  const [newCar, setNewCar] = useState({
+  const [newCar, setNewCar] = useState(() => {
+    const saved = sessionStorage.getItem('adminCarsNewCar');
+    return saved ? JSON.parse(saved) : {
     make: '',
     model: '',
     year: new Date().getFullYear(),
@@ -74,9 +87,28 @@ const AdminCars: React.FC = () => {
     doors: 4,
     fuel_type: 'Gas',
     gas_grade: 'Regular',
+  };
   });
   
+  // Track modal state changes in sessionStorage
   useEffect(() => {
+    sessionStorage.setItem('adminCarsModalOpen', isAddingCar.toString());
+  }, [isAddingCar]);
+  
+  useEffect(() => {
+    sessionStorage.setItem('adminCarsEditingCar', editingCar ? JSON.stringify(editingCar) : '');
+  }, [editingCar]);
+  
+  // Save newCar state to sessionStorage
+  useEffect(() => {
+    if (isAddingCar) {
+      sessionStorage.setItem('adminCarsNewCar', JSON.stringify(newCar));
+    }
+  }, [newCar, isAddingCar]);
+  
+  useEffect(() => {
+    // Always fetch data but control loading display
+    setIsInitialLoad(false);
     fetchAllCars();
     fetchAllBookings();
   }, [fetchAllCars, fetchAllBookings]);
@@ -142,6 +174,8 @@ const AdminCars: React.FC = () => {
       
       await addCar(newCar);
       setIsAddingCar(false);
+      sessionStorage.removeItem('adminCarsModalOpen');
+      sessionStorage.removeItem('adminCarsNewCar');
       setNewCar({
         make: '',
         model: '',
@@ -181,6 +215,7 @@ const AdminCars: React.FC = () => {
       
       await updateCar(car.id, car);
       setEditingCar(null);
+      sessionStorage.removeItem('adminCarsEditingCar');
       toast.success('Car updated successfully');
     } catch (error) {
       toast.error('Failed to update car');
@@ -222,7 +257,11 @@ const AdminCars: React.FC = () => {
     return matchesSearch && matchesCategory;
   });
   
-  if (loading) {
+  // Check if modal should be restored BEFORE showing loading
+  const shouldShowModal = isAddingCar || editingCar || sessionStorage.getItem('adminCarsModalOpen') === 'true';
+  
+  // Never show loading if modal should be displayed
+  if (loading && !shouldShowModal && allCars.length === 0) {
     return (
       <div className="min-h-screen pt-16 pb-12 flex items-center justify-center bg-secondary-50">
         <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary-800"></div>
@@ -406,6 +445,9 @@ const AdminCars: React.FC = () => {
                 onClick={() => {
                   setIsAddingCar(false);
                   setEditingCar(null);
+                  sessionStorage.removeItem('adminCarsModalOpen');
+                  sessionStorage.removeItem('adminCarsEditingCar');
+                  sessionStorage.removeItem('adminCarsNewCar');
                 }}
                 className="p-2 hover:bg-secondary-100 rounded-lg transition-all duration-200 group"
                 aria-label="Close modal"
@@ -691,6 +733,9 @@ const AdminCars: React.FC = () => {
                     setIsAddingCar(false);
                     setEditingCar(null);
                     setCustomFeature('');
+                    sessionStorage.removeItem('adminCarsModalOpen');
+                    sessionStorage.removeItem('adminCarsEditingCar');
+                    sessionStorage.removeItem('adminCarsNewCar');
                   }}
                 >
                   Cancel

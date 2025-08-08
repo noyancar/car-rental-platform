@@ -51,7 +51,11 @@ const ProtectedRoute: React.FC<{ element: React.ReactElement; adminOnly?: boolea
   
   // Show loading state while checking authentication
   if (loading) {
-    return <div className="min-h-screen flex items-center justify-center">Loading...</div>;
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-secondary-50">
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary-800"></div>
+      </div>
+    );
   }
   
   // Show auth modal if user is not authenticated

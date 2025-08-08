@@ -362,7 +362,7 @@ const BookingPage: React.FC = () => {
     : 0;
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen">
       {/* Compact Header - Desktop Only */}
       <div className="hidden lg:block bg-white border-b">
         <div className="container-custom py-6">
