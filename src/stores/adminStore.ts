@@ -311,7 +311,6 @@ export const useAdminStore = create<AdminState>((set, get) => ({
       
       set({ allBookings: bookings, isInitialLoad: false });
     } catch (error) {
-      console.error('Error fetching bookings:', error);
       set({ error: (error as Error).message });
     } finally {
       set({ loading: false });
@@ -558,7 +557,6 @@ export const useAdminStore = create<AdminState>((set, get) => ({
       
       set({ allCustomers: customers });
     } catch (error) {
-      console.error('Error fetching customers:', error);
       set({ error: (error as Error).message });
     } finally {
       set({ loading: false });
@@ -569,19 +567,14 @@ export const useAdminStore = create<AdminState>((set, get) => ({
     try {
       set({ loading: true, error: null });
       
-      console.log('Toggling blacklist for user:', userId, 'blacklist:', blacklist, 'reason:', reason);
-      
       // First check current user is admin
       const { data: { user } } = await supabase.auth.getUser();
-      console.log('Current user:', user?.id);
       
       const { data: adminProfile } = await supabase
         .from('profiles')
         .select('role')
         .eq('id', user?.id || '')
         .single();
-      
-      console.log('Admin profile:', adminProfile);
       
       const updateData: any = { is_blacklisted: blacklist };
       if (blacklist) {
@@ -590,24 +583,18 @@ export const useAdminStore = create<AdminState>((set, get) => ({
         updateData.blacklist_reason = null;
       }
       
-      console.log('Update data:', updateData);
-      
       const { data, error } = await supabase
         .from('profiles')
         .update(updateData)
         .eq('id', userId)
         .select();
       
-      console.log('Update result:', data, 'error:', error);
-      
       if (error) {
-        console.error('Detailed error:', error);
         throw error;
       }
       
       return true;
     } catch (error) {
-      console.error('Error toggling blacklist:', error);
       set({ error: (error as Error).message });
       return false;
     } finally {
@@ -640,7 +627,6 @@ export const useAdminStore = create<AdminState>((set, get) => ({
       
       return bookings;
     } catch (error) {
-      console.error('Error fetching customer bookings:', error);
       return [];
     }
   },
@@ -657,7 +643,6 @@ export const useAdminStore = create<AdminState>((set, get) => ({
       
       return data as CustomerNote[];
     } catch (error) {
-      console.error('Error fetching customer notes:', error);
       return [];
     }
   },
@@ -679,7 +664,6 @@ export const useAdminStore = create<AdminState>((set, get) => ({
       
       return true;
     } catch (error) {
-      console.error('Error adding customer note:', error);
       return false;
     }
   },

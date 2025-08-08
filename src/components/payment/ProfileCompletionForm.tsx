@@ -53,12 +53,6 @@ const ProfileCompletionForm: React.FC<ProfileCompletionFormProps> = ({ onComplet
     try {
       setLoading(true);
       
-      console.log('Updating profile with data:', {
-        has_valid_license: formData.has_valid_license,
-        license_state: formData.license_state,
-        license_number: formData.license_number,
-        phone: formData.phone
-      });
       
       await updateProfile({
         first_name: formData.first_name,

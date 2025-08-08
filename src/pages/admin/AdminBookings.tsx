@@ -39,15 +39,6 @@ const AdminBookings: React.FC = () => {
     fetchAllBookings();
   }, []); // Only on mount - simple and clean
   
-  useEffect(() => {
-    console.log('Admin bookings data:', allBookings);
-    console.log('Available locations:', dbLocations);
-    if (allBookings.length > 0) {
-      console.log('First booking detail:', allBookings[0]);
-      console.log('Pickup location data:', allBookings[0].pickup_location);
-      console.log('Return location data:', allBookings[0].return_location);
-    }
-  }, [allBookings, dbLocations]);
   
   const handleStatusChange = async (booking: Booking, newStatus: Booking['status']) => {
     try {
@@ -99,7 +90,6 @@ const AdminBookings: React.FC = () => {
     // Fallback to looking up by ID
     if (!locationId) return 'Not specified';
     const location = dbLocations.find(loc => loc.id === locationId);
-    console.log(`Looking for location ${locationId}:`, location);
     return location ? location.label : 'Unknown location';
   };
   
