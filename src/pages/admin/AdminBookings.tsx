@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
-import { Search, Filter, CheckCircle, XCircle, AlertCircle, Eye } from 'lucide-react';
+import { useSearchParams } from 'react-router-dom';
+import { Search, Filter, CheckCircle, XCircle, AlertCircle, Eye, Download, Calendar } from 'lucide-react';
 import { toast } from 'sonner';
 import { Button } from '../../components/ui/Button';
 import { Input } from '../../components/ui/Input';
@@ -7,6 +8,7 @@ import { Select } from '../../components/ui/Select';
 import { useAdminStore } from '../../stores/adminStore';
 import { useLocations } from '../../hooks/useLocations';
 import BookingDetailsModal from '../../components/admin/BookingDetailsModal';
+import { exportMonthlyRevenueCSV } from '../../utils/csvExport';
 import type { Booking } from '../../types';
 
 const AdminBookings: React.FC = () => {
@@ -19,11 +21,19 @@ const AdminBookings: React.FC = () => {
   } = useAdminStore();
   
   const { dbLocations } = useLocations();
+  const [searchParams] = useSearchParams();
   
   const [searchTerm, setSearchTerm] = useState('');
-  const [statusFilter, setStatusFilter] = useState('');
+  const [statusFilter, setStatusFilter] = useState(() => {
+    // Initialize with URL parameter if available
+    return searchParams.get('filter') || '';
+  });
   const [dateFilter, setDateFilter] = useState('');
   const [selectedBooking, setSelectedBooking] = useState<Booking | null>(null);
+  const [exportMonth, setExportMonth] = useState(() => {
+    const now = new Date();
+    return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+  });
   
   useEffect(() => {
     fetchAllBookings();
@@ -45,6 +55,27 @@ const AdminBookings: React.FC = () => {
       toast.success('Booking status updated successfully');
     } catch (error) {
       toast.error('Failed to update booking status');
+    }
+  };
+
+  const handleExportRevenue = () => {
+    try {
+      const [year, month] = exportMonth.split('-');
+      const monthDate = new Date(parseInt(year), parseInt(month) - 1, 1);
+      
+      // Add customer name to bookings for export
+      const bookingsWithCustomerNames = allBookings.map(booking => ({
+        ...booking,
+        customer_name: booking.first_name && booking.last_name 
+          ? `${booking.first_name} ${booking.last_name}` 
+          : booking.email || 'Unknown',
+        customer_email: booking.email
+      }));
+      
+      exportMonthlyRevenueCSV(bookingsWithCustomerNames, monthDate);
+      toast.success('Revenue report exported successfully');
+    } catch (error) {
+      toast.error('Failed to export revenue report');
     }
   };
   
@@ -79,7 +110,24 @@ const AdminBookings: React.FC = () => {
       booking.id.includes(searchTerm)
     );
     
-    const matchesStatus = !statusFilter || booking.status === statusFilter;
+    // Handle special "active" filter
+    let matchesStatus = true;
+    if (statusFilter === 'active') {
+      // Active bookings: confirmed status and current date is between start and end dates
+      if (booking.status !== 'confirmed') {
+        matchesStatus = false;
+      } else {
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        const startDate = new Date(booking.start_date);
+        const endDate = new Date(booking.end_date);
+        startDate.setHours(0, 0, 0, 0);
+        endDate.setHours(23, 59, 59, 999);
+        matchesStatus = today >= startDate && today <= endDate;
+      }
+    } else if (statusFilter) {
+      matchesStatus = booking.status === statusFilter;
+    }
     
     const matchesDate = !dateFilter || (
       new Date(booking.start_date).toISOString().split('T')[0] === dateFilter
@@ -109,9 +157,28 @@ const AdminBookings: React.FC = () => {
   return (
     <div className="min-h-screen pt-16 pb-12 bg-secondary-50">
       <div className="container-custom">
-        <h1 className="text-3xl font-display font-bold text-primary-800 mb-8">
-          Manage Bookings
-        </h1>
+        <div className="flex justify-between items-start mb-8">
+          <h1 className="text-3xl font-display font-bold text-primary-800">
+            Manage Bookings
+          </h1>
+          
+          {/* Export Controls */}
+          <div className="flex items-center gap-3">
+            <input
+              type="month"
+              value={exportMonth}
+              onChange={(e) => setExportMonth(e.target.value)}
+              className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500"
+            />
+            <Button
+              variant="outline"
+              leftIcon={<Download size={20} />}
+              onClick={handleExportRevenue}
+            >
+              Export Revenue
+            </Button>
+          </div>
+        </div>
         
         {/* Filters */}
         <div className="bg-white p-4 rounded-lg shadow-md mb-6">
@@ -126,6 +193,7 @@ const AdminBookings: React.FC = () => {
             <Select
               options={[
                 { value: '', label: 'All Statuses' },
+                { value: 'active', label: 'Active (Currently Rented)' },
                 { value: 'pending', label: 'Pending' },
                 { value: 'confirmed', label: 'Confirmed' },
                 { value: 'cancelled', label: 'Cancelled' },

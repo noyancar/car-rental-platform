@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Plus, Edit, Trash2, Check, X, Search, Tag, Settings } from 'lucide-react';
+import { Plus, Edit, Trash2, Check, X, Search, Tag, Settings, Download } from 'lucide-react';
 import { toast } from 'sonner';
 import { Button } from '../../components/ui/Button';
 import { Input } from '../../components/ui/Input';
@@ -8,6 +8,7 @@ import { SimpleImageUploader } from '../../components/ui/SimpleImageUploader';
 import { PageHeader } from '../../components/ui/PageHeader';
 import { useAdminStore } from '../../stores/adminStore';
 import { checkStorageSetup } from '../../utils/fixStorageSetup';
+import { exportCarPerformanceCSV } from '../../utils/csvExport';
 import type { Car } from '../../types/index';
 
 const COMMON_FEATURES = [
@@ -33,9 +34,11 @@ const COMMON_FEATURES = [
 const AdminCars: React.FC = () => {
   const { 
     allCars, 
+    allBookings,
     loading, 
     error,
     fetchAllCars,
+    fetchAllBookings,
     addCar,
     updateCar,
     toggleCarAvailability,
@@ -75,7 +78,17 @@ const AdminCars: React.FC = () => {
   
   useEffect(() => {
     fetchAllCars();
-  }, [fetchAllCars]);
+    fetchAllBookings();
+  }, [fetchAllCars, fetchAllBookings]);
+
+  const handleExportPerformance = () => {
+    try {
+      exportCarPerformanceCSV(allCars, allBookings);
+      toast.success('Car performance report exported successfully');
+    } catch (error) {
+      toast.error('Failed to export car performance report');
+    }
+  };
   
   const handleAddFeature = () => {
     if (!customFeature.trim()) return;
@@ -243,6 +256,13 @@ const AdminCars: React.FC = () => {
           fallbackPath="/admin"
           actions={
             <div className="flex gap-2">
+              <Button
+                variant="outline"
+                onClick={handleExportPerformance}
+                leftIcon={<Download size={20} />}
+              >
+                Export Performance
+              </Button>
               <Button 
                 variant="primary"
                 onClick={() => setIsAddingCar(true)}

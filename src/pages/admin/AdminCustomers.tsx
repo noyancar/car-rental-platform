@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Search, User, AlertCircle, Ban, Check, MessageSquare, Calendar, DollarSign } from 'lucide-react';
+import { Search, User, AlertCircle, Ban, Check, MessageSquare, Calendar, DollarSign, Download } from 'lucide-react';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
 import { Button } from '../../components/ui/Button';
@@ -7,6 +7,7 @@ import { Input } from '../../components/ui/Input';
 import { useAdminStore } from '../../stores/adminStore';
 import CustomerDetailsModal from '../../components/admin/CustomerDetailsModal';
 import BlacklistModal from '../../components/admin/BlacklistModal';
+import { exportCustomersCSV } from '../../utils/csvExport';
 import type { User as Customer } from '../../types';
 
 interface CustomerWithStats extends Customer {
@@ -91,11 +92,30 @@ const AdminCustomers: React.FC = () => {
     );
   }
 
+  const handleExport = () => {
+    try {
+      exportCustomersCSV(filteredCustomers);
+      toast.success('Customer list exported successfully');
+    } catch (error) {
+      toast.error('Failed to export customer list');
+    }
+  };
+
   return (
     <div className="p-6 max-w-7xl mx-auto">
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold text-gray-900 mb-2">Customer Management</h1>
-        <p className="text-gray-600">View and manage your customers</p>
+      <div className="mb-8 flex justify-between items-start">
+        <div>
+          <h1 className="text-3xl font-bold text-gray-900 mb-2">Customer Management</h1>
+          <p className="text-gray-600">View and manage your customers</p>
+        </div>
+        <Button
+          variant="outline"
+          leftIcon={<Download size={20} />}
+          onClick={handleExport}
+          disabled={filteredCustomers.length === 0}
+        >
+          Export to CSV
+        </Button>
       </div>
 
       {error && (
