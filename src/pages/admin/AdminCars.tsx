@@ -107,11 +107,10 @@ const AdminCars: React.FC = () => {
   }, [newCar, isAddingCar]);
   
   useEffect(() => {
-    // Always fetch data but control loading display
     setIsInitialLoad(false);
     fetchAllCars();
     fetchAllBookings();
-  }, [fetchAllCars, fetchAllBookings]);
+  }, []); // Only on mount - simple and clean
 
   const handleExportPerformance = () => {
     try {

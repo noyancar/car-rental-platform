@@ -38,7 +38,7 @@ const AdminCustomers: React.FC = () => {
 
   useEffect(() => {
     fetchAllCustomers();
-  }, [fetchAllCustomers]);
+  }, []); // Only on mount - simple and clean
 
   const handleBlacklistToggle = (customer: CustomerWithStats) => {
     setBlacklistModalData({

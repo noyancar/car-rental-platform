@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Car, CalendarCheck, Tag, Megaphone, Users, TrendingUp, DollarSign, Clock, Package, MapPin, UserCheck, Calendar } from 'lucide-react';
 import { format } from 'date-fns';
@@ -19,13 +19,24 @@ const AdminDashboard: React.FC = () => {
     loading 
   } = useAdminStore();
   
+  const [dataLoaded, setDataLoaded] = useState(false);
+  
   useEffect(() => {
-    fetchAllCars();
-    fetchAllBookings();
-    fetchDiscountCodes();
-    fetchCampaigns();
-    fetchAllCustomers();
-  }, [fetchAllCars, fetchAllBookings, fetchDiscountCodes, fetchCampaigns, fetchAllCustomers]);
+    // Load all data once on mount
+    if (!dataLoaded) {
+      Promise.all([
+        fetchAllCars(),
+        fetchAllBookings(),
+        fetchDiscountCodes(),
+        fetchCampaigns(),
+        fetchAllCustomers()
+      ]).then(() => {
+        setDataLoaded(true);
+      }).catch(error => {
+        console.error('Failed to load admin data:', error);
+      });
+    }
+  }, [dataLoaded]); // Only re-run if dataLoaded changes
   
   // Calculate truly active bookings (currently in progress)
   const today = new Date();

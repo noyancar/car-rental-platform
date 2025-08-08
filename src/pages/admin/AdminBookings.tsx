@@ -37,7 +37,7 @@ const AdminBookings: React.FC = () => {
   
   useEffect(() => {
     fetchAllBookings();
-  }, [fetchAllBookings]);
+  }, []); // Only on mount - simple and clean
   
   useEffect(() => {
     console.log('Admin bookings data:', allBookings);
