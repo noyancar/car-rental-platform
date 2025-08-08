@@ -277,24 +277,15 @@ export const useAdminStore = create<AdminState>((set, get) => ({
       // Step 2: Get unique user IDs
       const userIds = [...new Set(data.map(b => b.user_id).filter(Boolean))];
       
-      // Step 3: Batch fetch profiles
+      // Step 3: Batch fetch profiles (email is now in profiles table)
       const { data: profilesData } = await supabase
         .from('profiles')
-        .select('id, first_name, last_name, phone, license_number')
+        .select('id, first_name, last_name, phone, license_number, email')
         .in('id', userIds);
       
       // Create lookup map
       const profilesMap = new Map(
         (profilesData || []).map(p => [p.id, p])
-      );
-      
-      // Step 4: Fetch emails using the RPC function
-      const { data: emailsData } = await supabase
-        .rpc('get_user_emails', { user_ids: userIds });
-      
-      // Create email lookup map
-      const emailsMap = new Map(
-        (emailsData || []).map(e => [e.user_id, e.email])
       );
       
       // Step 5: Combine data
@@ -314,7 +305,7 @@ export const useAdminStore = create<AdminState>((set, get) => ({
             last_name: profile?.last_name || '',
             phone: profile?.phone || '',
             license_number: profile?.license_number || '',
-            email: emailsMap.get(item.user_id) || ''
+            email: profile?.email || ''
           };
         });
       
@@ -559,19 +550,10 @@ export const useAdminStore = create<AdminState>((set, get) => ({
         return;
       }
       
-      // Get emails for all users
-      const { data: emailsData } = await supabase
-        .rpc('get_user_emails', { user_ids: data.map(p => p.id) });
-      
-      // Create email lookup map
-      const emailsMap = new Map(
-        (emailsData || []).map(e => [e.user_id, e.email])
-      );
-      
-      // Combine data
+      // Profiles now include email directly
       const customers: CustomerWithStats[] = data.map(profile => ({
         ...profile,
-        email: emailsMap.get(profile.id) || ''
+        email: profile.email || ''
       }));
       
       set({ allCustomers: customers });
