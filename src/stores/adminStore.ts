@@ -263,7 +263,12 @@ export const useAdminStore = create<AdminState>((set, get) => ({
           *,
           cars (*),
           pickup_location:locations!pickup_location_id (*),
-          return_location:locations!return_location_id (*)
+          return_location:locations!return_location_id (*),
+          booking_extras (
+            quantity,
+            total_price,
+            extras (name, price, category)
+          )
         `)
         .order('created_at', { ascending: false });
       

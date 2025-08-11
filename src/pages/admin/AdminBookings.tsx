@@ -259,7 +259,7 @@ const AdminBookings: React.FC = () => {
                       </div>
                     </td>
                     <td className="px-6 py-4">
-                      ${booking.total_price}
+                      ${booking.grand_total || booking.total_price}
                     </td>
                     <td className="px-6 py-4">
                       <div className="flex items-center">

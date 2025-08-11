@@ -119,6 +119,8 @@ const PaymentPage: React.FC = () => {
       const { data, error } = await supabase.functions.invoke('create-payment-intent', {
         body: { 
           booking_id: bookingData.id,
+          customerEmail: bookingData.customer_email || bookingData.email || user?.email, // Send customer email for receipt
+          customerName: bookingData.customer_name || 'Customer', // Use existing customer_name or fallback
           metadata: {
             user_email: user?.email,
             car_info: `${bookingData.car?.make} ${bookingData.car?.model} ${bookingData.car?.year}`
@@ -127,6 +129,7 @@ const PaymentPage: React.FC = () => {
       });
 
       if (error) {
+        console.error('Edge Function error:', error);
         throw error;
       }
 
@@ -145,6 +148,8 @@ const PaymentPage: React.FC = () => {
         throw new Error(data?.error || 'Failed to create payment intent');
       }
     } catch (error) {
+      console.error('Payment initialization error:', error);
+      console.error('Full error details:', { error, data });
       setPaymentError('Failed to initialize payment. Please try again.');
       toast.error('Failed to initialize payment');
     }

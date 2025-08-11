@@ -161,6 +161,23 @@ const BookingDetailsModal: React.FC<BookingDetailsModalProps> = ({ booking, onCl
                 <span>Subtotal:</span>
                 <span className="font-medium">${booking.subtotal || booking.total_price}</span>
               </div>
+              {booking.booking_extras && booking.booking_extras.length > 0 && (
+                <div className="space-y-1">
+                  <div className="text-gray-600 text-xs mt-2">Additional Services:</div>
+                  {booking.booking_extras.map((extra: any, index: number) => (
+                    <div key={index} className="flex justify-between text-sm">
+                      <span className="ml-2">• {extra.extras?.name || 'Extra'} (x{extra.quantity})</span>
+                      <span>${extra.total_price}</span>
+                    </div>
+                  ))}
+                  {booking.extras_total > 0 && (
+                    <div className="flex justify-between font-medium border-t pt-1">
+                      <span>Extras Total:</span>
+                      <span>${booking.extras_total}</span>
+                    </div>
+                  )}
+                </div>
+              )}
               {booking.delivery_fee > 0 && (
                 <div className="flex justify-between">
                   <span>Delivery Fee:</span>
@@ -175,7 +192,7 @@ const BookingDetailsModal: React.FC<BookingDetailsModalProps> = ({ booking, onCl
               )}
               <div className="border-t pt-2 flex justify-between font-semibold text-lg">
                 <span>Total:</span>
-                <span>${booking.total_price}</span>
+                <span>${booking.grand_total || booking.total_price}</span>
               </div>
               <div className="mt-2 flex items-center gap-2 text-gray-500">
                 <CreditCard size={16} />

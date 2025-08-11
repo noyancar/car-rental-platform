@@ -16,7 +16,7 @@ serve(async (req) => {
 
   try {
     // Get request body
-    const { booking_id, currency = 'usd', metadata = {} } = await req.json();
+    const { booking_id, currency = 'usd', metadata = {}, customerEmail, customerName } = await req.json();
 
     if (!booking_id) {
       throw new Error("Booking ID is required");
@@ -89,6 +89,46 @@ serve(async (req) => {
     const stripe = new Stripe(stripeSecretKey, {
       apiVersion: '2023-10-16',
     });
+
+    // Get or create Stripe customer
+    let stripeCustomerId = booking.stripe_customer_id;
+    const email = customerEmail || booking.email || booking.customer_email;
+    const name = customerName || `${booking.first_name} ${booking.last_name}`;
+
+    if (!stripeCustomerId && email) {
+      // Search for existing customer by email
+      const existingCustomers = await stripe.customers.list({
+        email: email,
+        limit: 1
+      });
+
+      if (existingCustomers.data.length > 0) {
+        stripeCustomerId = existingCustomers.data[0].id;
+        console.log(`Found existing Stripe customer: ${stripeCustomerId}`);
+      } else {
+        // Create new Stripe customer
+        const newCustomer = await stripe.customers.create({
+          email: email,
+          name: name,
+          metadata: {
+            booking_id: booking_id,
+            user_id: booking.user_id
+          }
+        });
+        stripeCustomerId = newCustomer.id;
+        console.log(`Created new Stripe customer: ${stripeCustomerId}`);
+      }
+
+      // Update booking with Stripe customer ID and email
+      await supabase
+        .from("bookings")
+        .update({
+          stripe_customer_id: stripeCustomerId,
+          customer_email: email,
+          customer_name: name
+        })
+        .eq("id", booking_id);
+    }
 
     // Check if a payment intent already exists
     if (booking.stripe_payment_intent_id) {
@@ -180,10 +220,14 @@ serve(async (req) => {
       automatic_payment_methods: {
         enabled: true,
       },
+      customer: stripeCustomerId, // Attach to customer for history
+      receipt_email: email, // This triggers automatic receipt email from Stripe!
       metadata: {
         booking_id: booking_id.toString(),
         user_id: booking.user_id,
         car_id: booking.car_id.toString(),
+        customer_email: email,
+        customer_name: name,
         ...metadata,
       },
       description: `Car rental - ${booking.cars.make} ${booking.cars.model} ${booking.cars.year}`,
