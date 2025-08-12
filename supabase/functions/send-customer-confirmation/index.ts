@@ -26,12 +26,14 @@ Deno.serve(async (req) => {
       throw new Error('Booking ID is required')
     }
     
-    // Fetch booking details with car info
+    // Fetch booking details with car info and locations
     const { data: booking, error: bookingError } = await supabase
       .from('bookings')
       .select(`
         *,
-        car:cars(*)
+        car:cars(*),
+        pickup_location:locations!pickup_location_id(label),
+        return_location:locations!return_location_id(label)
       `)
       .eq('id', bookingId)
       .single()
@@ -61,6 +63,10 @@ Deno.serve(async (req) => {
     const firstName = booking.first_name || booking.customer_name?.split(' ')[0] || 'Valued Customer';
     const lastName = booking.last_name || booking.customer_name?.split(' ').slice(1).join(' ') || '';
     
+    // Get pickup and return times
+    const pickupTime = booking.pickup_time || '10:00';
+    const returnTime = booking.return_time || '10:00';
+    
     // Format dates for English locale
     const startDate = new Date(booking.start_date).toLocaleDateString('en-US', {
       weekday: 'long',
@@ -80,6 +86,10 @@ Deno.serve(async (req) => {
       (new Date(booking.end_date).getTime() - new Date(booking.start_date).getTime()) / 
       (1000 * 60 * 60 * 24)
     )
+    
+    // Get location names
+    const pickupLocationName = booking.pickup_location?.label || 'Location to be confirmed';
+    const returnLocationName = booking.return_location?.label || pickupLocationName; // Default to pickup if not specified
     
     // Customer confirmation email HTML template
     const emailHtml = `
@@ -108,7 +118,8 @@ Deno.serve(async (req) => {
             .checklist h3 { margin: 0 0 15px 0; color: #92400e; }
             .checklist ul { margin: 10px 0; padding-left: 20px; }
             .checklist li { margin: 8px 0; color: #78350f; }
-            .button { display: inline-block; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 14px 30px; text-decoration: none; border-radius: 8px; margin: 20px 0; font-weight: 600; }
+            .button { display: inline-block; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: #ffffff !important; padding: 14px 30px; text-decoration: none !important; border-radius: 8px; margin: 20px 0; font-weight: 600; }
+            .button:hover { background: linear-gradient(135deg, #5a67d8 0%, #6b4299 100%); color: #ffffff !important; text-decoration: none !important; }
             .footer { text-align: center; color: #6b7280; font-size: 13px; margin-top: 40px; padding-top: 20px; border-top: 1px solid #e5e7eb; }
             .footer a { color: #667eea; text-decoration: none; }
           </style>
@@ -155,12 +166,12 @@ Deno.serve(async (req) => {
               <div class="section">
                 <div class="section-title">📅 Rental Period</div>
                 <div class="detail-row">
-                  <span class="label">Pick-up Date:</span>
-                  <span class="value highlight">${startDate}</span>
+                  <span class="label">Pick-up Date & Time:</span>
+                  <span class="value highlight">${startDate} at ${pickupTime}</span>
                 </div>
                 <div class="detail-row">
-                  <span class="label">Drop-off Date:</span>
-                  <span class="value highlight">${endDate}</span>
+                  <span class="label">Return Date & Time:</span>
+                  <span class="value highlight">${endDate} at ${returnTime}</span>
                 </div>
                 <div class="detail-row">
                   <span class="label">Duration:</span>
@@ -168,14 +179,19 @@ Deno.serve(async (req) => {
                 </div>
                 <div class="detail-row">
                   <span class="label">Pick-up Location:</span>
-                  <span class="value">${booking.pickup_location}</span>
+                  <span class="value">${pickupLocationName}</span>
                 </div>
-                ${booking.return_location ? `
+                ${returnLocationName !== pickupLocationName ? `
                 <div class="detail-row">
-                  <span class="label">Drop-off Location:</span>
-                  <span class="value">${booking.return_location}</span>
+                  <span class="label">Return Location:</span>
+                  <span class="value">${returnLocationName}</span>
                 </div>
-                ` : ''}
+                ` : `
+                <div class="detail-row">
+                  <span class="label">Return Location:</span>
+                  <span class="value">Same as pick-up location</span>
+                </div>
+                `}
               </div>
               
               <div class="section">
@@ -184,19 +200,25 @@ Deno.serve(async (req) => {
                   <span class="label">Car Rental:</span>
                   <span class="value">$${(booking.base_price || booking.total_price).toFixed(2)}</span>
                 </div>
-                ${booking.extras_total ? `
+                ${booking.extras_total && booking.extras_total > 0 ? `
                 <div class="detail-row">
                   <span class="label">Additional Services:</span>
                   <span class="value">$${booking.extras_total.toFixed(2)}</span>
                 </div>
                 ` : ''}
-                ${booking.delivery_fee ? `
+                ${booking.pickup_delivery_fee && booking.pickup_delivery_fee > 0 ? `
                 <div class="detail-row">
-                  <span class="label">Delivery Fee:</span>
-                  <span class="value">$${booking.delivery_fee.toFixed(2)}</span>
+                  <span class="label">Pick-up Delivery Fee:</span>
+                  <span class="value">$${booking.pickup_delivery_fee.toFixed(2)}</span>
                 </div>
                 ` : ''}
-                ${booking.discount_amount ? `
+                ${booking.return_delivery_fee && booking.return_delivery_fee > 0 ? `
+                <div class="detail-row">
+                  <span class="label">Return Delivery Fee:</span>
+                  <span class="value">$${booking.return_delivery_fee.toFixed(2)}</span>
+                </div>
+                ` : ''}
+                ${booking.discount_amount && booking.discount_amount > 0 ? `
                 <div class="detail-row">
                   <span class="label">Discount Applied:</span>
                   <span class="value" style="color: #059669;">-$${booking.discount_amount.toFixed(2)}</span>
@@ -232,13 +254,13 @@ Deno.serve(async (req) => {
               <div class="section">
                 <div class="section-title">ℹ️ Additional Information</div>
                 <p style="margin: 10px 0;">
-                  <strong>Pick-up Time:</strong> Our office is open from 8:00 AM to 8:00 PM daily.
+                  <strong>Office Hours:</strong> Our office is open from 8:00 AM to 8:00 PM daily.
                 </p>
                 <p style="margin: 10px 0;">
                   <strong>Fuel Policy:</strong> The vehicle will be provided with a full tank. Please return it with a full tank to avoid refueling charges.
                 </p>
                 <p style="margin: 10px 0;">
-                  <strong>Mileage:</strong> ${booking.car.mileage_type || 'Unlimited mileage included'}.
+                  <strong>Mileage:</strong> ${booking.car.mileage_type || '200 miles/day included'}.
                 </p>
                 <p style="margin: 10px 0;">
                   <strong>Insurance:</strong> Basic insurance is included. Additional coverage options available at pick-up.
@@ -287,7 +309,7 @@ Deno.serve(async (req) => {
       
       const result = await resendResponse.json()
       
-      console.log('Confirmation email sent to customer:', booking.email)
+      console.log('Confirmation email sent to customer:', customerEmail)
       
       return new Response(
         JSON.stringify({ 

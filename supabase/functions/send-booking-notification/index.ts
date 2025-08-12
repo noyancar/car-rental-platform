@@ -27,12 +27,19 @@ Deno.serve(async (req) => {
       throw new Error('Booking ID is required')
     }
     
-    // Fetch booking details with car info
+    // Fetch booking details with car info and locations
     const { data: booking, error: bookingError } = await supabase
       .from('bookings')
       .select(`
         *,
-        car:cars(*)
+        car:cars(*),
+        pickup_location:locations!pickup_location_id(label),
+        return_location:locations!return_location_id(label),
+        booking_extras(
+          quantity,
+          total_price,
+          extras(name, price)
+        )
       `)
       .eq('id', bookingId)
       .single()
@@ -53,7 +60,13 @@ Deno.serve(async (req) => {
     const firstName = booking.first_name || booking.customer_name?.split(' ')[0] || 'Customer';
     const lastName = booking.last_name || booking.customer_name?.split(' ').slice(1).join(' ') || '';
     const customerEmail = booking.email || booking.customer_email || 'N/A';
-    const customerPhone = booking.phone || 'N/A';
+    
+    // Get customer phone - check multiple possible fields
+    const customerPhone = booking.phone || booking.customer_phone || 'N/A';
+    
+    // Get pickup and return times
+    const pickupTime = booking.pickup_time || '10:00';
+    const returnTime = booking.return_time || '10:00';
     
     // Format dates for English locale
     const startDate = new Date(booking.start_date).toLocaleDateString('en-US', {
@@ -75,7 +88,19 @@ Deno.serve(async (req) => {
       (1000 * 60 * 60 * 24)
     )
     
-    // Email HTML template (English)
+    // Get location names
+    const pickupLocationName = booking.pickup_location?.label || 'Location to be confirmed';
+    const returnLocationName = booking.return_location?.label || pickupLocationName;
+    
+    // Format extras list
+    let extrasListHtml = '';
+    if (booking.booking_extras && booking.booking_extras.length > 0) {
+      extrasListHtml = booking.booking_extras.map(item => 
+        `<li>${item.extras.name} (x${item.quantity}) - $${item.total_price.toFixed(2)}</li>`
+      ).join('');
+    }
+    
+    // Email HTML template for Admin (English)
     const emailHtml = `
       <!DOCTYPE html>
       <html>
@@ -91,8 +116,11 @@ Deno.serve(async (req) => {
             .label { font-weight: bold; color: #6b7280; }
             .value { color: #111827; }
             .total { font-size: 24px; font-weight: bold; color: #059669; }
-            .button { display: inline-block; background: #1e40af; color: white; padding: 12px 30px; text-decoration: none; border-radius: 6px; margin-top: 20px; }
+            .button { display: inline-block; background: #1e40af; color: #ffffff !important; padding: 12px 30px; text-decoration: none !important; border-radius: 6px; margin-top: 20px; font-weight: 600; }
+            .button:hover { background: #1e3a8a; color: #ffffff !important; text-decoration: none !important; }
             .footer { text-align: center; color: #6b7280; font-size: 12px; margin-top: 30px; }
+            .extras-list { margin: 0; padding-left: 20px; }
+            .extras-list li { margin: 5px 0; }
           </style>
         </head>
         <body>
@@ -117,10 +145,12 @@ Deno.serve(async (req) => {
                   <span class="label">Email:</span>
                   <span class="value">${customerEmail}</span>
                 </div>
+                ${customerPhone !== 'N/A' ? `
                 <div class="detail-row">
                   <span class="label">Phone:</span>
                   <span class="value">${customerPhone}</span>
                 </div>
+                ` : ''}
               </div>
               
               <div class="booking-details">
@@ -135,7 +165,11 @@ Deno.serve(async (req) => {
                 </div>
                 <div class="detail-row">
                   <span class="label">Category:</span>
-                  <span class="value">${booking.car.category}</span>
+                  <span class="value">${booking.car.category.charAt(0).toUpperCase() + booking.car.category.slice(1)}</span>
+                </div>
+                <div class="detail-row">
+                  <span class="label">Transmission:</span>
+                  <span class="value">${booking.car.transmission || 'Automatic'}</span>
                 </div>
               </div>
               
@@ -143,41 +177,63 @@ Deno.serve(async (req) => {
                 <h2>Rental Period</h2>
                 <div class="detail-row">
                   <span class="label">Pick-up:</span>
-                  <span class="value">${startDate}</span>
+                  <span class="value">${startDate} at ${pickupTime}</span>
                 </div>
                 <div class="detail-row">
-                  <span class="label">Drop-off:</span>
-                  <span class="value">${endDate}</span>
+                  <span class="label">Return:</span>
+                  <span class="value">${endDate} at ${returnTime}</span>
                 </div>
                 <div class="detail-row">
                   <span class="label">Duration:</span>
-                  <span class="value">${days} days</span>
+                  <span class="value">${days} ${days === 1 ? 'day' : 'days'}</span>
                 </div>
                 <div class="detail-row">
-                  <span class="label">Location:</span>
-                  <span class="value">${booking.pickup_location}</span>
+                  <span class="label">Pick-up Location:</span>
+                  <span class="value">${pickupLocationName}</span>
                 </div>
+                ${returnLocationName !== pickupLocationName ? `
+                <div class="detail-row">
+                  <span class="label">Return Location:</span>
+                  <span class="value">${returnLocationName}</span>
+                </div>
+                ` : ''}
               </div>
               
               <div class="booking-details">
                 <h2>Payment Information</h2>
                 <div class="detail-row">
                   <span class="label">Car Rental:</span>
-                  <span class="value">$${booking.base_price?.toFixed(2) || booking.total_price?.toFixed(2)}</span>
+                  <span class="value">$${(booking.base_price || booking.car_rental_subtotal || booking.total_price)?.toFixed(2)}</span>
                 </div>
-                ${booking.extras_total ? `
+                ${booking.extras_total && booking.extras_total > 0 ? `
                 <div class="detail-row">
                   <span class="label">Extras:</span>
                   <span class="value">$${booking.extras_total.toFixed(2)}</span>
                 </div>
-                ` : ''}
-                ${booking.delivery_fee ? `
+                ${extrasListHtml ? `
                 <div class="detail-row">
-                  <span class="label">Delivery Fee:</span>
-                  <span class="value">$${booking.delivery_fee.toFixed(2)}</span>
+                  <span class="label"></span>
+                  <span class="value">
+                    <ul class="extras-list">
+                      ${extrasListHtml}
+                    </ul>
+                  </span>
                 </div>
                 ` : ''}
-                ${booking.discount_amount ? `
+                ` : ''}
+                ${booking.pickup_delivery_fee && booking.pickup_delivery_fee > 0 ? `
+                <div class="detail-row">
+                  <span class="label">Pick-up Delivery Fee:</span>
+                  <span class="value">$${booking.pickup_delivery_fee.toFixed(2)}</span>
+                </div>
+                ` : ''}
+                ${booking.return_delivery_fee && booking.return_delivery_fee > 0 ? `
+                <div class="detail-row">
+                  <span class="label">Return Delivery Fee:</span>
+                  <span class="value">$${booking.return_delivery_fee.toFixed(2)}</span>
+                </div>
+                ` : ''}
+                ${booking.discount_amount && booking.discount_amount > 0 ? `
                 <div class="detail-row">
                   <span class="label">Discount:</span>
                   <span class="value">-$${booking.discount_amount.toFixed(2)}</span>
@@ -186,6 +242,10 @@ Deno.serve(async (req) => {
                 <div class="detail-row">
                   <span class="label">Total Paid:</span>
                   <span class="value total">$${(booking.grand_total || booking.total_price).toFixed(2)}</span>
+                </div>
+                <div class="detail-row">
+                  <span class="label">Payment Method:</span>
+                  <span class="value">Stripe (${booking.stripe_payment_status || 'Paid'})</span>
                 </div>
               </div>
               
@@ -197,6 +257,7 @@ Deno.serve(async (req) => {
               
               <div class="footer">
                 <p>This is an automated notification from your car rental system.</p>
+                <p>Booking created at: ${new Date(booking.created_at).toLocaleString('en-US')}</p>
                 <p>© 2025 Car Rental Company</p>
               </div>
             </div>
