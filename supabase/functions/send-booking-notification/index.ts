@@ -111,7 +111,7 @@ Deno.serve(async (req) => {
             .header { background: #1e40af; color: white; padding: 20px; text-align: center; border-radius: 10px 10px 0 0; }
             .content { background: #f9fafb; padding: 30px; border: 1px solid #e5e7eb; border-radius: 0 0 10px 10px; }
             .booking-details { background: white; padding: 20px; border-radius: 8px; margin: 20px 0; }
-            .detail-row { display: flex; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid #e5e7eb; }
+            .detail-row { padding: 10px 0; border-bottom: 1px solid #e5e7eb; }
             .detail-row:last-child { border-bottom: none; }
             .label { font-weight: bold; color: #6b7280; }
             .value { color: #111827; }
@@ -133,18 +133,20 @@ Deno.serve(async (req) => {
               
               <div class="booking-details">
                 <h2>Booking Details</h2>
-                <div class="detail-row">
-                  <span class="label">Booking ID:</span>
-                  <span class="value">#${booking.id.slice(0, 8).toUpperCase()}</span>
-                </div>
-                <div class="detail-row">
-                  <span class="label">Customer:</span>
-                  <span class="value">${firstName} ${lastName}</span>
-                </div>
-                <div class="detail-row">
-                  <span class="label">Email:</span>
-                  <span class="value">${customerEmail}</span>
-                </div>
+                <table style="width: 100%;">
+                  <tr class="detail-row">
+                    <td class="label" style="width: 40%;">Booking ID:</td>
+                    <td class="value" style="text-align: right;">#${booking.id.slice(0, 8).toUpperCase()}</td>
+                  </tr>
+                  <tr class="detail-row">
+                    <td class="label">Customer:</td>
+                    <td class="value" style="text-align: right;">${firstName} ${lastName}</td>
+                  </tr>
+                  <tr class="detail-row">
+                    <td class="label">Email:</td>
+                    <td class="value" style="text-align: right;">${customerEmail}</td>
+                  </tr>
+                </table>
                 ${customerPhone !== 'N/A' ? `
                 <div class="detail-row">
                   <span class="label">Phone:</span>
@@ -201,15 +203,16 @@ Deno.serve(async (req) => {
               
               <div class="booking-details">
                 <h2>Payment Information</h2>
-                <div class="detail-row">
-                  <span class="label">Car Rental:</span>
-                  <span class="value">$${(booking.base_price || booking.car_rental_subtotal || booking.total_price)?.toFixed(2)}</span>
-                </div>
+                <table style="width: 100%;">
+                  <tr class="detail-row">
+                    <td class="label" style="width: 40%;">Car Rental:</td>
+                    <td class="value" style="text-align: right;">$${(booking.base_price || booking.car_rental_subtotal || booking.total_price)?.toFixed(2)}</td>
+                  </tr>
                 ${booking.extras_total && booking.extras_total > 0 ? `
-                <div class="detail-row">
-                  <span class="label">Extras:</span>
-                  <span class="value">$${booking.extras_total.toFixed(2)}</span>
-                </div>
+                  <tr class="detail-row">
+                    <td class="label">Extras:</td>
+                    <td class="value" style="text-align: right;">$${booking.extras_total.toFixed(2)}</td>
+                  </tr>
                 ${extrasListHtml ? `
                 <div class="detail-row">
                   <span class="label"></span>
@@ -222,10 +225,10 @@ Deno.serve(async (req) => {
                 ` : ''}
                 ` : ''}
                 ${booking.pickup_delivery_fee && booking.pickup_delivery_fee > 0 ? `
-                <div class="detail-row">
-                  <span class="label">Pick-up Delivery Fee:</span>
-                  <span class="value">$${booking.pickup_delivery_fee.toFixed(2)}</span>
-                </div>
+                  <tr class="detail-row">
+                    <td class="label">Pick-up Delivery Fee:</td>
+                    <td class="value" style="text-align: right;">$${booking.pickup_delivery_fee.toFixed(2)}</td>
+                  </tr>
                 ` : ''}
                 ${booking.return_delivery_fee && booking.return_delivery_fee > 0 ? `
                 <div class="detail-row">
@@ -239,14 +242,15 @@ Deno.serve(async (req) => {
                   <span class="value">-$${booking.discount_amount.toFixed(2)}</span>
                 </div>
                 ` : ''}
-                <div class="detail-row">
-                  <span class="label">Total Paid:</span>
-                  <span class="value total">$${(booking.grand_total || booking.total_price).toFixed(2)}</span>
-                </div>
-                <div class="detail-row">
-                  <span class="label">Payment Method:</span>
-                  <span class="value">Stripe (${booking.stripe_payment_status || 'Paid'})</span>
-                </div>
+                  <tr class="detail-row" style="border-top: 2px solid #374151; padding-top: 10px;">
+                    <td class="label" style="font-size: 18px; font-weight: bold;">Total Paid:</td>
+                    <td class="value total" style="text-align: right;">$${(booking.grand_total || booking.total_price).toFixed(2)}</td>
+                  </tr>
+                  <tr class="detail-row">
+                    <td class="label">Payment Method:</td>
+                    <td class="value" style="text-align: right;">Stripe (${booking.stripe_payment_status || 'Paid'})</td>
+                  </tr>
+                </table>
               </div>
               
               <center>

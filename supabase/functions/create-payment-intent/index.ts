@@ -228,9 +228,11 @@ serve(async (req) => {
         car_id: booking.car_id.toString(),
         customer_email: email,
         customer_name: name,
+        rental_dates: `${booking.start_date} to ${booking.end_date}`,
         ...metadata,
       },
-      description: `Car rental - ${booking.cars.make} ${booking.cars.model} ${booking.cars.year}`,
+      description: `Car Rental - Booking #${booking_id.slice(0, 8).toUpperCase()} - ${booking.cars.make} ${booking.cars.model} ${booking.cars.year}`,
+      statement_descriptor_suffix: 'CAR RENTAL',
     }, {
       idempotencyKey: idempotencyKey
     });

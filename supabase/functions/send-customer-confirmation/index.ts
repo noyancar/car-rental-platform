@@ -108,7 +108,10 @@ Deno.serve(async (req) => {
             .booking-ref-label { font-size: 14px; opacity: 0.9; margin-top: 5px; }
             .section { background: #f9fafb; padding: 20px; border-radius: 8px; margin: 20px 0; }
             .section-title { color: #374151; font-size: 18px; font-weight: 600; margin-bottom: 15px; border-bottom: 2px solid #e5e7eb; padding-bottom: 10px; }
-            .detail-row { display: flex; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid #e5e7eb; }
+            .detail-row { padding: 10px 0; border-bottom: 1px solid #e5e7eb; }
+            table { width: 100%; border-collapse: collapse; }
+            td.label { width: 40%; font-weight: 500; color: #6b7280; }
+            td.value { text-align: right; color: #111827; font-weight: 500; }
             .detail-row:last-child { border-bottom: none; }
             .label { font-weight: 500; color: #6b7280; }
             .value { color: #111827; font-weight: 500; }
@@ -196,21 +199,22 @@ Deno.serve(async (req) => {
               
               <div class="section">
                 <div class="section-title">💳 Payment Summary</div>
-                <div class="detail-row">
-                  <span class="label">Car Rental:</span>
-                  <span class="value">$${(booking.base_price || booking.total_price).toFixed(2)}</span>
-                </div>
+                <table style="width: 100%;">
+                  <tr class="detail-row">
+                    <td class="label">Car Rental:</td>
+                    <td class="value">$${(booking.base_price || booking.total_price).toFixed(2)}</td>
+                  </tr>
                 ${booking.extras_total && booking.extras_total > 0 ? `
-                <div class="detail-row">
-                  <span class="label">Additional Services:</span>
-                  <span class="value">$${booking.extras_total.toFixed(2)}</span>
-                </div>
+                  <tr class="detail-row">
+                    <td class="label">Additional Services:</td>
+                    <td class="value">$${booking.extras_total.toFixed(2)}</td>
+                  </tr>
                 ` : ''}
                 ${booking.pickup_delivery_fee && booking.pickup_delivery_fee > 0 ? `
-                <div class="detail-row">
-                  <span class="label">Pick-up Delivery Fee:</span>
-                  <span class="value">$${booking.pickup_delivery_fee.toFixed(2)}</span>
-                </div>
+                  <tr class="detail-row">
+                    <td class="label">Pick-up Delivery Fee:</td>
+                    <td class="value">$${booking.pickup_delivery_fee.toFixed(2)}</td>
+                  </tr>
                 ` : ''}
                 ${booking.return_delivery_fee && booking.return_delivery_fee > 0 ? `
                 <div class="detail-row">
@@ -224,14 +228,15 @@ Deno.serve(async (req) => {
                   <span class="value" style="color: #059669;">-$${booking.discount_amount.toFixed(2)}</span>
                 </div>
                 ` : ''}
-                <div class="detail-row" style="margin-top: 10px; padding-top: 10px; border-top: 2px solid #374151;">
-                  <span class="label" style="font-size: 18px;">Total Paid:</span>
-                  <span class="value total">$${(booking.grand_total || booking.total_price).toFixed(2)}</span>
-                </div>
-                <div class="detail-row">
-                  <span class="label">Payment Status:</span>
-                  <span class="value" style="color: #059669;">✅ Successfully Paid</span>
-                </div>
+                  <tr class="detail-row" style="border-top: 2px solid #374151;">
+                    <td class="label" style="font-size: 18px; padding-top: 10px;">Total Paid:</td>
+                    <td class="value total" style="padding-top: 10px;">$${(booking.grand_total || booking.total_price).toFixed(2)}</td>
+                  </tr>
+                  <tr class="detail-row">
+                    <td class="label">Payment Status:</td>
+                    <td class="value" style="color: #059669;">✅ Successfully Paid</td>
+                  </tr>
+                </table>
               </div>
               
               <div class="checklist">
