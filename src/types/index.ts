@@ -6,11 +6,12 @@ export type User = {
   phone?: string;
   address?: string;
   license_number?: string;
-  license_expiry?: string;
-  emergency_contact?: string;
-  emergency_phone?: string;
+  license_state?: string;
+  has_valid_license?: boolean;
+  license_verified_at?: string;
   avatar_url?: string;
   created_at?: string;
+  role?: 'user' | 'admin';
 }
 
 export type Car = {
@@ -52,8 +53,22 @@ export interface Booking {
   car?: Car;
   pickup_location_id?: string;
   return_location_id?: string;
-  pickup_location?: any; // Location object from join
-  return_location?: any; // Location object from join
+  pickup_location?: {
+    id: string;
+    value: string;
+    label: string;
+    address: string;
+    category: string;
+    delivery_fee: number;
+  }; // Location object from join
+  return_location?: {
+    id: string;
+    value: string;
+    label: string;
+    address: string;
+    category: string;
+    delivery_fee: number;
+  }; // Location object from join
   pickup_time?: string;
   return_time?: string;
   discount_code_id?: string;

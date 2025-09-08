@@ -44,7 +44,7 @@ export const useAuthStore = create<AuthState>((set) => ({
         
         set({ 
           user: data.user as User,
-          isAdmin: data.user.email === 'admin@example.com'
+          isAdmin: false // New users are never admins by default
         });
       }
     } catch (error) {
@@ -77,7 +77,7 @@ export const useAuthStore = create<AuthState>((set) => ({
           
         set({ 
           user: { ...data.user, ...profile } as User,
-          isAdmin: data.user.email === 'admin@example.com'
+          isAdmin: profile?.role === 'admin'
         });
       }
     } catch (error) {
@@ -123,9 +123,22 @@ export const useAuthStore = create<AuthState>((set) => ({
         
       if (error) throw error;
       
-      set(state => ({
-        user: state.user ? { ...state.user, ...data } : null
-      }));
+      // Fetch the updated profile from database
+      const { data: updatedProfile, error: fetchError } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', user.id)
+        .single();
+        
+      if (fetchError) throw fetchError;
+      
+      // Update local state with fresh data from database
+      set({
+        user: {
+          ...updatedProfile,
+          email: user.email || updatedProfile.email
+        }
+      });
     } catch (error) {
       set({ error: (error as Error).message });
       throw error;
@@ -154,7 +167,7 @@ export const useAuthStore = create<AuthState>((set) => ({
         
         set({ 
           user: { ...session.user, ...profile } as User,
-          isAdmin: session.user.email === 'admin@example.com',
+          isAdmin: profile?.role === 'admin',
           loading: false
         });
       } else {

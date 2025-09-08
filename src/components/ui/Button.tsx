@@ -32,8 +32,8 @@ export const Button = memo<ButtonProps>(({
     primary: 'bg-primary-600 text-white hover:bg-primary-700 focus:ring-primary-500 shadow-lg hover:shadow-xl',
     secondary: 'bg-volcanic-800 text-white hover:bg-volcanic-900 focus:ring-volcanic-500',
     accent: 'bg-accent-500 text-white hover:bg-accent-600 focus:ring-accent-400 shadow-lg hover:shadow-xl',
-    outline: 'border-2 border-primary-800 text-primary-800 hover:bg-primary-50 focus:ring-primary-500 disabled:border-primary-800/70 disabled:text-primary-800/70',
-    ghost: 'text-volcanic-700 hover:bg-sandy-200 focus:ring-sandy-400',
+    outline: 'border-2 border-primary-800 text-primary-800 hover:bg-white hover:shadow-md focus:ring-primary-500 disabled:border-primary-800/70 disabled:text-primary-800/70',
+    ghost: 'text-volcanic-700 hover:text-primary-800 focus:ring-gray-400',
   };
   
   // Size classes with better mobile touch targets

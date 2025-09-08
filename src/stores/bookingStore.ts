@@ -84,7 +84,6 @@ export const useBookingStore = create<BookingState>((set) => ({
       set({ loading: true, error: null });
       
       const { data: { user } } = await supabase.auth.getUser();
-      console.log('Current user:', user);
       
       if (!user) {
         throw new Error('User not authenticated');

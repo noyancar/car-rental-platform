@@ -4,6 +4,7 @@ import { Car, User, Menu, X, ShieldCheck, ChevronDown } from 'lucide-react';
 import { Button } from '../ui/Button';
 import { useAuthStore } from '../../stores/authStore';
 import { AuthModal } from '../auth';
+import SimpleNotificationBadge from '../admin/SimpleNotificationBadge';
 
 export const Navbar: React.FC = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -79,13 +80,16 @@ export const Navbar: React.FC = () => {
             {user ? (
               <div className="flex items-center space-x-4">
                 {isAdmin && (
-                  <Link 
-                    to="/admin" 
-                    className="flex items-center space-x-1 text-accent-600 hover:text-accent-700"
-                  >
-                    <ShieldCheck size={20} />
-                    <span>Admin</span>
-                  </Link>
+                  <div className="flex items-center space-x-2">
+                    <SimpleNotificationBadge />
+                    <Link 
+                      to="/admin" 
+                      className="flex items-center space-x-1 text-accent-600 hover:text-accent-700"
+                    >
+                      <ShieldCheck size={20} />
+                      <span>Admin</span>
+                    </Link>
+                  </div>
                 )}
                 <Link 
                   to="/bookings" 

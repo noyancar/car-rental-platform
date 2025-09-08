@@ -40,7 +40,6 @@ const PendingPaymentPage: React.FC = () => {
 
   useEffect(() => {
     if (user && pendingBooking && !bookingCreated) {
-      console.log('User authenticated, creating booking...', { user, pendingBooking });
       // User is now authenticated, create the actual booking
       setBookingCreated(true); // Prevent duplicate creation
       createBookingForUser();
@@ -49,11 +48,9 @@ const PendingPaymentPage: React.FC = () => {
 
   const fetchCarDetails = async (carId: number) => {
     try {
-      console.log('Fetching car details for:', carId);
       await fetchCarById(carId);
       const { currentCar } = useCarStore.getState();
       setCar(currentCar);
-      console.log('Car details fetched:', currentCar);
     } catch (error) {
       console.error('Error fetching car:', error);
     } finally {
@@ -67,8 +64,6 @@ const PendingPaymentPage: React.FC = () => {
       return;
     }
 
-    console.log('Creating booking for user:', user.id);
-    console.log('Pending booking data:', pendingBooking);
     
     // Validate required fields
     if (!pendingBooking.car_id || !pendingBooking.start_date || !pendingBooking.end_date || !pendingBooking.total_price) {
@@ -96,12 +91,10 @@ const PendingPaymentPage: React.FC = () => {
         return_delivery_fee: pendingBooking.return_delivery_fee || 0
       });
 
-      console.log('Booking created:', booking);
 
       if (booking) {
         // Restore selected extras
         if (pendingBooking.extras && pendingBooking.extras.length > 0) {
-          console.log('Restoring extras:', pendingBooking.extras);
           // Restore extras to store
           const { addExtra } = useExtrasStore.getState();
           pendingBooking.extras.forEach((item: any) => {
@@ -122,7 +115,6 @@ const PendingPaymentPage: React.FC = () => {
         localStorage.removeItem('pendingBooking');
         
         // Navigate to payment page
-        console.log('Navigating to payment page:', `/payment/${booking.id}`);
         // Don't show success toast here - it's just a draft booking
         // The actual success message will appear after payment
         navigate(`/payment/${booking.id}`);

@@ -35,6 +35,8 @@ import AdminDiscountCodes from './pages/admin/AdminDiscountCodes';
 import AdminCampaigns from './pages/admin/AdminCampaigns';
 import AdminExtras from './pages/admin/AdminExtras';
 import LocationManagement from './pages/admin/LocationManagement';
+import AdminCustomers from './pages/admin/AdminCustomers';
+import AdminCalendar from './pages/admin/AdminCalendar';
 
 // Auth store
 import { useAuthStore } from './stores/authStore';
@@ -49,7 +51,11 @@ const ProtectedRoute: React.FC<{ element: React.ReactElement; adminOnly?: boolea
   
   // Show loading state while checking authentication
   if (loading) {
-    return <div className="min-h-screen flex items-center justify-center">Loading...</div>;
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-secondary-50">
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary-800"></div>
+      </div>
+    );
   }
   
   // Show auth modal if user is not authenticated
@@ -146,6 +152,12 @@ function App() {
             } />
             <Route path="/admin/locations" element={
               <ProtectedRoute element={<LocationManagement />} adminOnly />
+            } />
+            <Route path="/admin/customers" element={
+              <ProtectedRoute element={<AdminCustomers />} adminOnly />
+            } />
+            <Route path="/admin/calendar" element={
+              <ProtectedRoute element={<AdminCalendar />} adminOnly />
             } />
             
             {/* Fallback route */}

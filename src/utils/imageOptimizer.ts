@@ -42,8 +42,6 @@ export async function optimizeImage(
       throw new Error('Dosya bir görüntü değil');
     }
 
-    console.log(`Görüntü optimize ediliyor: ${file.name}`);
-    console.log(`Orijinal boyut: ${(file.size / 1024 / 1024).toFixed(2)} MB`);
 
     // Görüntüyü sıkıştır
     const compressedFile = await imageCompression(file, {
@@ -55,8 +53,6 @@ export async function optimizeImage(
       alwaysKeepResolution: options.alwaysKeepResolution,
     });
 
-    console.log(`Optimize edilmiş boyut: ${(compressedFile.size / 1024 / 1024).toFixed(2)} MB`);
-    console.log(`Sıkıştırma oranı: ${((1 - compressedFile.size / file.size) * 100).toFixed(0)}%`);
 
     return compressedFile;
   } catch (error) {

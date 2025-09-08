@@ -27,3 +27,17 @@ dist-ssr
 .env
 .env.*
 .env.local
+
+# Test files
+test-*.sh
+test-*.js
+debug-*.sh
+*.md
+!README.md
+CLEANUP_*.sql
+
+# Supabase temp files
+supabase/.temp/
+
+# MCP config
+.mcp.json

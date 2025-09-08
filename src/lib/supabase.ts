@@ -31,9 +31,9 @@ export const ensureStorageBucket = async (bucketName: string, isPublic = true) =
     const bucketExists = buckets?.some(bucket => bucket.name === bucketName);
     
     if (!bucketExists) {
-      console.warn(`Bucket "${bucketName}" bulunamadı. Lütfen Supabase dashboard üzerinden oluşturun.`);
+      // Bucket yok, sessizce devam et
     } else {
-      console.log(`Bucket "${bucketName}" mevcut, kullanıma hazır.`);
+      // Bucket mevcut, devam et
     }
   } catch (error) {
     console.error('Bucket kontrolü sırasında hata:', error);

@@ -5,6 +5,7 @@ import { format } from 'date-fns';
 import { toast } from 'sonner';
 import { Button } from '../components/ui/Button';
 import { AuthModal } from '../components/auth';
+import ProfileCompletionForm from '../components/payment/ProfileCompletionForm';
 import StripeProvider from '../components/payment/StripeProvider';
 import StripePaymentForm from '../components/payment/StripePaymentForm';
 import { useAuthStore } from '../stores/authStore';
@@ -21,6 +22,7 @@ const PaymentPage: React.FC = () => {
   const [paymentClientSecret, setPaymentClientSecret] = useState<string | null>(null);
   const [paymentError, setPaymentError] = useState<string | null>(null);
   const [showAuthModal, setShowAuthModal] = useState(false);
+  const [showProfileCompletion, setShowProfileCompletion] = useState(false);
 
   useEffect(() => {
     if (!bookingId) {
@@ -49,6 +51,13 @@ const PaymentPage: React.FC = () => {
     
     try {
       setLoading(true);
+      
+      // Check if user profile is complete
+      if (!user.phone || !user.license_number || !user.has_valid_license) {
+        setShowProfileCompletion(true);
+        setLoading(false);
+        return;
+      }
       
       // Fetch booking with extras and locations
       const { data: bookingData, error: bookingError } = await supabase
@@ -110,6 +119,8 @@ const PaymentPage: React.FC = () => {
       const { data, error } = await supabase.functions.invoke('create-payment-intent', {
         body: { 
           booking_id: bookingData.id,
+          customerEmail: bookingData.customer_email || bookingData.email || user?.email, // Send customer email for receipt
+          customerName: bookingData.customer_name || 'Customer', // Use existing customer_name or fallback
           metadata: {
             user_email: user?.email,
             car_info: `${bookingData.car?.make} ${bookingData.car?.model} ${bookingData.car?.year}`
@@ -118,6 +129,7 @@ const PaymentPage: React.FC = () => {
       });
 
       if (error) {
+        console.error('Edge Function error:', error);
         throw error;
       }
 
@@ -136,6 +148,8 @@ const PaymentPage: React.FC = () => {
         throw new Error(data?.error || 'Failed to create payment intent');
       }
     } catch (error) {
+      console.error('Payment initialization error:', error);
+      console.error('Full error details:', { error, data });
       setPaymentError('Failed to initialize payment. Please try again.');
       toast.error('Failed to initialize payment');
     }
@@ -145,6 +159,12 @@ const PaymentPage: React.FC = () => {
     // Webhook already updated the booking status, just show success and navigate
     toast.success('Payment successful! Your booking is confirmed.');
     navigate(`/bookings/${bookingId}`);
+  };
+
+  const handleProfileComplete = () => {
+    setShowProfileCompletion(false);
+    // Reload booking details after profile is complete
+    loadBookingDetails();
   };
 
   const handlePaymentError = async (error: string) => {
@@ -206,6 +226,26 @@ const PaymentPage: React.FC = () => {
     return (
       <div className="min-h-screen pt-16 pb-12 flex flex-col items-center justify-center">
         <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary-800"></div>
+      </div>
+    );
+  }
+
+  if (showProfileCompletion) {
+    return (
+      <div className="min-h-screen pt-16 pb-12 bg-secondary-50">
+        <div className="container-custom">
+          <div className="mb-6">
+            <button 
+              onClick={() => navigate('/bookings')} 
+              className="inline-flex items-center text-primary-700 hover:text-primary-800"
+            >
+              <ArrowLeft size={20} className="mr-2" />
+              Back to My Bookings
+            </button>
+          </div>
+          
+          <ProfileCompletionForm onComplete={handleProfileComplete} />
+        </div>
       </div>
     );
   }

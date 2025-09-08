@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Plus, Edit, Trash2, Check, X, Search, Tag, Settings } from 'lucide-react';
+import { Plus, Edit, Trash2, Check, X, Search, Tag, Settings, Download } from 'lucide-react';
 import { toast } from 'sonner';
 import { Button } from '../../components/ui/Button';
 import { Input } from '../../components/ui/Input';
@@ -8,6 +8,7 @@ import { SimpleImageUploader } from '../../components/ui/SimpleImageUploader';
 import { PageHeader } from '../../components/ui/PageHeader';
 import { useAdminStore } from '../../stores/adminStore';
 import { checkStorageSetup } from '../../utils/fixStorageSetup';
+import { exportCarPerformanceCSV } from '../../utils/csvExport';
 import type { Car } from '../../types/index';
 
 const COMMON_FEATURES = [
@@ -33,23 +34,39 @@ const COMMON_FEATURES = [
 const AdminCars: React.FC = () => {
   const { 
     allCars, 
+    allBookings,
     loading, 
     error,
     fetchAllCars,
+    fetchAllBookings,
     addCar,
     updateCar,
-    toggleCarAvailability
+    toggleCarAvailability,
+    deleteCar
   } = useAdminStore();
   
-  const [isAddingCar, setIsAddingCar] = useState(false);
+  // Restore modal state from sessionStorage
+  const [isAddingCar, setIsAddingCar] = useState(() => {
+    const saved = sessionStorage.getItem('adminCarsModalOpen');
+    return saved === 'true';
+  });
   const [searchTerm, setSearchTerm] = useState('');
   const [filterCategory, setFilterCategory] = useState('');
-  const [editingCar, setEditingCar] = useState<Car | null>(null);
+  const [editingCar, setEditingCar] = useState<Car | null>(() => {
+    const saved = sessionStorage.getItem('adminCarsEditingCar');
+    return saved ? JSON.parse(saved) : null;
+  });
+  const [isInitialLoad, setIsInitialLoad] = useState(() => {
+    // If modal was open, we're not in initial load
+    return sessionStorage.getItem('adminCarsModalOpen') !== 'true';
+  });
   
   const [selectedFeatures, setSelectedFeatures] = useState<string[]>([]);
   const [customFeature, setCustomFeature] = useState('');
   
-  const [newCar, setNewCar] = useState({
+  const [newCar, setNewCar] = useState(() => {
+    const saved = sessionStorage.getItem('adminCarsNewCar');
+    return saved ? JSON.parse(saved) : {
     make: '',
     model: '',
     year: new Date().getFullYear(),
@@ -70,11 +87,39 @@ const AdminCars: React.FC = () => {
     doors: 4,
     fuel_type: 'Gas',
     gas_grade: 'Regular',
+  };
   });
   
+  // Track modal state changes in sessionStorage
   useEffect(() => {
+    sessionStorage.setItem('adminCarsModalOpen', isAddingCar.toString());
+  }, [isAddingCar]);
+  
+  useEffect(() => {
+    sessionStorage.setItem('adminCarsEditingCar', editingCar ? JSON.stringify(editingCar) : '');
+  }, [editingCar]);
+  
+  // Save newCar state to sessionStorage
+  useEffect(() => {
+    if (isAddingCar) {
+      sessionStorage.setItem('adminCarsNewCar', JSON.stringify(newCar));
+    }
+  }, [newCar, isAddingCar]);
+  
+  useEffect(() => {
+    setIsInitialLoad(false);
     fetchAllCars();
-  }, [fetchAllCars]);
+    fetchAllBookings();
+  }, []); // Only on mount - simple and clean
+
+  const handleExportPerformance = () => {
+    try {
+      exportCarPerformanceCSV(allCars, allBookings);
+      toast.success('Car performance report exported successfully');
+    } catch (error) {
+      toast.error('Failed to export car performance report');
+    }
+  };
   
   const handleAddFeature = () => {
     if (!customFeature.trim()) return;
@@ -128,6 +173,8 @@ const AdminCars: React.FC = () => {
       
       await addCar(newCar);
       setIsAddingCar(false);
+      sessionStorage.removeItem('adminCarsModalOpen');
+      sessionStorage.removeItem('adminCarsNewCar');
       setNewCar({
         make: '',
         model: '',
@@ -167,18 +214,33 @@ const AdminCars: React.FC = () => {
       
       await updateCar(car.id, car);
       setEditingCar(null);
+      sessionStorage.removeItem('adminCarsEditingCar');
       toast.success('Car updated successfully');
     } catch (error) {
       toast.error('Failed to update car');
     }
   };
   
-  const handleToggleAvailability = async (id: number, available: boolean) => {
+  const handleToggleAvailability = async (id: string, available: boolean) => {
     try {
       await toggleCarAvailability(id, available);
       toast.success(`Car ${available ? 'enabled' : 'disabled'} successfully`);
     } catch (error) {
       toast.error('Failed to update car availability');
+    }
+  };
+  
+  const handleDeleteCar = async (car: Car) => {
+    if (!confirm(`Are you sure you want to delete "${car.make} ${car.model}"?\n\nThis action cannot be undone.`)) {
+      return;
+    }
+    
+    const success = await deleteCar(car.id);
+    
+    if (success) {
+      toast.success('Car deleted successfully');
+    } else {
+      toast.error(error || 'Failed to delete car. It may have active bookings.');
     }
   };
   
@@ -194,7 +256,11 @@ const AdminCars: React.FC = () => {
     return matchesSearch && matchesCategory;
   });
   
-  if (loading) {
+  // Check if modal should be restored BEFORE showing loading
+  const shouldShowModal = isAddingCar || editingCar || sessionStorage.getItem('adminCarsModalOpen') === 'true';
+  
+  // Never show loading if modal should be displayed
+  if (loading && !shouldShowModal && allCars.length === 0) {
     return (
       <div className="min-h-screen pt-16 pb-12 flex items-center justify-center bg-secondary-50">
         <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary-800"></div>
@@ -228,6 +294,13 @@ const AdminCars: React.FC = () => {
           fallbackPath="/admin"
           actions={
             <div className="flex gap-2">
+              <Button
+                variant="outline"
+                onClick={handleExportPerformance}
+                leftIcon={<Download size={20} />}
+              >
+                Export Performance
+              </Button>
               <Button 
                 variant="primary"
                 onClick={() => setIsAddingCar(true)}
@@ -340,6 +413,15 @@ const AdminCars: React.FC = () => {
                         >
                           {car.available ? 'Disable' : 'Enable'}
                         </Button>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="text-error-500 border-error-500 hover:bg-error-50"
+                          onClick={() => handleDeleteCar(car)}
+                          leftIcon={<Trash2 size={16} />}
+                        >
+                          Delete
+                        </Button>
                       </div>
                     </td>
                   </tr>
@@ -362,6 +444,9 @@ const AdminCars: React.FC = () => {
                 onClick={() => {
                   setIsAddingCar(false);
                   setEditingCar(null);
+                  sessionStorage.removeItem('adminCarsModalOpen');
+                  sessionStorage.removeItem('adminCarsEditingCar');
+                  sessionStorage.removeItem('adminCarsNewCar');
                 }}
                 className="p-2 hover:bg-secondary-100 rounded-lg transition-all duration-200 group"
                 aria-label="Close modal"
@@ -647,6 +732,9 @@ const AdminCars: React.FC = () => {
                     setIsAddingCar(false);
                     setEditingCar(null);
                     setCustomFeature('');
+                    sessionStorage.removeItem('adminCarsModalOpen');
+                    sessionStorage.removeItem('adminCarsEditingCar');
+                    sessionStorage.removeItem('adminCarsNewCar');
                   }}
                 >
                   Cancel

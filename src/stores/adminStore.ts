@@ -1,6 +1,22 @@
 import { create } from 'zustand';
 import { supabase } from '../lib/supabase';
-import type { Car, Booking, DiscountCode, Campaign } from '../types';
+import type { Car, Booking, DiscountCode, Campaign, User } from '../types';
+
+interface CustomerWithStats extends User {
+  is_blacklisted?: boolean;
+  blacklist_reason?: string;
+  total_bookings?: number;
+  total_spent?: number;
+  last_booking_date?: string;
+}
+
+interface CustomerNote {
+  id: string;
+  user_id: string;
+  note: string;
+  created_by: string;
+  created_at: string;
+}
 
 interface AdminState {
   // Cars
@@ -11,6 +27,8 @@ interface AdminState {
   discountCodes: DiscountCode[];
   // Campaigns
   campaigns: Campaign[];
+  // Customers
+  allCustomers: CustomerWithStats[];
   
   loading: boolean;
   error: string | null;
@@ -20,6 +38,7 @@ interface AdminState {
   addCar: (car: Omit<Car, 'id'>) => Promise<void>;
   updateCar: (id: string, car: Partial<Car>) => Promise<void>;
   toggleCarAvailability: (id: string, available: boolean) => Promise<void>;
+  deleteCar: (id: string) => Promise<boolean>;
   
   // Booking management
   fetchAllBookings: () => Promise<void>;
@@ -36,6 +55,13 @@ interface AdminState {
   addCampaign: (campaign: Omit<Campaign, 'id' | 'created_at'>) => Promise<void>;
   updateCampaign: (id: string, campaign: Partial<Campaign>) => Promise<void>;
   toggleCampaignStatus: (id: string, active: boolean) => Promise<void>;
+  
+  // Customer management
+  fetchAllCustomers: () => Promise<void>;
+  toggleCustomerBlacklist: (userId: string, blacklist: boolean, reason?: string | null) => Promise<boolean>;
+  getCustomerBookings: (userId: string) => Promise<Booking[]>;
+  getCustomerNotes: (userId: string) => Promise<CustomerNote[]>;
+  addCustomerNote: (userId: string, note: string) => Promise<boolean>;
 }
 
 export const useAdminStore = create<AdminState>((set, get) => ({
@@ -43,13 +69,23 @@ export const useAdminStore = create<AdminState>((set, get) => ({
   allBookings: [],
   discountCodes: [],
   campaigns: [],
+  allCustomers: [],
   loading: false,
   error: null,
   
   // Car management
   fetchAllCars: async () => {
+    const state = get();
     try {
-      set({ loading: true, error: null });
+      // Check if modal is open in sessionStorage
+      const modalOpen = sessionStorage.getItem('adminCarsModalOpen') === 'true';
+      
+      // Only show loading if we don't have data yet AND modal is not open
+      if (state.allCars.length === 0 && !modalOpen) {
+        set({ loading: true, error: null });
+      } else {
+        set({ error: null });
+      }
       
       const { data, error } = await supabase
         .from('cars')
@@ -148,13 +184,13 @@ export const useAdminStore = create<AdminState>((set, get) => ({
     } catch (error) {
       set({ error: (error as Error).message });
     } finally {
-      set({ loading: false });
+      set({ isSavingData: false });
     }
   },
   
   toggleCarAvailability: async (id: string, available) => {
     try {
-      set({ loading: true, error: null });
+      set({ isSavingData: true, error: null });
       
       const { error } = await supabase
         .from('cars')
@@ -167,37 +203,118 @@ export const useAdminStore = create<AdminState>((set, get) => ({
     } catch (error) {
       set({ error: (error as Error).message });
     } finally {
-      set({ loading: false });
+      set({ isSavingData: false });
+    }
+  },
+  
+  deleteCar: async (id: string) => {
+    try {
+      set({ isSavingData: true, error: null });
+      
+      // First check if car has any active bookings
+      const { data: bookings, error: bookingsError } = await supabase
+        .from('bookings')
+        .select('id')
+        .eq('car_id', id)
+        .in('status', ['confirmed', 'pending']);
+      
+      if (bookingsError) throw bookingsError;
+      
+      if (bookings && bookings.length > 0) {
+        throw new Error('Cannot delete car with active bookings');
+      }
+      
+      // Delete the car
+      const { error } = await supabase
+        .from('cars')
+        .delete()
+        .eq('id', id);
+      
+      if (error) throw error;
+      
+      await get().fetchAllCars();
+      return true;
+    } catch (error) {
+      set({ error: (error as Error).message });
+      return false;
+    } finally {
+      set({ isSavingData: false });
     }
   },
   
   // Booking management
   fetchAllBookings: async () => {
+    const state = get();
     try {
-      set({ loading: true, error: null });
+      // Check if modal is open in sessionStorage
+      const modalOpen = sessionStorage.getItem('adminCarsModalOpen') === 'true';
       
+      // Only show loading if we don't have data yet AND modal is not open
+      if (state.allBookings.length === 0 && !modalOpen) {
+        set({ loading: true, error: null });
+      } else {
+        set({ error: null });
+      }
+      
+      // Step 1: Get bookings with related data
       const { data, error } = await supabase
         .from('bookings')
         .select(`
           *,
           cars (*),
           pickup_location:locations!pickup_location_id (*),
-          return_location:locations!return_location_id (*)
+          return_location:locations!return_location_id (*),
+          booking_extras (
+            quantity,
+            total_price,
+            extras (name, price, category)
+          )
         `)
         .order('created_at', { ascending: false });
       
       if (error) throw error;
       
-      console.log('Fetched bookings with locations:', data);
+      if (!data || data.length === 0) {
+        set({ allBookings: [] });
+        return;
+      }
       
-      const bookings: Booking[] = data.map(item => ({
-        ...item,
-        car: item.cars,
-        pickup_location: item.pickup_location,
-        return_location: item.return_location,
-      }));
+      // Step 2: Get unique user IDs
+      const userIds = [...new Set(data.map(b => b.user_id).filter(Boolean))];
       
-      set({ allBookings: bookings });
+      // Step 3: Batch fetch profiles (email is now in profiles table)
+      const { data: profilesData } = await supabase
+        .from('profiles')
+        .select('id, first_name, last_name, phone, license_number, email')
+        .in('id', userIds);
+      
+      // Create lookup map
+      const profilesMap = new Map(
+        (profilesData || []).map(p => [p.id, p])
+      );
+      
+      // Step 5: Combine data
+      const bookings: Booking[] = data
+        .filter(item => item.car_id && item.created_at) // Only valid bookings
+        .map(item => {
+          const profile = profilesMap.get(item.user_id);
+          return {
+            ...item,
+            car_id: item.car_id as string,
+            created_at: item.created_at as string,
+            status: item.status as Booking['status'],
+            car: item.cars || undefined, // Convert null to undefined
+            pickup_location: item.pickup_location,
+            return_location: item.return_location,
+            first_name: profile?.first_name || '',
+            last_name: profile?.last_name || '',
+            phone: profile?.phone || '',
+            license_number: profile?.license_number || '',
+            email: profile?.email || ''
+          };
+        });
+      
+      set({ allBookings: bookings, isInitialLoad: false });
     } catch (error) {
       console.error('Error fetching bookings:', error);
       set({ error: (error as Error).message });
@@ -210,12 +327,31 @@ export const useAdminStore = create<AdminState>((set, get) => ({
     try {
       set({ loading: true, error: null });
       
+      // First update the booking status
       const { error } = await supabase
         .from('bookings')
         .update({ status })
         .eq('id', id);
       
       if (error) throw error;
+      
+      // If cancelled, make the car available again
+      if (status === 'cancelled') {
+        // Get the booking to find the car
+        const { data: booking } = await supabase
+          .from('bookings')
+          .select('car_id')
+          .eq('id', id)
+          .single();
+        
+        if (booking?.car_id) {
+          // Make the car available
+          await supabase
+            .from('cars')
+            .update({ available: true })
+            .eq('id', booking.car_id);
+        }
+      }
       
       await get().fetchAllBookings();
     } catch (error) {
@@ -227,8 +363,14 @@ export const useAdminStore = create<AdminState>((set, get) => ({
   
   // Discount code management
   fetchDiscountCodes: async () => {
+    const state = get();
     try {
-      set({ loading: true, error: null });
+      // Only show loading if we don't have data yet
+      if (state.discountCodes.length === 0) {
+        set({ loading: true, error: null });
+      } else {
+        set({ error: null });
+      }
       
       const { data, error } = await supabase
         .from('discount_codes')
@@ -309,8 +451,14 @@ export const useAdminStore = create<AdminState>((set, get) => ({
   
   // Campaign management
   fetchCampaigns: async () => {
+    const state = get();
     try {
-      set({ loading: true, error: null });
+      // Only show loading if we don't have data yet
+      if (state.campaigns.length === 0) {
+        set({ loading: true, error: null });
+      } else {
+        set({ error: null });
+      }
       
       const { data, error } = await supabase
         .from('campaigns')
@@ -380,6 +528,154 @@ export const useAdminStore = create<AdminState>((set, get) => ({
       set({ error: (error as Error).message });
     } finally {
       set({ loading: false });
+    }
+  },
+  
+  // Customer management
+  fetchAllCustomers: async () => {
+    const state = get();
+    try {
+      // Only show loading if we don't have data yet
+      if (state.allCustomers.length === 0) {
+        set({ loading: true, error: null });
+      } else {
+        set({ error: null });
+      }
+      
+      // Get all profiles with customer stats
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('*')
+        .order('created_at', { ascending: false });
+      
+      if (error) throw error;
+      
+      if (!data || data.length === 0) {
+        set({ allCustomers: [] });
+        return;
+      }
+      
+      // Profiles now include email directly
+      const customers: CustomerWithStats[] = data.map(profile => ({
+        ...profile,
+        email: profile.email || ''
+      }));
+      
+      set({ allCustomers: customers });
+    } catch (error) {
+      console.error('Error fetching customers:', error);
+      set({ error: (error as Error).message });
+    } finally {
+      set({ loading: false });
+    }
+  },
+  
+  toggleCustomerBlacklist: async (userId: string, blacklist: boolean, reason?: string | null) => {
+    try {
+      set({ loading: true, error: null });
+      
+      // First check current user is admin
+      const { data: { user } } = await supabase.auth.getUser();
+      
+      const { data: adminProfile } = await supabase
+        .from('profiles')
+        .select('role')
+        .eq('id', user?.id || '')
+        .single();
+      
+      const updateData: any = { is_blacklisted: blacklist };
+      if (blacklist) {
+        updateData.blacklist_reason = reason;
+      } else {
+        updateData.blacklist_reason = null;
+      }
+      
+      const { data, error } = await supabase
+        .from('profiles')
+        .update(updateData)
+        .eq('id', userId)
+        .select();
+      
+      if (error) {
+        throw error;
+      }
+      
+      return true;
+    } catch (error) {
+      console.error('Error toggling blacklist:', error);
+      set({ error: (error as Error).message });
+      return false;
+    } finally {
+      set({ loading: false });
+    }
+  },
+  
+  getCustomerBookings: async (userId: string) => {
+    try {
+      const { data, error } = await supabase
+        .from('bookings')
+        .select(`
+          *,
+          car:cars (*),
+          pickup_location:locations!pickup_location_id (*),
+          return_location:locations!return_location_id (*)
+        `)
+        .eq('user_id', userId)
+        .order('created_at', { ascending: false });
+      
+      if (error) throw error;
+      
+      // Transform the data to match Booking type
+      const bookings: Booking[] = (data || []).map(booking => ({
+        ...booking,
+        car: booking.car || undefined,
+        pickup_location: booking.pickup_location || undefined,
+        return_location: booking.return_location || undefined
+      }));
+      
+      return bookings;
+    } catch (error) {
+      console.error('Error fetching customer bookings:', error);
+      return [];
+    }
+  },
+  
+  getCustomerNotes: async (userId: string) => {
+    try {
+      const { data, error } = await supabase
+        .from('customer_notes')
+        .select('*')
+        .eq('user_id', userId)
+        .order('created_at', { ascending: false });
+      
+      if (error) throw error;
+      
+      return data as CustomerNote[];
+    } catch (error) {
+      console.error('Error fetching customer notes:', error);
+      return [];
+    }
+  },
+  
+  addCustomerNote: async (userId: string, note: string) => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error('No authenticated user');
+      
+      const { error } = await supabase
+        .from('customer_notes')
+        .insert([{
+          user_id: userId,
+          note,
+          created_by: user.id
+        }]);
+      
+      if (error) throw error;
+      
+      return true;
+    } catch (error) {
+      console.error('Error adding customer note:', error);
+      return false;
     }
   },
 }));

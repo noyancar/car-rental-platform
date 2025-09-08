@@ -24,7 +24,7 @@ const CarsPage: React.FC = () => {
   }, [searchParams]);
   
   return (
-    <div className="py-6 sm:py-8 md:py-10 bg-sandy-50 min-h-screen">
+    <div className="py-6 sm:py-8 md:py-10 bg-white min-h-screen">
       <div className="container-custom">
         {/* Search Form - Always visible */}
         <div className="mb-6 sm:mb-8">

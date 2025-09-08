@@ -1,6 +1,7 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Car, CalendarCheck, Tag, Megaphone, Users, TrendingUp, DollarSign, Clock, Package, MapPin } from 'lucide-react';
+import { Car, CalendarCheck, Tag, Megaphone, Users, TrendingUp, DollarSign, Clock, Package, MapPin, UserCheck, Calendar } from 'lucide-react';
+import { format } from 'date-fns';
 import { useAdminStore } from '../../stores/adminStore';
 
 const AdminDashboard: React.FC = () => {
@@ -9,19 +10,46 @@ const AdminDashboard: React.FC = () => {
     allBookings, 
     discountCodes, 
     campaigns,
+    allCustomers,
     fetchAllCars,
     fetchAllBookings,
     fetchDiscountCodes,
     fetchCampaigns,
+    fetchAllCustomers,
     loading 
   } = useAdminStore();
   
+  const [dataLoaded, setDataLoaded] = useState(false);
+  
   useEffect(() => {
-    fetchAllCars();
-    fetchAllBookings();
-    fetchDiscountCodes();
-    fetchCampaigns();
-  }, [fetchAllCars, fetchAllBookings, fetchDiscountCodes, fetchCampaigns]);
+    // Load all data once on mount
+    if (!dataLoaded) {
+      Promise.all([
+        fetchAllCars(),
+        fetchAllBookings(),
+        fetchDiscountCodes(),
+        fetchCampaigns(),
+        fetchAllCustomers()
+      ]).then(() => {
+        setDataLoaded(true);
+      }).catch(error => {
+        console.error('Failed to load admin data:', error);
+      });
+    }
+  }, [dataLoaded]); // Only re-run if dataLoaded changes
+  
+  // Calculate truly active bookings (currently in progress)
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  
+  const activeBookings = allBookings.filter(booking => {
+    if (booking.status !== 'confirmed') return false;
+    const startDate = new Date(booking.start_date);
+    const endDate = new Date(booking.end_date);
+    startDate.setHours(0, 0, 0, 0);
+    endDate.setHours(23, 59, 59, 999);
+    return today >= startDate && today <= endDate;
+  });
   
   const stats = [
     {
@@ -32,9 +60,15 @@ const AdminDashboard: React.FC = () => {
     },
     {
       title: 'Active Bookings',
-      value: allBookings.filter(b => b.status === 'confirmed').length,
+      value: activeBookings.length,
       icon: <CalendarCheck className="h-6 w-6 text-primary-600" />,
-      link: '/admin/bookings',
+      link: '/admin/bookings?filter=active',
+    },
+    {
+      title: 'Total Customers',
+      value: allCustomers.length,
+      icon: <Users className="h-6 w-6 text-primary-600" />,
+      link: '/admin/customers',
     },
     {
       title: 'Active Discounts',
@@ -51,6 +85,51 @@ const AdminDashboard: React.FC = () => {
   ];
   
   const recentBookings = allBookings.slice(0, 5);
+  
+  // Calculate upcoming bookings (next 7 days)
+  const nextWeek = new Date(today);
+  nextWeek.setDate(nextWeek.getDate() + 7);
+  
+  const upcomingBookings = allBookings.filter(booking => {
+    if (booking.status !== 'confirmed') return false;
+    const startDate = new Date(booking.start_date);
+    return startDate > today && startDate <= nextWeek;
+  });
+  
+  // Calculate additional metrics
+  const currentMonth = new Date();
+  const thisMonthBookings = allBookings.filter(booking => {
+    const bookingDate = new Date(booking.created_at);
+    return bookingDate.getMonth() === currentMonth.getMonth() && 
+           bookingDate.getFullYear() === currentMonth.getFullYear() &&
+           booking.status === 'confirmed';
+  });
+  
+  const thisMonthRevenue = thisMonthBookings.reduce((sum, booking) => 
+    sum + (booking.grand_total || booking.total_price || 0), 0
+  );
+  
+  // Calculate last month's revenue for comparison
+  const lastMonth = new Date(currentMonth.getFullYear(), currentMonth.getMonth() - 1, 1);
+  const lastMonthBookings = allBookings.filter(booking => {
+    const bookingDate = new Date(booking.created_at);
+    return bookingDate.getMonth() === lastMonth.getMonth() && 
+           bookingDate.getFullYear() === lastMonth.getFullYear() &&
+           booking.status === 'confirmed';
+  });
+  
+  const lastMonthRevenue = lastMonthBookings.reduce((sum, booking) => 
+    sum + (booking.grand_total || booking.total_price || 0), 0
+  );
+  
+  const revenueChange = lastMonthRevenue > 0 
+    ? ((thisMonthRevenue - lastMonthRevenue) / lastMonthRevenue * 100).toFixed(1)
+    : '0';
+    
+  // Calculate occupancy rate (based on truly active bookings)
+  const occupancyRate = allCars.length > 0 
+    ? Math.round((activeBookings.length / allCars.length) * 100)
+    : 0;
   
   if (loading) {
     return (
@@ -84,6 +163,59 @@ const AdminDashboard: React.FC = () => {
               </div>
             </Link>
           ))}
+        </div>
+        
+        {/* Revenue Summary */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+          {/* This Month Revenue */}
+          <div className="bg-white p-6 rounded-lg shadow-md">
+            <div className="flex items-center justify-between mb-2">
+              <p className="text-secondary-600">This Month Revenue</p>
+              <DollarSign className="h-5 w-5 text-green-600" />
+            </div>
+            <p className="text-3xl font-bold text-gray-900">${thisMonthRevenue.toFixed(2)}</p>
+            <p className={`text-sm mt-2 ${parseFloat(revenueChange) > 0 ? 'text-green-600' : parseFloat(revenueChange) < 0 ? 'text-red-600' : 'text-gray-600'}`}>
+              {parseFloat(revenueChange) > 0 ? '↑' : parseFloat(revenueChange) < 0 ? '↓' : '→'} {Math.abs(parseFloat(revenueChange))}% from last month
+            </p>
+          </div>
+          
+          {/* Occupancy Rate */}
+          <div className="bg-white p-6 rounded-lg shadow-md">
+            <div className="flex items-center justify-between mb-2">
+              <p className="text-secondary-600">Car Occupancy Rate</p>
+              <TrendingUp className="h-5 w-5 text-blue-600" />
+            </div>
+            <p className="text-3xl font-bold text-gray-900">{occupancyRate}%</p>
+            <p className="text-sm text-gray-600 mt-2">
+              {activeBookings.length} of {allCars.length} cars booked
+            </p>
+          </div>
+          
+          {/* Average Booking Value */}
+          <div className="bg-white p-6 rounded-lg shadow-md">
+            <div className="flex items-center justify-between mb-2">
+              <p className="text-secondary-600">Avg Booking Value</p>
+              <Tag className="h-5 w-5 text-purple-600" />
+            </div>
+            <p className="text-3xl font-bold text-gray-900">
+              ${thisMonthBookings.length > 0 ? (thisMonthRevenue / thisMonthBookings.length).toFixed(2) : '0.00'}
+            </p>
+            <p className="text-sm text-gray-600 mt-2">
+              From {thisMonthBookings.length} bookings this month
+            </p>
+          </div>
+          
+          {/* Upcoming Bookings */}
+          <div className="bg-white p-6 rounded-lg shadow-md">
+            <div className="flex items-center justify-between mb-2">
+              <p className="text-secondary-600">Upcoming (7 days)</p>
+              <Calendar className="h-5 w-5 text-orange-600" />
+            </div>
+            <p className="text-3xl font-bold text-gray-900">{upcomingBookings.length}</p>
+            <p className="text-sm text-gray-600 mt-2">
+              New pickups in next week
+            </p>
+          </div>
         </div>
         
         {/* Recent Activity */}
@@ -134,7 +266,7 @@ const AdminDashboard: React.FC = () => {
           {/* Quick Actions */}
           <div className="bg-white rounded-lg shadow-md p-6">
             <h2 className="text-xl font-semibold mb-6">Quick Actions</h2>
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-2 lg:grid-cols-3 gap-4">
               <Link 
                 to="/admin/cars"
                 className="flex items-center p-4 bg-primary-50 rounded-lg hover:bg-primary-100 transition-colors"
@@ -198,6 +330,28 @@ const AdminDashboard: React.FC = () => {
                 <div>
                   <p className="font-medium">Location Management</p>
                   <p className="text-sm text-secondary-500">Delivery fees & locations</p>
+                </div>
+              </Link>
+              
+              <Link 
+                to="/admin/customers"
+                className="flex items-center p-4 bg-indigo-50 rounded-lg hover:bg-indigo-100 transition-colors"
+              >
+                <UserCheck className="h-6 w-6 text-indigo-600 mr-3" />
+                <div>
+                  <p className="font-medium">Customer Management</p>
+                  <p className="text-sm text-secondary-500">View & manage customers</p>
+                </div>
+              </Link>
+              
+              <Link 
+                to="/admin/calendar"
+                className="flex items-center p-4 bg-cyan-50 rounded-lg hover:bg-cyan-100 transition-colors"
+              >
+                <Calendar className="h-6 w-6 text-cyan-600 mr-3" />
+                <div>
+                  <p className="font-medium">Availability Calendar</p>
+                  <p className="text-sm text-secondary-500">View car bookings</p>
                 </div>
               </Link>
             </div>

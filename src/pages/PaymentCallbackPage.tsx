@@ -45,6 +45,35 @@ const PaymentCallbackPage: React.FC = () => {
             setMessage('Payment successful! Your booking has been confirmed.');
             toast.success('Payment successful!');
             
+            // Send email notifications in parallel (admin + customer)
+            try {
+              const emailPromises = [
+                // Admin notification
+                supabase.functions.invoke('send-booking-notification', {
+                  body: { bookingId }
+                }),
+                // Customer confirmation
+                supabase.functions.invoke('send-customer-confirmation', {
+                  body: { bookingId }
+                })
+              ];
+              
+              // Use allSettled so one failure doesn't affect the other
+              const results = await Promise.allSettled(emailPromises);
+              
+              results.forEach((result, index) => {
+                if (result.status === 'rejected' || (result.status === 'fulfilled' && result.value.error)) {
+                  const functionName = index === 0 ? 'admin notification' : 'customer confirmation';
+                  console.error(`Failed to send ${functionName}:`, result);
+                } else {
+                  const functionName = index === 0 ? 'Admin' : 'Customer';
+                  console.log(`${functionName} email sent successfully`);
+                }
+              });
+            } catch (notificationError) {
+              console.error('Notification error:', notificationError);
+            }
+            
             // Redirect to booking details after a short delay
             setTimeout(() => {
               navigate(`/bookings/${bookingId}`);
@@ -90,7 +119,7 @@ const PaymentCallbackPage: React.FC = () => {
 
   if (status === 'loading') {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+      <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">
           <Loader2 className="w-12 h-12 animate-spin text-primary-800 mx-auto mb-4" />
           <p className="text-gray-600">Verifying your payment...</p>
@@ -101,7 +130,7 @@ const PaymentCallbackPage: React.FC = () => {
 
   if (status === 'success') {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+      <div className="min-h-screen flex items-center justify-center">
         <div className="max-w-md w-full bg-white rounded-lg shadow-lg p-8 text-center">
           <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
             <CheckCircle className="w-8 h-8 text-green-600" />
@@ -115,7 +144,7 @@ const PaymentCallbackPage: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50">
+    <div className="min-h-screen flex items-center justify-center">
       <div className="max-w-md w-full bg-white rounded-lg shadow-lg p-8">
         <div className="text-center mb-6">
           <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
