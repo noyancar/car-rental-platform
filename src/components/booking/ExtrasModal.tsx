@@ -71,7 +71,7 @@ export default function ExtrasModal({
 
   if (!isOpen) return null;
 
-  const { extrasTotal, breakdown } = calculateTotal(rentalDays);
+  const { extrasTotal, breakdown } = calculateTotal();
   const grandTotal = carTotal + extrasTotal + deliveryFee;
 
   const categories = Object.keys(categoryInfo) as ExtraCategory[];
@@ -193,7 +193,7 @@ export default function ExtrasModal({
                               <span className="text-lg sm:text-xl md:text-2xl font-bold text-volcanic-900">
                                 ${extra.price.toFixed(2)}
                                 <span className="text-sm font-normal text-volcanic-500 ml-1">
-                                  {extra.price_type === 'per_day' ? '/day' : '/trip'}
+                                  /trip
                                 </span>
                               </span>
                               {extra.stock_quantity !== null && (
@@ -386,7 +386,6 @@ export default function ExtrasModal({
                           <p className="font-semibold text-volcanic-900 text-xs">{item.name}</p>
                           <p className="text-xs text-volcanic-600 mt-0.5">
                             {item.quantity} × ${item.price.toFixed(2)}
-                            {extras.find(e => e.name === item.name)?.price_type === 'per_day' && ` × ${rentalDays}d`}
                           </p>
                         </div>
                         <p className="font-bold text-volcanic-900 text-xs">${item.total.toFixed(2)}</p>
