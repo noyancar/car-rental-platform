@@ -1,0 +1,22 @@
+
+[functions.send-booking-notification]
+enabled = true
+verify_jwt = true
+import_map = "./functions/send-booking-notification/deno.json"
+# Uncomment to specify a custom file path to the entrypoint.
+# Supported file extensions are: .ts, .js, .mjs, .jsx, .tsx
+entrypoint = "./functions/send-booking-notification/index.ts"
+# Specifies static files to be bundled with the function. Supports glob patterns.
+# For example, if you want to serve static HTML pages in your function:
+# static_files = [ "./functions/send-booking-notification/*.html" ]
+
+[functions.send-customer-confirmation]
+enabled = true
+verify_jwt = true
+import_map = "./functions/send-customer-confirmation/deno.json"
+# Uncomment to specify a custom file path to the entrypoint.
+# Supported file extensions are: .ts, .js, .mjs, .jsx, .tsx
+entrypoint = "./functions/send-customer-confirmation/index.ts"
+# Specifies static files to be bundled with the function. Supports glob patterns.
+# For example, if you want to serve static HTML pages in your function:
+# static_files = [ "./functions/send-customer-confirmation/*.html" ]
