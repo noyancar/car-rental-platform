@@ -14,8 +14,8 @@ interface ExtrasState {
   removeExtra: (extraId: string) => void;
   updateQuantity: (extraId: string, quantity: number) => void;
   clearSelectedExtras: () => void;
-  calculateTotal: (rentalDays: number) => { extrasTotal: number; breakdown: Array<{ name: string; price: number; quantity: number; total: number }> };
-  saveBookingExtras: (bookingId: string, rentalDays: number) => Promise<void>;
+  calculateTotal: () => { extrasTotal: number; breakdown: Array<{ name: string; price: number; quantity: number; total: number }> };
+  saveBookingExtras: (bookingId: string) => Promise<void>;
   checkAvailability: (extraId: string, quantity: number, pickupDate: string, returnDate: string) => Promise<boolean>;
 }
 
@@ -99,16 +99,15 @@ export const useExtrasStore = create<ExtrasState>((set, get) => ({
     set({ selectedExtras: new Map() });
   },
 
-  calculateTotal: (rentalDays: number) => {
+  calculateTotal: () => {
     const { selectedExtras } = get();
     let extrasTotal = 0;
     const breakdown: Array<{ name: string; price: number; quantity: number; total: number }> = [];
 
     selectedExtras.forEach(({ extra, quantity }) => {
-      const total = extra.price_type === 'per_day' 
-        ? extra.price * quantity * rentalDays
-        : extra.price * quantity;
-      
+      // All extras are now one_time pricing
+      const total = extra.price * quantity;
+
       extrasTotal += total;
       breakdown.push({
         name: extra.name,
@@ -121,12 +120,12 @@ export const useExtrasStore = create<ExtrasState>((set, get) => ({
     return { extrasTotal, breakdown };
   },
 
-  saveBookingExtras: async (bookingId: string, rentalDays: number) => {
+  saveBookingExtras: async (bookingId: string) => {
     const { selectedExtras, calculateTotal } = get();
     
     try {
       // Calculate total extras price
-      const { extrasTotal } = calculateTotal(rentalDays);
+      const { extrasTotal } = calculateTotal();
       
       // Prepare booking extras data
       const bookingExtras = Array.from(selectedExtras.values()).map(({ extra, quantity }) => ({
@@ -134,9 +133,8 @@ export const useExtrasStore = create<ExtrasState>((set, get) => ({
         extra_id: extra.id,
         quantity,
         unit_price: extra.price,
-        total_price: extra.price_type === 'per_day' 
-          ? extra.price * quantity * rentalDays
-          : extra.price * quantity
+        // All extras are now one_time pricing
+        total_price: extra.price * quantity
       }));
 
       if (bookingExtras.length > 0) {

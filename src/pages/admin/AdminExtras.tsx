@@ -16,8 +16,8 @@ const categoryOptions = [
 ];
 
 const priceTypeOptions = [
-  { value: 'per_day', label: 'Per Day' },
-  { value: 'one_time', label: 'One Time' }
+  { value: 'one_time', label: 'One Time' },
+  { value: 'per_day', label: 'Per Day (Deprecated)' }
 ];
 
 const iconOptions = [
@@ -38,7 +38,7 @@ const AdminExtras: React.FC = () => {
     slug: '',
     description: '',
     price: '',
-    price_type: 'per_day' as ExtraPriceType,
+    price_type: 'one_time' as ExtraPriceType,
     category: 'services' as ExtraCategory,
     stock_quantity: '',
     max_per_booking: '99',
@@ -186,7 +186,7 @@ const AdminExtras: React.FC = () => {
       slug: '',
       description: '',
       price: '',
-      price_type: 'per_day',
+      price_type: 'one_time',
       category: 'services',
       stock_quantity: '',
       max_per_booking: '99',
@@ -423,7 +423,7 @@ const AdminExtras: React.FC = () => {
                     <div className="text-sm text-gray-900">
                       ${extra.price.toFixed(2)}
                       <span className="text-gray-500 ml-1">
-                        / {extra.price_type === 'per_day' ? 'day' : 'trip'}
+                        / trip
                       </span>
                     </div>
                   </td>

@@ -230,8 +230,7 @@ const BookingPage: React.FC = () => {
   
   const handleExtrasModalContinue = async (selectedExtras: Map<string, { extra: any; quantity: number }>) => {
     // Calculate extras total
-    const rentalDays = calculateRentalDuration(startDate, endDate, pickupTime, returnTime);
-    const { extrasTotal } = calculateTotal(rentalDays);
+    const { extrasTotal } = calculateTotal();
     
     // Use our price breakdown
     const carRentalSubtotal = totalPrice; // totalPrice is just car rental
@@ -290,8 +289,7 @@ const BookingPage: React.FC = () => {
       
       if (booking) {
         // Save extras
-        const rentalDays = calculateRentalDuration(startDate, endDate, pickupTime, returnTime);
-        await saveBookingExtras(booking.id, rentalDays);
+        await saveBookingExtras(booking.id);
         
         // Navigate to payment page
         navigate(`/payment/${booking.id}`);
