@@ -1,11 +1,19 @@
 import React, { useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { Calendar, Tag, Clock, ArrowRight } from 'lucide-react';
 import { Button } from '../components/ui/Button';
 import { useAdminStore } from '../stores/adminStore';
 
 const DealsPage: React.FC = () => {
   const { campaigns, loading, error, fetchCampaigns } = useAdminStore();
+  const navigate = useNavigate();
+
+  const handleScrollToTop = () => {
+    navigate('/');
+    setTimeout(() => {
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }, 100);
+  };
   
   useEffect(() => {
     fetchCampaigns();
@@ -51,9 +59,9 @@ const DealsPage: React.FC = () => {
             <p className="text-secondary-600 mb-8">
               Check back soon for new special offers and discounts!
             </p>
-            <Link to="/cars">
-              <Button variant="primary">Browse Cars</Button>
-            </Link>
+            <Button variant="primary" onClick={handleScrollToTop}>
+              Get Started
+            </Button>
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
@@ -90,15 +98,14 @@ const DealsPage: React.FC = () => {
                     </div>
                   </div>
                   
-                  <Link to="/cars">
-                    <Button 
-                      variant="primary" 
-                      fullWidth
-                      rightIcon={<ArrowRight size={16} />}
-                    >
-                      Browse Cars
-                    </Button>
-                  </Link>
+                  <Button
+                    variant="primary"
+                    fullWidth
+                    rightIcon={<ArrowRight size={16} />}
+                    onClick={handleScrollToTop}
+                  >
+                    Get Started
+                  </Button>
                 </div>
               </div>
             ))}
