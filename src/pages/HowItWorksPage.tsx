@@ -1,14 +1,9 @@
 import React from 'react';
 import { Car, Calendar, CreditCard, CheckCircle } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 import { Button } from '../components/ui/Button';
 
 const HowItWorksPage: React.FC = () => {
-  const navigate = useNavigate();
-
-  const handleScrollToTop = () => {
-    navigate('/', { state: { scrollToTop: true } });
-  };
 
   const steps = [
     {
@@ -103,9 +98,11 @@ const HowItWorksPage: React.FC = () => {
           <p className="text-xl text-white/90 mb-8 max-w-2xl mx-auto">
             Browse our collection of premium vehicles and book your perfect car today.
           </p>
-          <Button variant="accent" size="lg" onClick={handleScrollToTop}>
-            Get Started
-          </Button>
+          <Link to="/cars">
+            <Button variant="accent" size="lg">
+              Browse Cars
+            </Button>
+          </Link>
         </div>
       </div>
     </div>
