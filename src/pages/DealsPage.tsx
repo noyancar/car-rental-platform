@@ -9,10 +9,7 @@ const DealsPage: React.FC = () => {
   const navigate = useNavigate();
 
   const handleScrollToTop = () => {
-    navigate('/');
-    setTimeout(() => {
-      window.scrollTo({ top: 0, behavior: 'smooth' });
-    }, 100);
+    navigate('/', { state: { scrollToTop: true } });
   };
   
   useEffect(() => {
