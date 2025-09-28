@@ -107,7 +107,7 @@ const HeroSection: React.FC = () => {
             <span className="bg-gradient-to-r from-accent-400 to-accent-200 bg-clip-text text-transparent drop-shadow-[3px_3px_6px_rgba(0,0,0,0.8)] block sm:inline">Adventure Awaits You</span>
           </h1>
           <p className="text-sm sm:text-base md:text-lg lg:text-xl xl:text-2xl mb-6 sm:mb-8 text-white/90 animate-slide-up text-shadow px-2 sm:px-4 md:px-0" style={{ animationDelay: '0.2s' }}>
-            Discover Hawaii's hidden gems with our premium 4x4 vehicles. From beaches to volcanoes, your island journey starts here.
+            Discover Hawaii's hidden gems with our premium vehicles. Your island journey starts here.
           </p>
         </div>
         

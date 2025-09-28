@@ -313,7 +313,7 @@ const AuthModal: React.FC<AuthModalProps> = ({
           <p className="text-gray-600 text-sm sm:text-base">
             {mode === 'signin' 
               ? 'Enter your credentials to access your account' 
-              : 'Start your journey with NoyanCar today'}
+              : 'Start your journey with NYN Rentals today'}
           </p>
         </div>
 

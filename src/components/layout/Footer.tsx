@@ -11,10 +11,10 @@ export const Footer: React.FC = () => {
           <div className="text-center md:text-left max-w-xs">
             <div className="flex items-center justify-center md:justify-start mb-4">
               <Car className="h-7 w-7 md:h-8 md:w-8" />
-              <span className="ml-2 text-lg md:text-xl font-bold">Noyan Car</span>
+              <span className="ml-2 text-lg md:text-xl font-bold">NYN Rentals</span>
             </div>
             <p className="text-secondary-300 text-sm sm:text-base">
-              Experience premium car rentals with exceptional service and luxury vehicles for any occasion.
+            Experience premium car rentals for any occasion with exceptional service.
             </p>
           </div>
 
@@ -39,20 +39,20 @@ export const Footer: React.FC = () => {
               <li className="flex items-start justify-center md:justify-start">
                 <MapPin className="h-5 w-5 mr-2 text-secondary-300 mt-0.5 flex-shrink-0" />
                 <span className="text-secondary-300 text-left">
-                  123 Luxury Drive<br />
-                  Beverly Hills, CA 90210
+                711 Ke’eaumoku St Garage<br />
+                Honolulu HI 96814
                 </span>
               </li>
               <li className="flex items-center justify-center md:justify-start">
                 <Phone className="h-5 w-5 mr-2 text-secondary-300 flex-shrink-0" />
                 <a href="tel:+11234567890" className="text-secondary-300 hover:text-white transition-colors">
-                  (123) 456-7890
+                  808-909-1272
                 </a>
               </li>
               <li className="flex items-center justify-center md:justify-start">
                 <Mail className="h-5 w-5 mr-2 text-secondary-300 flex-shrink-0" />
                 <a href="mailto:info@noyancar.com" className="text-secondary-300 hover:text-white transition-colors">
-                  info@noyancar.com
+                nynrentals@gmail.com
                 </a>
               </li>
             </ul>
@@ -60,7 +60,7 @@ export const Footer: React.FC = () => {
         </div>
         
         <div className="border-t border-secondary-700 mt-8 sm:mt-12 pt-6 sm:pt-8 text-center text-secondary-400">
-          <p className="text-sm sm:text-base">© {new Date().getFullYear()} NoyanCar. All rights reserved.</p>
+          <p className="text-sm sm:text-base">© {new Date().getFullYear()} NYN Rentals. All rights reserved.</p>
           <div className="mt-2 space-x-3 sm:space-x-4 text-sm sm:text-base">
             <Link to="/terms" className="text-secondary-400 hover:text-white transition-colors">
               Terms of Service

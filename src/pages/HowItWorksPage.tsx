@@ -13,8 +13,8 @@ const HowItWorksPage: React.FC = () => {
     },
     {
       icon: <Calendar className="h-12 w-12 text-primary-800" />,
-      title: 'Select Dates',
-      description: 'Pick your preferred rental dates and duration. Our flexible booking system accommodates your schedule.',
+      title: 'Select Dates and Options',
+      description: 'Pick your dates, add delivery, and pack your beach day with extras.',
     },
     {
       icon: <CreditCard className="h-12 w-12 text-primary-800" />,
@@ -34,10 +34,10 @@ const HowItWorksPage: React.FC = () => {
         {/* Hero Section */}
         <div className="text-center mb-16">
           <h1 className="text-4xl md:text-5xl font-display font-bold text-primary-800 mb-4">
-            How NoyanCar Works
+            How NYN Rentals Works
           </h1>
           <p className="text-xl text-secondary-600 max-w-2xl mx-auto">
-            Renting a luxury car has never been easier. Follow these simple steps to get started with your premium driving experience.
+            Renting a car has never been easier. Follow these simple steps to get started with your premium driving experience.
           </p>
         </div>
 
@@ -66,13 +66,13 @@ const HowItWorksPage: React.FC = () => {
             <div>
               <h3 className="text-xl font-semibold mb-2">What documents do I need?</h3>
               <p className="text-secondary-600">
-                You'll need a valid driver's license, proof of insurance, and a credit card in your name. International customers need a valid passport and international driver's permit.
+                You'll need a valid driver's license, proof of insurance, and a credit card in your name. International guests need a valid passport and international driver's permit.
               </p>
             </div>
             <div>
               <h3 className="text-xl font-semibold mb-2">Is insurance included?</h3>
               <p className="text-secondary-600">
-                Basic insurance is included with all rentals. Additional coverage options are available for enhanced protection.
+              Your safety comes first. Guests simply provide proof of their own insurance, and for extra peace of mind we offer optional RCP coverage you can add to your rental.
               </p>
             </div>
             <div>
@@ -84,7 +84,8 @@ const HowItWorksPage: React.FC = () => {
             <div>
               <h3 className="text-xl font-semibold mb-2">Is there a mileage limit?</h3>
               <p className="text-secondary-600">
-                Most rentals include 150 miles per day. Additional mileage can be purchased at competitive rates.
+              No — we don’t place daily mileage limits on our cars. Enjoy the freedom to explore the island at your own pace, without worrying about extra charges for distance.
+
               </p>
             </div>
           </div>
@@ -93,7 +94,7 @@ const HowItWorksPage: React.FC = () => {
         {/* CTA Section */}
         <div className="text-center bg-primary-800 rounded-lg shadow-md p-8">
           <h2 className="text-3xl font-display font-bold text-white mb-4">
-            Ready to Experience Luxury?
+            Upgrade Your Island Journey
           </h2>
           <p className="text-xl text-white/90 mb-8 max-w-2xl mx-auto">
             Browse our collection of premium vehicles and book your perfect car today.
