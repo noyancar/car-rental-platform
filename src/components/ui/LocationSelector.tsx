@@ -66,8 +66,11 @@ export function LocationSelector({
         value={value}
         onChange={(e) => onChange(e.target.value)}
         className="w-full px-3 sm:px-4 py-2 sm:py-3 border-2 border-gray-400 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white text-gray-900 min-h-[36px] sm:min-h-[40px] text-sm sm:text-base"
+        disabled={loading}
       >
-        <option value="">{placeholder}</option>
+        <option value="">
+          {loading ? 'Loading locations...' : placeholder}
+        </option>
         
         {showCategories ? (
           Object.entries(groupedLocations).map(([category, locs]) => (

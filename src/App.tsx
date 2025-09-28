@@ -38,8 +38,9 @@ import LocationManagement from './pages/admin/LocationManagement';
 import AdminCustomers from './pages/admin/AdminCustomers';
 import AdminCalendar from './pages/admin/AdminCalendar';
 
-// Auth store
+// Stores
 import { useAuthStore } from './stores/authStore';
+import { useLocationStore } from './stores/locationStore';
 
 // Protected Route component
 const ProtectedRoute: React.FC<{ element: React.ReactElement; adminOnly?: boolean }> = ({ 
@@ -94,10 +95,14 @@ const ProtectedRoute: React.FC<{ element: React.ReactElement; adminOnly?: boolea
 
 function App() {
   const { getProfile } = useAuthStore();
-  
+  const { fetchLocations } = useLocationStore();
+
   useEffect(() => {
+    // Initialize auth
     getProfile();
-  }, [getProfile]);
+    // Pre-load locations for better UX
+    fetchLocations();
+  }, [getProfile, fetchLocations]);
   
   return (
     <Router>
