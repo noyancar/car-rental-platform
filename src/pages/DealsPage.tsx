@@ -40,7 +40,7 @@ const DealsPage: React.FC = () => {
             Special Offers & Deals
           </h1>
           <p className="text-xl text-secondary-600 max-w-2xl mx-auto">
-            Take advantage of our exclusive offers and save on your next luxury car rental.
+            Take advantage of our exclusive offers and save on your next premium car rental.
           </p>
         </div>
 
@@ -104,30 +104,6 @@ const DealsPage: React.FC = () => {
             ))}
           </div>
         )}
-
-        {/* Additional Info Section */}
-        <div className="mt-16 grid grid-cols-1 md:grid-cols-3 gap-8">
-          <div className="bg-white p-6 rounded-lg shadow-md">
-            <h3 className="text-lg font-semibold mb-2">Best Price Guarantee</h3>
-            <p className="text-secondary-600">
-              Find a better price? We'll match it and give you an additional 10% off.
-            </p>
-          </div>
-          
-          <div className="bg-white p-6 rounded-lg shadow-md">
-            <h3 className="text-lg font-semibold mb-2">Flexible Cancellation</h3>
-            <p className="text-secondary-600">
-              Plans change? Cancel up to 48 hours before your rental for a full refund.
-            </p>
-          </div>
-          
-          <div className="bg-white p-6 rounded-lg shadow-md">
-            <h3 className="text-lg font-semibold mb-2">Member Rewards</h3>
-            <p className="text-secondary-600">
-              Join our loyalty program and earn points towards free rental days.
-            </p>
-          </div>
-        </div>
       </div>
     </div>
   );

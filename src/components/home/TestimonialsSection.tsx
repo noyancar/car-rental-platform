@@ -12,24 +12,24 @@ interface Testimonial {
 const TESTIMONIALS: Testimonial[] = [
   {
     id: '1',
-    name: 'James Davidson',
-    location: 'Los Angeles, CA',
-    text: 'The BMW I rented for my anniversary was immaculate. The booking process was seamless, and the staff was incredibly helpful. Will definitely use NYN Rentals again!',
-    initials: 'JD'
+    name: 'Lenny K.',
+    location: 'New York, NY',
+    text: 'Jeep was perfect for our day trip across the island. Very clean and fun to drive. Pick up and drop off were a breeze. Thank you guys!',
+    initials: 'LK'
   },
   {
     id: '2',
-    name: 'Sarah Chen',
-    location: 'New York, NY',
-    text: 'I needed a luxury SUV for a client meeting, and NYN Rentals delivered. The Range Rover was spotless, and the pickup/drop-off process was extremely convenient.',
-    initials: 'SC'
+    name: 'Jeff G.',
+    location: 'Seattle, WA',
+    text: 'Everything was great! The car was clean and in excellent condition. We had the car delivered to our hotel. Much more convenient than major car rental companies. Loved it. Will rent again on our next trip!',
+    initials: 'JG'
   },
   {
     id: '3',
-    name: 'Michael Morgan',
-    location: 'Austin, TX',
-    text: 'We rented a Tesla for our California road trip and it was the perfect choice. Excellent range, immaculate condition, and the customer service was top-notch.',
-    initials: 'MM'
+    name: 'Wendy M.',
+    location: 'San Francisco, CA',
+    text: 'The car was super clean, pickup & drop off the car was super easy and most of all the service was fantastic. We rented beach gear with the car as well. Highly recommended. ',
+    initials: 'WM'
   }
 ];
 
@@ -38,7 +38,7 @@ const TestimonialsSection: React.FC = () => {
     <section className="py-10 sm:py-16 md:py-20 bg-white">
       <div className="container-custom">
         <h2 className="text-2xl sm:text-3xl md:text-4xl font-display text-center mb-8 sm:mb-10 md:mb-12">
-          What Our Customers Say
+          What Our Guests Say
         </h2>
         
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-8">
