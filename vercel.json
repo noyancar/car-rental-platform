@@ -1,0 +1,9 @@
+{
+  "redirects": [
+    {
+      "source": "/QRHW",
+      "destination": "/?utm_source=QRHW",
+      "permanent": false
+    }
+  ]
+}
