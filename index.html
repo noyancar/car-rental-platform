@@ -13,27 +13,23 @@
       function gtag(){dataLayer.push(arguments);}
       gtag('js', new Date());
 
-      gtag('config', 'G-7RY3DM815X');
-    </script>
+      // Get UTM parameters from URL
+      var params = new URLSearchParams(window.location.search);
+      var utmSource = params.get('utm_source');
+      var utmMedium = params.get('utm_medium');
+      var utmCampaign = params.get('utm_campaign');
 
-    <!-- Google's Official UTM Tracking Method -->
-    <script>
-      (function() {
-        var params = new URLSearchParams(window.location.search);
-        var utmSource = params.get('utm_source');
-
-        if (utmSource) {
-          window.dataLayer = window.dataLayer || [];
-          window.dataLayer.push({
-            'event': 'campaign_tracking',
-            'campaign_source': utmSource,
-            'campaign_medium': params.get('utm_medium') || 'direct',
-            'campaign_name': params.get('utm_campaign') || 'none'
-          });
-
-          console.log('UTM tracked (Google official):', utmSource);
-        }
-      })();
+      // Configure GA4 with UTM parameters if they exist
+      if (utmSource) {
+        gtag('config', 'G-7RY3DM815X', {
+          'campaign_source': utmSource,
+          'campaign_medium': utmMedium || '(not set)',
+          'campaign_name': utmCampaign || '(not set)'
+        });
+        console.log('UTM tracked:', utmSource);
+      } else {
+        gtag('config', 'G-7RY3DM815X');
+      }
     </script>
 
     <link rel="preconnect" href="https://fonts.googleapis.com">
