@@ -16,6 +16,26 @@
       gtag('config', 'G-7RY3DM815X');
     </script>
 
+    <!-- Google's Official UTM Tracking Method -->
+    <script>
+      (function() {
+        var params = new URLSearchParams(window.location.search);
+        var utmSource = params.get('utm_source');
+
+        if (utmSource) {
+          window.dataLayer = window.dataLayer || [];
+          window.dataLayer.push({
+            'event': 'campaign_tracking',
+            'campaign_source': utmSource,
+            'campaign_medium': params.get('utm_medium') || 'direct',
+            'campaign_name': params.get('utm_campaign') || 'none'
+          });
+
+          console.log('UTM tracked (Google official):', utmSource);
+        }
+      })();
+    </script>
+
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700&family=Playfair+Display:wght@700&display=swap" rel="stylesheet">
