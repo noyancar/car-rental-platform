@@ -7,6 +7,9 @@ import { Navbar } from './components/layout/Navbar';
 import { Footer } from './components/layout/Footer';
 import ScrollToTop from './components/utils/ScrollToTop';
 
+// Hooks
+import { useAnalytics } from './hooks/useAnalytics';
+
 // Auth components
 import { AuthModal } from './components/auth';
 
@@ -93,6 +96,12 @@ const ProtectedRoute: React.FC<{ element: React.ReactElement; adminOnly?: boolea
   return element;
 };
 
+// Analytics wrapper component
+const AnalyticsWrapper: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  useAnalytics();
+  return <>{children}</>;
+};
+
 function App() {
   const { getProfile } = useAuthStore();
   const { fetchLocations } = useLocationStore();
@@ -103,14 +112,15 @@ function App() {
     // Pre-load locations for better UX
     fetchLocations();
   }, [getProfile, fetchLocations]);
-  
+
   return (
     <Router>
       <ScrollToTop />
-      <div className="flex flex-col min-h-screen">
-        <Navbar />
-        <main className="flex-grow pt-14 sm:pt-16 md:pt-20">
-          <Routes>
+      <AnalyticsWrapper>
+        <div className="flex flex-col min-h-screen">
+          <Navbar />
+          <main className="flex-grow pt-14 sm:pt-16 md:pt-20">
+            <Routes>
             {/* Public routes */}
             <Route path="/" element={<HomePage />} />
             <Route path="/auth/callback" element={<AuthCallback />} />
@@ -171,8 +181,9 @@ function App() {
         </main>
         <Footer />
       </div>
-      
+
       <Toaster position="top-right" closeButton richColors />
+      </AnalyticsWrapper>
     </Router>
   );
 }
