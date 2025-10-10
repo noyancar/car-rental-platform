@@ -234,13 +234,13 @@ const AdminCars: React.FC = () => {
     if (!confirm(`Are you sure you want to delete "${car.make} ${car.model}"?\n\nThis action cannot be undone.`)) {
       return;
     }
-    
-    const success = await deleteCar(car.id);
-    
-    if (success) {
+
+    const result = await deleteCar(car.id);
+
+    if (result.success) {
       toast.success('Car deleted successfully');
     } else {
-      toast.error(error || 'Failed to delete car. It may have active bookings.');
+      toast.error(result.message || 'Failed to delete car');
     }
   };
   

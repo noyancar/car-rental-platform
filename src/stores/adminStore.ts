@@ -38,7 +38,7 @@ interface AdminState {
   addCar: (car: Omit<Car, 'id'>) => Promise<void>;
   updateCar: (id: string, car: Partial<Car>) => Promise<void>;
   toggleCarAvailability: (id: string, available: boolean) => Promise<void>;
-  deleteCar: (id: string) => Promise<boolean>;
+  deleteCar: (id: string) => Promise<{ success: boolean; message?: string }>;
   
   // Booking management
   fetchAllBookings: () => Promise<void>;
@@ -207,36 +207,51 @@ export const useAdminStore = create<AdminState>((set, get) => ({
     }
   },
   
-  deleteCar: async (id: string) => {
+  deleteCar: async (id: string): Promise<{ success: boolean; message?: string }> => {
     try {
-      set({ isSavingData: true, error: null });
-      
-      // First check if car has any active bookings
+      set({ isSavingData: true });
+
+      // Check if car has any booking history at all
       const { data: bookings, error: bookingsError } = await supabase
         .from('bookings')
         .select('id')
         .eq('car_id', id)
-        .in('status', ['confirmed', 'pending']);
-      
-      if (bookingsError) throw bookingsError;
-      
-      if (bookings && bookings.length > 0) {
-        throw new Error('Cannot delete car with active bookings');
+        .limit(1); // Just need to know if any exist
+
+      if (bookingsError) {
+        return {
+          success: false,
+          message: bookingsError.message
+        };
       }
-      
-      // Delete the car
+
+      if (bookings && bookings.length > 0) {
+        return {
+          success: false,
+          message: 'This car has booking history and cannot be permanently deleted. Please use the "Disable" button instead to make it unavailable for new bookings.'
+        };
+      }
+
+      // Delete the car (only if no booking history)
       const { error } = await supabase
         .from('cars')
         .delete()
         .eq('id', id);
-      
-      if (error) throw error;
-      
+
+      if (error) {
+        return {
+          success: false,
+          message: error.message
+        };
+      }
+
       await get().fetchAllCars();
-      return true;
+      return { success: true };
     } catch (error) {
-      set({ error: (error as Error).message });
-      return false;
+      return {
+        success: false,
+        message: (error as Error).message
+      };
     } finally {
       set({ isSavingData: false });
     }
