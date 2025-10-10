@@ -136,7 +136,13 @@ const AuthModal: React.FC<AuthModalProps> = ({
       toast.success('Magic link sent! Check your email.');
     } catch (error: any) {
       console.error('Magic link error:', error);
-      toast.error(error.message || 'Failed to send magic link');
+
+      // Better error message for rate limiting
+      if (error.message?.includes('request this after')) {
+        toast.error('Please wait a moment before requesting another email.');
+      } else {
+        toast.error(error.message || 'Failed to send magic link');
+      }
     } finally {
       setLoading(false);
     }
@@ -158,7 +164,13 @@ const AuthModal: React.FC<AuthModalProps> = ({
       toast.success('Password reset link sent! Check your email.');
     } catch (error: any) {
       console.error('Password reset error:', error);
-      toast.error(error.message || 'Failed to send password reset email');
+
+      // Better error message for rate limiting
+      if (error.message?.includes('request this after')) {
+        toast.error('Please wait a moment before requesting another email.');
+      } else {
+        toast.error(error.message || 'Failed to send password reset email');
+      }
     } finally {
       setLoading(false);
     }
