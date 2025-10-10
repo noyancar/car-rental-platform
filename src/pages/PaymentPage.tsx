@@ -48,12 +48,25 @@ const PaymentPage: React.FC = () => {
 
   const loadBookingDetails = async () => {
     if (!user) return;
-    
+
     try {
       setLoading(true);
-      
-      // Check if user profile is complete
-      if (!user.phone || !user.license_number || !user.has_valid_license) {
+
+      // Fetch fresh profile data from database to check completeness
+      const { data: profile, error: profileError } = await supabase
+        .from('profiles')
+        .select('first_name, last_name, phone')
+        .eq('id', user.id)
+        .single();
+
+      if (profileError) {
+        console.error('Profile fetch error:', profileError);
+        toast.error('Failed to load profile');
+        return;
+      }
+
+      // Check if user profile is complete (only essential fields)
+      if (!profile.first_name || !profile.last_name || !profile.phone) {
         setShowProfileCompletion(true);
         setLoading(false);
         return;
@@ -72,7 +85,7 @@ const PaymentPage: React.FC = () => {
           pickup_location:locations!bookings_pickup_location_id_fkey (*),
           return_location:locations!bookings_return_location_id_fkey (*)
         `)
-        .eq('id', bookingId)
+        .eq('id', bookingId!)
         .single();
 
       if (bookingError) throw bookingError;
@@ -117,7 +130,7 @@ const PaymentPage: React.FC = () => {
     try {
       // Call the Supabase Edge Function to create a payment intent
       const { data, error } = await supabase.functions.invoke('create-payment-intent', {
-        body: { 
+        body: {
           booking_id: bookingData.id,
           customerEmail: bookingData.customer_email || bookingData.email || user?.email, // Send customer email for receipt
           customerName: bookingData.customer_name || 'Customer', // Use existing customer_name or fallback

@@ -155,12 +155,6 @@ const CustomerDetailsModal: React.FC<CustomerDetailsModalProps> = ({ customer, o
                             <span className="text-sm">{customer.address}</span>
                           </div>
                         )}
-                        {customer.license_number && (
-                          <div className="flex items-center gap-3">
-                            <FileText className="h-5 w-5 text-gray-400" />
-                            <span>License: {customer.license_number}</span>
-                          </div>
-                        )}
                       </div>
                     </div>
 

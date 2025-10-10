@@ -78,10 +78,6 @@ const BookingDetailsModal: React.FC<BookingDetailsModalProps> = ({ booking, onCl
                   {booking.phone || 'Not provided'}
                 </p>
               </div>
-              <div>
-                <span className="text-gray-600">License Number:</span>
-                <p className="font-medium">{booking.license_number || 'Not provided'}</p>
-              </div>
             </div>
           </div>
 

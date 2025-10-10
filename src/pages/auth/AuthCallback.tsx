@@ -32,10 +32,29 @@ const AuthCallback: React.FC = () => {
 
         // Get the session from the URL
         const { data: { session }, error: sessionError } = await supabase.auth.getSession();
-        
+
         if (sessionError) throw sessionError;
-        
+
         if (session) {
+          // Auto-fill profile from Google OAuth metadata if available
+          const metadata = session.user.user_metadata;
+          if (metadata) {
+            const fullName = metadata.full_name || '';
+            const firstName = metadata.given_name || fullName.split(' ')[0] || '';
+            const lastName = metadata.family_name || fullName.split(' ').slice(1).join(' ') || '';
+
+            // Update profile if we have name data and profile exists
+            if (firstName || lastName) {
+              await supabase
+                .from('profiles')
+                .update({
+                  first_name: firstName,
+                  last_name: lastName
+                })
+                .eq('id', session.user.id);
+            }
+          }
+
           // Check for pending booking FIRST
           const pendingBooking = localStorage.getItem('pendingBooking');
           

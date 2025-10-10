@@ -5,10 +5,6 @@ export type User = {
   last_name?: string;
   phone?: string;
   address?: string;
-  license_number?: string;
-  license_state?: string;
-  has_valid_license?: boolean;
-  license_verified_at?: string;
   avatar_url?: string;
   created_at?: string;
   role?: 'user' | 'admin';
