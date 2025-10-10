@@ -10,6 +10,7 @@ import { useLocations } from '../../hooks/useLocations';
 import BookingDetailsModal from '../../components/admin/BookingDetailsModal';
 import { exportMonthlyRevenueCSV } from '../../utils/csvExport';
 import type { Booking } from '../../types';
+import { isBookingExpired, formatBookingId } from '../../utils/bookingHelpers';
 
 const AdminBookings: React.FC = () => {
   const { 
@@ -226,7 +227,7 @@ const AdminBookings: React.FC = () => {
                 {filteredBookings.map((booking) => (
                   <tr key={booking.id}>
                     <td className="px-6 py-4">
-                      #{booking.id}
+                      #{formatBookingId(booking.id)}
                     </td>
                     <td className="px-6 py-4">
                       <div className="flex items-center">
@@ -273,9 +274,13 @@ const AdminBookings: React.FC = () => {
                           booking.status === 'confirmed' ? 'bg-success-50 text-success-500' :
                           booking.status === 'cancelled' ? 'bg-error-50 text-error-500' :
                           booking.status === 'completed' ? 'bg-secondary-100 text-secondary-600' :
+                          (booking.status === 'draft' && isBookingExpired(booking)) ? 'bg-red-50 text-red-600' :
                           'bg-warning-50 text-warning-500'
                         }`}>
-                          {booking.status.charAt(0).toUpperCase() + booking.status.slice(1)}
+                          {booking.status === 'draft' && isBookingExpired(booking)
+                            ? 'Draft (Expired)'
+                            : booking.status.charAt(0).toUpperCase() + booking.status.slice(1)
+                          }
                         </span>
                       </div>
                     </td>

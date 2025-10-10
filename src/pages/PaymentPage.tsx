@@ -12,6 +12,7 @@ import { useAuthStore } from '../stores/authStore';
 import { supabase } from '../lib/supabase';
 import { BookingWithExtras } from '../types';
 import { calculateBookingPriceBreakdown } from '../utils/bookingPriceCalculations';
+import { isBookingExpired } from '../utils/bookingHelpers';
 
 const PaymentPage: React.FC = () => {
   const { bookingId } = useParams();
@@ -89,6 +90,13 @@ const PaymentPage: React.FC = () => {
         .single();
 
       if (bookingError) throw bookingError;
+
+      // Check if booking has expired
+      if (isBookingExpired(bookingData)) {
+        toast.error('This booking has expired. Please create a new booking.');
+        navigate('/bookings');
+        return;
+      }
 
       // Check if booking is already paid
       if (bookingData.status === 'confirmed' && bookingData.stripe_payment_intent_id) {

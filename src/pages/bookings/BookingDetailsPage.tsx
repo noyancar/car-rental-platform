@@ -8,6 +8,7 @@ import { useBookingStore } from '../../stores/bookingStore';
 import { supabase } from '../../lib/supabase';
 import { toast } from 'sonner';
 import { calculateBookingPriceBreakdown } from '../../utils/bookingPriceCalculations';
+import { formatBookingId } from '../../utils/bookingHelpers';
 
 const BookingDetailsPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
@@ -136,7 +137,7 @@ const BookingDetailsPage: React.FC = () => {
             <div className="flex justify-between items-start">
               <div>
                 <h1 className="text-2xl font-semibold text-secondary-900">
-                  Booking #{currentBooking.id}
+                  Booking #{formatBookingId(currentBooking.id)}
                 </h1>
                 <p className="mt-1 text-secondary-500">
                   Created on {format(new Date(currentBooking.created_at), 'MMM d, yyyy')}
