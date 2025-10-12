@@ -3,7 +3,7 @@ import { createClient } from "npm:@supabase/supabase-js@2.39.3";
 import Stripe from "npm:stripe@13.10.0";
 
 const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Origin": "https://www.nynrentals.com",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-application-name",
   "Access-Control-Allow-Methods": "POST, OPTIONS",
 };
