@@ -58,23 +58,6 @@ export default function StripePaymentForm({
     };
   }, [elements, errorMessage]);
 
-  // Warn user before leaving page if they have entered payment info
-  useEffect(() => {
-    const handleBeforeUnload = (e: BeforeUnloadEvent) => {
-      // Only warn if payment hasn't been submitted yet and Stripe is loaded
-      if (stripe && elements && !isProcessing && !hasSubmitted) {
-        e.preventDefault();
-        return true; // Modern approach - browser will show its own message
-      }
-    };
-
-    window.addEventListener('beforeunload', handleBeforeUnload);
-
-    return () => {
-      window.removeEventListener('beforeunload', handleBeforeUnload);
-    };
-  }, [stripe, elements, isProcessing, hasSubmitted]);
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
@@ -215,9 +198,6 @@ export default function StripePaymentForm({
         options={{
           layout: 'tabs',
           paymentMethodOrder: ['card', 'apple_pay', 'google_pay'],
-          business: {
-            name: 'NYN Rentals',
-          },
         }}
       />
 
