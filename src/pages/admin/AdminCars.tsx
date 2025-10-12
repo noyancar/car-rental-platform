@@ -593,7 +593,7 @@ const AdminCars: React.FC = () => {
                 />
                 
                 <SimpleImageUploader
-                  label="Araç Fotoğrafları"
+                  label="Vehicle Photos"
                   initialImages={editingCar?.image_urls || (editingCar?.image_url ? [editingCar.image_url] : [])}
                   initialMainIndex={editingCar?.main_image_index || 0}
                   onImagesChange={(urls: string[], mainIndex: number) => {

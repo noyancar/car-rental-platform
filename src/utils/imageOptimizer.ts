@@ -156,4 +156,35 @@ export async function optimizeToTargetSize(
   }
   
   return optimizedFile;
+}
+
+/**
+ * Adds thumbnail transformation parameters to Supabase Storage URL
+ * If Supabase transform is not supported, returns original URL (safe fallback)
+ * @param url - Original Supabase storage URL
+ * @param width - Desired width in pixels (default: 400)
+ * @param height - Desired height in pixels (default: 300)
+ * @returns Thumbnail URL or original URL in case of error
+ */
+export function getThumbnailUrl(
+  url: string,
+  width: number = 400,
+  height: number = 300
+): string {
+  // Check for empty or invalid URL
+  if (!url || typeof url !== 'string') {
+    return url;
+  }
+
+  try {
+    const urlObj = new URL(url);
+    urlObj.searchParams.set('width', width.toString());
+    urlObj.searchParams.set('height', height.toString());
+    urlObj.searchParams.set('resize', 'cover');
+    return urlObj.toString();
+  } catch (error) {
+    // Return original URL in case of error (safe fallback)
+    console.warn('getThumbnailUrl: Invalid URL, returning original:', url);
+    return url;
+  }
 } 
