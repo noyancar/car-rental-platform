@@ -10,6 +10,7 @@ import { useLocations } from '../../hooks/useLocations';
 import BookingDetailsModal from '../../components/admin/BookingDetailsModal';
 import { exportMonthlyRevenueCSV } from '../../utils/csvExport';
 import type { Booking } from '../../types';
+import { isBookingExpired, formatBookingId } from '../../utils/bookingHelpers';
 
 const AdminBookings: React.FC = () => {
   const { 
@@ -76,8 +77,13 @@ const AdminBookings: React.FC = () => {
         return <CheckCircle className="h-5 w-5 text-success-500" />;
       case 'cancelled':
         return <XCircle className="h-5 w-5 text-error-500" />;
+      case 'completed':
+        return <CheckCircle className="h-5 w-5 text-secondary-600" />;
+      case 'draft':
+      case 'pending':
+        return <AlertCircle className="h-5 w-5 text-warning-600" />;
       default:
-        return <AlertCircle className="h-5 w-5 text-warning-500" />;
+        return <AlertCircle className="h-5 w-5 text-warning-600" />;
     }
   };
   
@@ -221,7 +227,7 @@ const AdminBookings: React.FC = () => {
                 {filteredBookings.map((booking) => (
                   <tr key={booking.id}>
                     <td className="px-6 py-4">
-                      #{booking.id}
+                      #{formatBookingId(booking.id)}
                     </td>
                     <td className="px-6 py-4">
                       <div className="flex items-center">
@@ -268,9 +274,13 @@ const AdminBookings: React.FC = () => {
                           booking.status === 'confirmed' ? 'bg-success-50 text-success-500' :
                           booking.status === 'cancelled' ? 'bg-error-50 text-error-500' :
                           booking.status === 'completed' ? 'bg-secondary-100 text-secondary-600' :
+                          (booking.status === 'draft' && isBookingExpired(booking)) ? 'bg-red-50 text-red-600' :
                           'bg-warning-50 text-warning-500'
                         }`}>
-                          {booking.status.charAt(0).toUpperCase() + booking.status.slice(1)}
+                          {booking.status === 'draft' && isBookingExpired(booking)
+                            ? 'Draft (Expired)'
+                            : booking.status.charAt(0).toUpperCase() + booking.status.slice(1)
+                          }
                         </span>
                       </div>
                     </td>
@@ -285,17 +295,16 @@ const AdminBookings: React.FC = () => {
                           Details
                         </Button>
                         {booking.status !== 'completed' && booking.status !== 'cancelled' && (
-                          <Select
+                          <select
                             value=""
                             onChange={(e) => handleStatusChange(booking, e.target.value as Booking['status'])}
-                            className="w-40"
-                            options={[
-                              { value: '', label: 'Change Status', disabled: true },
-                              ...(booking.status !== 'confirmed' ? [{ value: 'confirmed', label: '✓ Confirm' }] : []),
-                              ...(booking.status !== 'cancelled' ? [{ value: 'cancelled', label: '✗ Cancel' }] : []),
-                              ...(booking.status === 'confirmed' ? [{ value: 'completed', label: '✓ Complete' }] : []),
-                            ].filter(opt => opt.value !== booking.status)}
-                          />
+                            className="px-3 py-2 text-sm border border-gray-300 rounded-md hover:border-gray-400 focus:outline-none focus:ring-2 focus:ring-primary-500 cursor-pointer bg-white"
+                          >
+                            <option value="" disabled>Change Status</option>
+                            {booking.status !== 'confirmed' && <option value="confirmed">✓ Confirm</option>}
+                            {booking.status !== 'cancelled' && <option value="cancelled">✗ Cancel</option>}
+                            {booking.status === 'confirmed' && <option value="completed">✓ Complete</option>}
+                          </select>
                         )}
                       </div>
                     </td>

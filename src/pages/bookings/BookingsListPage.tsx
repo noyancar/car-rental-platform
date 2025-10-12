@@ -9,7 +9,7 @@ import { calculateRentalDuration } from '../../utils/bookingPriceCalculations';
 
 const BookingsListPage: React.FC = () => {
   const { bookings, loading, error, fetchUserBookings } = useBookingStore();
-  
+
   useEffect(() => {
     fetchUserBookings();
   }, [fetchUserBookings]);

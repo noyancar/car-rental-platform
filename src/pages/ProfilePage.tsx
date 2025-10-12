@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { User, Phone, FileText } from 'lucide-react';
+import { User, Phone } from 'lucide-react';
 import { toast } from 'sonner';
 import { Input } from '../components/ui/Input';
 import { Button } from '../components/ui/Button';
@@ -11,16 +11,14 @@ const ProfilePage: React.FC = () => {
     first_name: user?.first_name || '',
     last_name: user?.last_name || '',
     phone: user?.phone || '',
-    license_number: user?.license_number || '',
   });
-  
+
   useEffect(() => {
     if (user) {
       setFormData({
         first_name: user.first_name || '',
         last_name: user.last_name || '',
         phone: user.phone || '',
-        license_number: user.license_number || '',
       });
     }
   }, [user]);
@@ -28,23 +26,18 @@ const ProfilePage: React.FC = () => {
   
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     // Validate required fields
     if (!formData.first_name || !formData.last_name) {
       toast.error('Please enter your full name');
       return;
     }
-    
+
     if (!formData.phone) {
       toast.error('Phone number is required for reservations');
       return;
     }
-    
-    if (!formData.license_number) {
-      toast.error('Driver\'s license number is required to rent a car');
-      return;
-    }
-    
+
     try {
       await updateProfile(formData);
       toast.success('Profile updated successfully');
@@ -107,7 +100,7 @@ const ProfilePage: React.FC = () => {
                     placeholder="John"
                     required
                   />
-                  
+
                   <Input
                     label="Last Name"
                     value={formData.last_name}
@@ -115,7 +108,7 @@ const ProfilePage: React.FC = () => {
                     placeholder="Doe"
                     required
                   />
-                  
+
                   <div className="md:col-span-2">
                     <Input
                       label="Phone Number"
@@ -128,28 +121,6 @@ const ProfilePage: React.FC = () => {
                     />
                   </div>
                 </div>
-              </div>
-              
-              {/* Driver's License */}
-              <div className="mb-8">
-                <h2 className="text-lg font-semibold mb-4 flex items-center">
-                  <FileText className="h-5 w-5 mr-2 text-primary-700" />
-                  Driver's License
-                </h2>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <div className="md:col-span-2">
-                    <Input
-                      label="License Number"
-                      value={formData.license_number}
-                      onChange={(e) => setFormData({ ...formData, license_number: e.target.value })}
-                      placeholder="DL12345678"
-                      required
-                    />
-                  </div>
-                </div>
-                <p className="text-sm text-gray-600 mt-2">
-                  We need this information to verify your eligibility to rent a vehicle.
-                </p>
               </div>
               
               

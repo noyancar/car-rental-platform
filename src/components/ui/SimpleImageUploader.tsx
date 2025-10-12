@@ -97,7 +97,7 @@ export const SimpleImageUploader: React.FC<SimpleImageUploaderProps> = ({
   // Dosya yükleme işlevi
   const uploadFiles = useCallback(async (files: FileList) => {
     if (images.length + files.length > maxFiles) {
-      toast.error(`En fazla ${maxFiles} fotoğraf yükleyebilirsiniz.`);
+      toast.error(`You can upload maximum ${maxFiles} photos.`);
       return;
     }
 
@@ -106,60 +106,60 @@ export const SimpleImageUploader: React.FC<SimpleImageUploaderProps> = ({
     const fileArray = Array.from(files);
 
     try {
-      // Oturum kontrolü
+      // Session check
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) {
-        toast.error('Dosya yüklemek için oturum açmanız gerekiyor!');
+        toast.error('You need to be logged in to upload files!');
         setIsUploading(false);
         return;
       }
 
-      // Her dosyayı işle
+      // Process each file
       for (const file of fileArray) {
         try {
-          // Dosya tipi kontrolü (sadece resimler)
+          // File type check (images only)
           if (!file.type.startsWith('image/')) {
-            toast.error(`${file.name} bir resim dosyası değil.`);
+            toast.error(`${file.name} is not an image file.`);
             continue;
           }
 
-          // Dosya boyutu kontrolü - 10MB'a kadar izin ver (optimize edilecek)
+          // File size check - allow up to 10MB (will be optimized)
           if (file.size > 10 * 1024 * 1024) {
-            toast.error(`${file.name} 10MB'dan büyük. Lütfen daha küçük bir görüntü seçin.`);
+            toast.error(`${file.name} is larger than 10MB. Please select a smaller image.`);
             continue;
           }
 
-          // Görüntüyü optimize et
+          // Optimize image
           let fileToUpload = file;
           try {
             const originalSizeMB = file.size / 1024 / 1024;
-            
-            // Eğer dosya 1MB'dan büyükse optimize et
+
+            // Optimize if file is larger than 1MB
             if (originalSizeMB > 1) {
-              toast.info(`${file.name} optimize ediliyor...`);
+              toast.info(`Optimizing ${file.name}...`);
               fileToUpload = await optimizeImage(file, {
-                maxSizeMB: 1, // 1MB'a kadar sıkıştır
-                maxWidthOrHeight: 1920, // Maksimum 1920px
+                maxSizeMB: 1, // Compress to 1MB
+                maxWidthOrHeight: 1920, // Max 1920px
                 initialQuality: 0.85,
               });
-              
+
               const newSizeMB = fileToUpload.size / 1024 / 1024;
               const savedPercent = ((1 - fileToUpload.size / file.size) * 100).toFixed(0);
-              
-              toast.success(`${file.name} optimize edildi: ${originalSizeMB.toFixed(1)}MB → ${newSizeMB.toFixed(1)}MB (%${savedPercent} tasarruf)`);
+
+              toast.success(`${file.name} optimized: ${originalSizeMB.toFixed(1)}MB → ${newSizeMB.toFixed(1)}MB (${savedPercent}% saved)`);
             }
           } catch (optimizeError) {
-            console.error('Görüntü optimizasyonu başarısız, orijinal dosya yüklenecek:', optimizeError);
-            // Optimizasyon başarısız olursa orijinal dosyayı kullan
+            console.error('Image optimization failed, original file will be uploaded:', optimizeError);
+            // Use original file if optimization fails
           }
 
-          // Dosya adı oluştur
+          // Generate filename
           const fileExt = file.name.split('.').pop();
-          const fileName = itemId 
+          const fileName = itemId
             ? `${folderPath}/${itemId}/${Date.now()}.${fileExt}`
             : `${folderPath}/${Date.now()}-${Math.random().toString(36).substring(2, 8)}.${fileExt}`;
 
-          // Supabase'e yükle
+          // Upload to Supabase
           const { data, error } = await supabase.storage
             .from(bucketName)
             .upload(fileName, fileToUpload, {
@@ -169,35 +169,35 @@ export const SimpleImageUploader: React.FC<SimpleImageUploaderProps> = ({
 
           if (error) throw error;
 
-          // Public URL al
+          // Get public URL
           const { data: publicUrlData } = supabase.storage
             .from(bucketName)
             .getPublicUrl(data.path);
 
-          // Yeni resmi ekle
+          // Add new image
           newImages.push({
             id: `new-${Date.now()}-${Math.random().toString(36).substring(2, 8)}`,
             url: publicUrlData.publicUrl,
-            isMain: images.length === 0 && newImages.length === 0 // İlk resim ana resim olsun
+            isMain: images.length === 0 && newImages.length === 0 // First image is main
           });
         } catch (error: any) {
-          toast.error(`${file.name} yüklenirken hata: ${error.message}`);
+          toast.error(`Error uploading ${file.name}: ${error.message}`);
         }
       }
 
-      // Başarıyla yüklenen resimleri state'e ekle
+      // Add successfully uploaded images to state
       if (newImages.length > 0) {
         setImages(prev => {
-          // Eğer henüz ana görüntü yoksa ve resimler ekliyorsak ilk eklenen resmi ana görüntü yap
+          // If no main image yet and adding images, make first added image the main one
           if (prev.length === 0 && !prev.some(img => img.isMain) && newImages.length > 0) {
             newImages[0].isMain = true;
           }
           return [...prev, ...newImages];
         });
-        toast.success(`${newImages.length} fotoğraf başarıyla yüklendi.`);
+        toast.success(`${newImages.length} photo${newImages.length > 1 ? 's' : ''} uploaded successfully.`);
       }
     } catch (error: any) {
-      toast.error(`Dosya yükleme hatası: ${error.message}`);
+      toast.error(`File upload error: ${error.message}`);
     } finally {
       setIsUploading(false);
     }
@@ -234,27 +234,27 @@ export const SimpleImageUploader: React.FC<SimpleImageUploaderProps> = ({
       {label && (
         <div className="flex justify-between items-center">
           <label className="block text-sm font-medium text-gray-700">{label}</label>
-          <div className="text-sm text-gray-500">{images.length}/{maxFiles} fotoğraf</div>
+          <div className="text-sm text-gray-500">{images.length}/{maxFiles} photos</div>
         </div>
       )}
       
-      {/* Yükleme butonu */}
+      {/* Upload button */}
       <div className="flex flex-col items-center justify-center border-2 border-dashed border-gray-300 rounded-lg p-6 bg-gray-50 hover:bg-gray-100 transition-colors">
         <Upload className="h-10 w-10 text-gray-400 mb-2" />
         <p className="text-sm text-gray-500 mb-2">
-          Fotoğraf yüklemek için tıklayın
+          Click to upload photos
         </p>
         <p className="text-xs text-gray-400 mb-4">
-          PNG, JPG, WEBP &middot; Maksimum 10MB &middot; Otomatik optimize edilir
+          PNG, JPG, WEBP &middot; Max 10MB &middot; Auto-optimized
         </p>
-        
+
         <Button
           variant="outline"
           size="sm"
           onClick={() => fileInputRef.current?.click()}
           disabled={isUploading || images.length >= maxFiles}
         >
-          {isUploading ? 'Yükleniyor...' : 'Fotoğraf Seç'}
+          {isUploading ? 'Uploading...' : 'Select Photos'}
         </Button>
         
         <input
@@ -273,10 +273,10 @@ export const SimpleImageUploader: React.FC<SimpleImageUploaderProps> = ({
         />
       </div>
       
-      {/* Yüklenen resimler */}
+      {/* Uploaded images */}
       {images.length > 0 && (
         <div className="mt-4">
-          <h3 className="text-sm font-medium text-gray-700 mb-2">Yüklenen Fotoğraflar</h3>
+          <h3 className="text-sm font-medium text-gray-700 mb-2">Uploaded Photos</h3>
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
             {images.map((image) => (
               <div 
@@ -291,14 +291,14 @@ export const SimpleImageUploader: React.FC<SimpleImageUploaderProps> = ({
                   className="w-full h-36 object-cover"
                 />
                 
-                {/* Ana resim etiketi */}
+                {/* Main image badge */}
                 {image.isMain && (
                   <div className="absolute top-2 left-2 bg-primary-500 text-white text-xs px-2 py-1 rounded">
-                    Ana Fotoğraf
+                    Main Photo
                   </div>
                 )}
-                
-                {/* Kontrol butonları */}
+
+                {/* Control buttons */}
                 <div className="absolute bottom-0 left-0 right-0 p-2 bg-black bg-opacity-50 flex justify-between items-center">
                   <button
                     type="button"
@@ -306,16 +306,16 @@ export const SimpleImageUploader: React.FC<SimpleImageUploaderProps> = ({
                     className={`p-1.5 rounded-full ${
                       image.isMain ? 'text-yellow-400' : 'text-white hover:text-yellow-400'
                     }`}
-                    title="Ana fotoğraf olarak ayarla"
+                    title="Set as main photo"
                   >
                     <Star size={16} />
                   </button>
-                  
+
                   <button
                     type="button"
                     onClick={() => removeImage(image.id)}
                     className="p-1.5 rounded-full text-white hover:text-red-400"
-                    title="Fotoğrafı kaldır"
+                    title="Remove photo"
                   >
                     <Trash size={16} />
                   </button>

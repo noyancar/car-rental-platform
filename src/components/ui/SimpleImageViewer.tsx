@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { ChevronLeft, ChevronRight, Expand, X, ZoomIn, ZoomOut } from 'lucide-react';
+import { getThumbnailUrl } from '../../utils/imageOptimizer';
 
 interface SimpleImageViewerProps {
   images: string[];
@@ -147,13 +148,15 @@ export const SimpleImageViewer: React.FC<SimpleImageViewerProps> = ({
           )}
           
           {/* Ana görüntü */}
-          <img 
-            src={validImages[currentIndex]} 
-            alt={`${alt} (${currentIndex + 1}/${validImages.length})`} 
+          <img
+            src={validImages[currentIndex]}
+            alt={`${alt} (${currentIndex + 1}/${validImages.length})`}
+            loading="lazy"
+            decoding="async"
             className={`
               transition-all duration-300
-              ${aspectRatio === 'auto' 
-                ? `w-full ${maxHeight} object-contain` 
+              ${aspectRatio === 'auto'
+                ? `w-full ${maxHeight} object-contain`
                 : 'w-full h-full object-cover'
               }
               ${imageLoaded ? 'opacity-100' : 'opacity-0'}
@@ -208,9 +211,10 @@ export const SimpleImageViewer: React.FC<SimpleImageViewerProps> = ({
                             : 'opacity-60 hover:opacity-90 hover:scale-105'
                         }`}
                       >
-                        <img 
-                          src={image} 
-                          alt={`Thumbnail ${index + 1}`} 
+                        <img
+                          src={getThumbnailUrl(image, 200, 150)}
+                          alt={`Thumbnail ${index + 1}`}
+                          loading="lazy"
                           className="w-full h-full object-cover"
                         />
                         {index === currentIndex && (

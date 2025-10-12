@@ -158,12 +158,6 @@ Deno.serve(async (req) => {
                   <span class="label">Transmission:</span>
                   <span class="value">${booking.car.transmission || 'Automatic'}</span>
                 </div>
-                ${booking.car.license_plate ? `
-                <div class="detail-row">
-                  <span class="label">License Plate:</span>
-                  <span class="value">${booking.car.license_plate}</span>
-                </div>
-                ` : ''}
               </div>
               
               <div class="section">

@@ -3,6 +3,7 @@ import { supabase } from '../lib/supabase';
 import type { Booking } from '../types';
 import { useLocationStore } from './locationStore';
 import { calculateRentalDuration } from '../utils/bookingPriceCalculations';
+import { filterActiveBookings } from '../utils/bookingHelpers';
 
 interface BookingState {
   bookings: Booking[];
@@ -10,12 +11,12 @@ interface BookingState {
   loading: boolean;
   error: string | null;
   isCheckingAvailability: boolean;
-  
+
   fetchUserBookings: () => Promise<void>;
   fetchBookingById: (id: string) => Promise<void>;
-  createBooking: (booking: Pick<Booking, 'car_id' | 'user_id' | 'start_date' | 'end_date' | 'total_price' | 'status' | 'pickup_time' | 'return_time'> & { 
-    discount_code_id?: string; 
-    pickup_location?: string; 
+  createBooking: (booking: Pick<Booking, 'car_id' | 'user_id' | 'start_date' | 'end_date' | 'total_price' | 'status' | 'pickup_time' | 'return_time'> & {
+    discount_code_id?: string;
+    pickup_location?: string;
     return_location?: string;
     car_rental_subtotal?: number;
     pickup_delivery_fee?: number;
@@ -108,8 +109,11 @@ export const useBookingStore = create<BookingState>((set) => ({
         ...booking,
         car: booking.cars,
       }));
-      
-      set({ bookings });
+
+      // Filter out expired draft bookings before setting state
+      const activeBookings = filterActiveBookings(bookings);
+
+      set({ bookings: activeBookings });
     } catch (error) {
       set({ error: (error as Error).message });
     } finally {
