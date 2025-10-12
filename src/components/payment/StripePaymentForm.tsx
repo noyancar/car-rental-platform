@@ -24,6 +24,7 @@ export default function StripePaymentForm({
   const stripe = useStripe();
   const elements = useElements();
   const [isProcessing, setIsProcessing] = useState(false);
+  const [processingStage, setProcessingStage] = useState<'payment' | 'verifying'>('payment');
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [hasSubmitted, setHasSubmitted] = useState(false);
 
@@ -56,6 +57,23 @@ export default function StripePaymentForm({
       paymentElement.off('focus', handleFocus);
     };
   }, [elements, errorMessage]);
+
+  // Warn user before leaving page if they have entered payment info
+  useEffect(() => {
+    const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+      // Only warn if payment hasn't been submitted yet and Stripe is loaded
+      if (stripe && elements && !isProcessing && !hasSubmitted) {
+        e.preventDefault();
+        return true; // Modern approach - browser will show its own message
+      }
+    };
+
+    window.addEventListener('beforeunload', handleBeforeUnload);
+
+    return () => {
+      window.removeEventListener('beforeunload', handleBeforeUnload);
+    };
+  }, [stripe, elements, isProcessing, hasSubmitted]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -120,39 +138,39 @@ export default function StripePaymentForm({
         setErrorMessage(userFriendlyMessage);
         onError(userFriendlyMessage);
         setHasSubmitted(false); // Allow retry on error
+        setIsProcessing(false); // Close overlay on error
+        setProcessingStage('payment'); // Reset stage
       } else if (paymentIntent && paymentIntent.status === 'succeeded') {
-        // Payment succeeded - wait for webhook to update the booking
+        // Payment succeeded - change stage to verifying
+        setProcessingStage('verifying');
+
         // Poll for booking status update (max 10 seconds)
         let attempts = 0;
         const maxAttempts = 10;
-        
+
         const checkBookingStatus = async () => {
           const { data: booking } = await supabase
             .from('bookings')
             .select('stripe_payment_status')
             .eq('id', bookingId)
             .single();
-          
+
           if (booking?.stripe_payment_status === 'succeeded') {
-            onSuccess(paymentIntent.id);
             return true;
           }
-          
+
           return false;
         };
-        
+
         const pollInterval = setInterval(async () => {
           attempts++;
-          
+
           const isUpdated = await checkBookingStatus();
-          
+
           if (isUpdated || attempts >= maxAttempts) {
             clearInterval(pollInterval);
-            
-            if (!isUpdated && attempts >= maxAttempts) {
-              // Webhook didn't update in time, but payment was successful
-              onSuccess(paymentIntent.id);
-            }
+            setIsProcessing(false); // Close overlay here
+            onSuccess(paymentIntent.id);
           }
         }, 1000);
       }
@@ -162,8 +180,8 @@ export default function StripePaymentForm({
       setErrorMessage(errorMsg);
       onError(errorMsg);
       setHasSubmitted(false); // Allow retry on error
-    } finally {
-      setIsProcessing(false);
+      setIsProcessing(false); // Close overlay on error
+      setProcessingStage('payment'); // Reset stage
     }
   };
 
@@ -174,8 +192,14 @@ export default function StripePaymentForm({
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
           <div className="bg-white rounded-lg p-8 max-w-sm w-full mx-4 text-center">
             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-800 mx-auto mb-4"></div>
-            <h3 className="text-lg font-semibold mb-2">Processing Payment</h3>
-            <p className="text-gray-600 text-sm">Please don't close this window...</p>
+            <h3 className="text-lg font-semibold mb-2">
+              {processingStage === 'payment' ? 'Processing Payment' : 'Verifying Payment'}
+            </h3>
+            <p className="text-gray-600 text-sm">
+              {processingStage === 'payment'
+                ? "Please don't close this window..."
+                : 'Confirming your booking...'}
+            </p>
             <p className="text-gray-500 text-xs mt-2">This may take a few moments</p>
           </div>
         </div>
@@ -187,10 +211,13 @@ export default function StripePaymentForm({
         <p className="text-2xl font-bold text-gray-900">${amount.toFixed(2)}</p>
       </div>
 
-      <PaymentElement 
+      <PaymentElement
         options={{
           layout: 'tabs',
           paymentMethodOrder: ['card', 'apple_pay', 'google_pay'],
+          business: {
+            name: 'NYN Rentals',
+          },
         }}
       />
 
