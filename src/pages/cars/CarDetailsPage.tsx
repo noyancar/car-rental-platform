@@ -1,6 +1,6 @@
 import React, { useEffect } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
-import { ArrowLeft, Users, Gauge, Car as CarIcon, Fuel, Palette, Car } from 'lucide-react';
+import { ArrowLeft, Users, Gauge, Car as CarIcon, Fuel, Car } from 'lucide-react';
 import { format } from 'date-fns';
 import { Button } from '../../components/ui/Button';
 import { SimpleImageViewer } from '../../components/ui/SimpleImageViewer';
@@ -193,16 +193,6 @@ const CarDetailsPage: React.FC = () => {
                 </div>
               </div>
 
-              {currentCar.color && (
-                <div className="flex items-center p-3 bg-gray-50 rounded-lg">
-                  <Palette className="h-5 w-5 text-primary-700 mr-2 flex-shrink-0" />
-                  <div>
-                    <p className="text-xs text-gray-600">Color</p>
-                    <p className="text-sm font-semibold text-gray-900">{currentCar.color}</p>
-                  </div>
-                </div>
-              )}
-              
               {currentCar.category && (
                 <div className="flex items-center p-3 bg-gray-50 rounded-lg">
                   <Car className="h-5 w-5 text-primary-700 mr-2 flex-shrink-0" />
