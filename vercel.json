@@ -1,6 +1,10 @@
 {
   "rewrites": [
     {
+      "source": "/qr/:code",
+      "destination": "https://lwhqqhlvmtbcugzasamf.supabase.co/functions/v1/qr-redirect/:code"
+    },
+    {
       "source": "/(.*)",
       "destination": "/index.html"
     }

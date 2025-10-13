@@ -26,6 +26,7 @@ import PendingPaymentPage from './pages/PendingPaymentPage';
 import HowItWorksPage from './pages/HowItWorksPage';
 import DealsPage from './pages/DealsPage';
 import ProfilePage from './pages/ProfilePage';
+import QRStatsPage from './pages/QRStatsPage';
 
 // Admin pages
 import AdminDashboard from './pages/admin/AdminDashboard';
@@ -118,6 +119,7 @@ function App() {
             <Route path="/cars/:id" element={<CarDetailsPage />} />
             <Route path="/how-it-works" element={<HowItWorksPage />} />
             <Route path="/deals" element={<DealsPage />} />
+            <Route path="/qr-stats" element={<QRStatsPage />} />
             
             {/* Semi-Protected routes - Allow anonymous but show auth modal at checkout */}
             <Route path="/booking/:carId" element={<BookingPage />} />
