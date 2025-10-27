@@ -85,6 +85,8 @@ export type DiscountCode = {
   active: boolean;
 }
 
+export type AppliedDiscount = Pick<DiscountCode, 'id' | 'code' | 'discount_percentage'>;
+
 export type Campaign = {
   id: string;
   name: string;

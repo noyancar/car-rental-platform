@@ -73,7 +73,7 @@ const PaymentPage: React.FC = () => {
         return;
       }
       
-      // Fetch booking with extras and locations
+      // Fetch booking with extras, locations, and discount code
       const { data: bookingData, error: bookingError } = await supabase
         .from('bookings')
         .select(`
@@ -84,7 +84,8 @@ const PaymentPage: React.FC = () => {
             extras (*)
           ),
           pickup_location:locations!bookings_pickup_location_id_fkey (*),
-          return_location:locations!bookings_return_location_id_fkey (*)
+          return_location:locations!bookings_return_location_id_fkey (*),
+          discount_code:discount_codes (code, discount_percentage)
         `)
         .eq('id', bookingId!)
         .single();
@@ -412,7 +413,14 @@ const PaymentPage: React.FC = () => {
                     {/* Price Breakdown */}
                     <div className="border-t pt-4 space-y-3">
                       <div className="flex justify-between">
-                        <span className="text-gray-600">Car Rental</span>
+                        <div className="flex flex-col">
+                          <span className="text-gray-600">Car Rental</span>
+                          {booking.discount_code && (
+                            <span className="text-xs text-green-600 mt-0.5">
+                              {booking.discount_code.code} ({booking.discount_code.discount_percentage}% off applied)
+                            </span>
+                          )}
+                        </div>
                         <span>${carTotal.toFixed(2)}</span>
                       </div>
 

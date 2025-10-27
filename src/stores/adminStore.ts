@@ -300,7 +300,7 @@ export const useAdminStore = create<AdminState>((set, get) => ({
       // Step 3: Batch fetch profiles (email is now in profiles table)
       const { data: profilesData } = await supabase
         .from('profiles')
-        .select('id, first_name, last_name, phone, license_number, email')
+        .select('id, first_name, last_name, phone, email')
         .in('id', userIds);
       
       // Create lookup map
@@ -324,7 +324,6 @@ export const useAdminStore = create<AdminState>((set, get) => ({
             first_name: profile?.first_name || '',
             last_name: profile?.last_name || '',
             phone: profile?.phone || '',
-            license_number: profile?.license_number || '',
             email: profile?.email || ''
           };
         });

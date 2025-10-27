@@ -14,6 +14,10 @@ interface ExtrasModalProps {
   carTotal: number;
   deliveryFee?: number;
   requiresQuote?: boolean;
+  discount?: {
+    code: string;
+    percentage: number;
+  } | null;
 }
 
 const categoryInfo: Record<ExtraCategory, { label: string; icon: React.ReactNode }> = {
@@ -47,7 +51,8 @@ export default function ExtrasModal({
   rentalDays,
   carTotal,
   deliveryFee = 0,
-  requiresQuote = false
+  requiresQuote = false,
+  discount = null
 }: ExtrasModalProps) {
   const { extras, selectedExtras, loading, fetchExtras, addExtra, removeExtra, updateQuantity, calculateTotal } = useExtrasStore();
   const [activeCategory, setActiveCategory] = useState<ExtraCategory>('services');
@@ -282,7 +287,14 @@ export default function ExtrasModal({
             {/* Totals */}
             <div className="border-t border-sandy-300 pt-4 mt-4 space-y-3">
               <div className="flex justify-between text-volcanic-600">
-                <span>Car Rental</span>
+                <div className="flex flex-col">
+                  <span>Car Rental</span>
+                  {discount && (
+                    <span className="text-xs text-green-600">
+                      {discount.code} ({discount.percentage}% off applied)
+                    </span>
+                  )}
+                </div>
                 <span className="font-medium">${carTotal.toFixed(2)}</span>
               </div>
               {extrasTotal > 0 && (
@@ -398,7 +410,14 @@ export default function ExtrasModal({
               {/* Totals */}
               <div className="border-t border-sandy-300 pt-2 space-y-1">
                 <div className="flex justify-between text-xs text-volcanic-600">
-                  <span>Car Rental</span>
+                  <div className="flex flex-col">
+                    <span>Car Rental</span>
+                    {discount && (
+                      <span className="text-[10px] text-green-600">
+                        {discount.code} ({discount.percentage}% off)
+                      </span>
+                    )}
+                  </div>
                   <span className="font-medium">${carTotal.toFixed(2)}</span>
                 </div>
                 {extrasTotal > 0 && (
