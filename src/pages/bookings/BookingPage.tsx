@@ -9,6 +9,7 @@ import { Select } from '../../components/ui/Select';
 import { useLocations } from '../../hooks/useLocations';
 import { useDeliveryFees } from '../../hooks/useDeliveryFees';
 import { calculateRentalDuration } from '../../utils/bookingPriceCalculations';
+import type { AppliedDiscount } from '../../types';
 import { LocationSelector } from '../../components/ui/LocationSelector';
 import { QuoteRequestModal, type QuoteRequestData } from '../../components/ui/QuoteRequestModal';
 import { useCarStore } from '../../stores/carStore';
@@ -39,10 +40,11 @@ const BookingPage: React.FC = () => {
   const navigate = useNavigate();
   const { user } = useAuthStore();
   const { currentCar, loading: carLoading, error: carError, fetchCarById } = useCarStore();
-  const { 
-    createBooking, 
-    calculatePrice, 
+  const {
+    createBooking,
+    calculatePrice,
     checkAvailability,
+    validateDiscountCode,
     loading: bookingLoading,
   } = useBookingStore();
   const { searchParams, isSearchPerformed, updateSearchParams } = useSearchStore();
@@ -60,6 +62,9 @@ const BookingPage: React.FC = () => {
   const [returnTime, setReturnTime] = useState(isSearchPerformed ? searchParams.returnTime : '10:00');
   const [totalPrice, setTotalPrice] = useState(0);
   const [discountCode, setDiscountCode] = useState('');
+  const [appliedDiscount, setAppliedDiscount] = useState<AppliedDiscount | null>(null);
+  const [discountError, setDiscountError] = useState('');
+  const [isApplyingDiscount, setIsApplyingDiscount] = useState(false);
   const [isAvailable, setIsAvailable] = useState<boolean | null>(null);
   const [validationMessage, setValidationMessage] = useState('');
   const [isEditingDates, setIsEditingDates] = useState(false);
@@ -208,13 +213,47 @@ const BookingPage: React.FC = () => {
     }
   }, [currentCar, startDate, endDate, pickupTime, returnTime, isEditingDates, validateDates, checkAvailability, calculatePrice]);
   
+  const handleApplyDiscount = async () => {
+    if (!discountCode.trim()) {
+      setDiscountError('Please enter a discount code');
+      return;
+    }
+
+    setIsApplyingDiscount(true);
+    setDiscountError('');
+
+    try {
+      const result = await validateDiscountCode(discountCode);
+
+      if (result.valid && result.data) {
+        setAppliedDiscount(result.data);
+        setDiscountError('');
+        toast.success(result.message);
+      } else {
+        setAppliedDiscount(null);
+        setDiscountError(result.message);
+      }
+    } catch (error) {
+      setAppliedDiscount(null);
+      setDiscountError('Failed to apply discount code');
+    } finally {
+      setIsApplyingDiscount(false);
+    }
+  };
+
+  const handleRemoveDiscount = () => {
+    setAppliedDiscount(null);
+    setDiscountCode('');
+    setDiscountError('');
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (!validateDates() || !isAvailable || !currentCar) {
       return;
     }
-    
+
     // Update search params
     updateSearchParams({
       pickupDate: startDate,
@@ -224,16 +263,16 @@ const BookingPage: React.FC = () => {
       pickupLocation,
       returnLocation
     });
-    
+
     setShowExtrasModal(true);
   };
   
   const handleExtrasModalContinue = async (selectedExtras: Map<string, { extra: any; quantity: number }>) => {
     // Calculate extras total
     const { extrasTotal } = calculateTotal();
-    
-    // Use our price breakdown
-    const carRentalSubtotal = totalPrice; // totalPrice is just car rental
+
+    // Use our price breakdown with discount
+    const carRentalSubtotal = carRentalAfterDiscount; // After discount
     const pickupDeliveryFee = deliveryFees.pickupFee;
     const returnDeliveryFee = deliveryFees.returnFee;
     const totalDeliveryFee = deliveryFees.totalFee;
@@ -249,12 +288,13 @@ const BookingPage: React.FC = () => {
         return_time: returnTime,
         pickup_location: pickupLocation,
         return_location: returnLocation,
-        total_price: carRentalSubtotal + totalDeliveryFee,  // This is car + delivery only
+        total_price: carRentalSubtotal + totalDeliveryFee,  // This is car + delivery only (after discount)
         car_rental_subtotal: carRentalSubtotal,
         pickup_delivery_fee: pickupDeliveryFee,
         return_delivery_fee: returnDeliveryFee,
         extras_total: extrasTotal,  // Store extras separately
         grand_total: grandTotal,  // Total including extras
+        discount_code_id: appliedDiscount?.id || null,
         extras: Array.from(selectedExtras.entries()).map(([id, { extra, quantity }]) => ({
           id,
           extra,
@@ -280,10 +320,11 @@ const BookingPage: React.FC = () => {
         return_location: returnLocation,
         pickup_time: pickupTime,
         return_time: returnTime,
-        total_price: carRentalSubtotal + totalDeliveryFee,  // This is car + delivery only
+        total_price: carRentalSubtotal + totalDeliveryFee,  // This is car + delivery only (after discount)
         car_rental_subtotal: carRentalSubtotal,
         pickup_delivery_fee: pickupDeliveryFee,
         return_delivery_fee: returnDeliveryFee,
+        discount_code_id: appliedDiscount?.id || undefined,
         status: 'draft'
       });
       
@@ -355,9 +396,16 @@ const BookingPage: React.FC = () => {
   }
   
   // Calculate rental duration with time consideration
-  const rentalDuration = startDate && endDate 
+  const rentalDuration = startDate && endDate
     ? calculateRentalDuration(startDate, endDate, pickupTime, returnTime)
     : 0;
+
+  // Calculate discount amount
+  const discountAmount = appliedDiscount
+    ? (totalPrice * appliedDiscount.discount_percentage) / 100
+    : 0;
+
+  const carRentalAfterDiscount = totalPrice - discountAmount;
 
   return (
     <div className="min-h-screen">
@@ -607,12 +655,63 @@ const BookingPage: React.FC = () => {
 
                 {/* Discount Code */}
                 <div className="p-6 border-b">
-                  <Input
-                    label="Discount Code (Optional)"
-                    value={discountCode}
-                    onChange={(e) => setDiscountCode(e.target.value)}
-                    placeholder="Enter discount code"
-                  />
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Discount Code (Optional)
+                  </label>
+
+                  {!appliedDiscount ? (
+                    <div className="space-y-3">
+                      <div className="flex gap-2">
+                        <Input
+                          value={discountCode}
+                          onChange={(e) => {
+                            setDiscountCode(e.target.value.toUpperCase());
+                            setDiscountError('');
+                          }}
+                          placeholder="Enter discount code"
+                          disabled={isApplyingDiscount}
+                        />
+                        <Button
+                          type="button"
+                          variant="outline"
+                          onClick={handleApplyDiscount}
+                          isLoading={isApplyingDiscount}
+                          disabled={!discountCode.trim() || isApplyingDiscount}
+                        >
+                          Apply
+                        </Button>
+                      </div>
+
+                      {discountError && (
+                        <div className="flex items-start text-sm text-red-600">
+                          <AlertCircle size={16} className="mr-1 mt-0.5 flex-shrink-0" />
+                          <span>{discountError}</span>
+                        </div>
+                      )}
+                    </div>
+                  ) : (
+                    <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center">
+                          <CheckCircle size={20} className="text-green-600 mr-2" />
+                          <div>
+                            <p className="font-medium text-green-900">
+                              {appliedDiscount.code} - {appliedDiscount.discount_percentage}% OFF
+                            </p>
+                            <p className="text-sm text-green-700">Discount applied successfully!</p>
+                          </div>
+                        </div>
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          onClick={handleRemoveDiscount}
+                        >
+                          Remove
+                        </Button>
+                      </div>
+                    </div>
+                  )}
                 </div>
 
                 {/* Submit Button */}
@@ -698,6 +797,16 @@ const BookingPage: React.FC = () => {
                           <span className="text-gray-600">Duration:</span>
                           <span>{rentalDuration} days</span>
                         </div>
+                        <div className="flex justify-between">
+                          <span className="text-gray-600">Car Rental:</span>
+                          <span>${totalPrice}</span>
+                        </div>
+                        {appliedDiscount && (
+                          <div className="flex justify-between text-green-600">
+                            <span>Discount ({appliedDiscount.discount_percentage}%):</span>
+                            <span>-${discountAmount.toFixed(2)}</span>
+                          </div>
+                        )}
                         {deliveryFees.totalFee > 0 && !deliveryFees.requiresQuote && (
                           <div className="flex justify-between">
                             <span className="text-gray-600">Delivery Fee:</span>
@@ -706,7 +815,7 @@ const BookingPage: React.FC = () => {
                         )}
                         <div className="flex justify-between font-bold text-lg pt-2 border-t">
                           <span>Total:</span>
-                          <span>${totalPrice + deliveryFees.totalFee}</span>
+                          <span>${(carRentalAfterDiscount + deliveryFees.totalFee).toFixed(2)}</span>
                         </div>
                       </div>
                     </div>
@@ -776,6 +885,12 @@ const BookingPage: React.FC = () => {
                           <span className="text-gray-600">Car Rental ({rentalDuration} days):</span>
                           <span>${totalPrice}</span>
                         </div>
+                        {appliedDiscount && (
+                          <div className="flex justify-between text-green-600">
+                            <span>Discount ({appliedDiscount.discount_percentage}%):</span>
+                            <span>-${discountAmount.toFixed(2)}</span>
+                          </div>
+                        )}
                         {deliveryFees.totalFee > 0 && !deliveryFees.requiresQuote && (
                           <div className="flex justify-between">
                             <span className="text-gray-600">Delivery Fee:</span>
@@ -784,7 +899,7 @@ const BookingPage: React.FC = () => {
                         )}
                         <div className="flex justify-between font-bold text-lg pt-2 border-t">
                           <span>Total:</span>
-                          <span className="text-primary-600">${totalPrice + deliveryFees.totalFee}</span>
+                          <span className="text-primary-600">${(carRentalAfterDiscount + deliveryFees.totalFee).toFixed(2)}</span>
                         </div>
                       </div>
                     </div>
@@ -813,9 +928,13 @@ const BookingPage: React.FC = () => {
           pickupDate={startDate}
           returnDate={endDate}
           rentalDays={rentalDuration}
-          carTotal={totalPrice}
+          carTotal={carRentalAfterDiscount}
           deliveryFee={deliveryFees.totalFee}
           requiresQuote={deliveryFees.requiresQuote}
+          discount={appliedDiscount ? {
+            code: appliedDiscount.code,
+            percentage: appliedDiscount.discount_percentage
+          } : null}
         />
       )}
       

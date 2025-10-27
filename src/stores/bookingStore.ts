@@ -5,6 +5,16 @@ import { useLocationStore } from './locationStore';
 import { calculateRentalDuration } from '../utils/bookingPriceCalculations';
 import { filterActiveBookings } from '../utils/bookingHelpers';
 
+interface DiscountCodeValidationResult {
+  valid: boolean;
+  message: string;
+  data?: {
+    id: string;
+    code: string;
+    discount_percentage: number;
+  };
+}
+
 interface BookingState {
   bookings: Booking[];
   currentBooking: Booking | null;
@@ -25,6 +35,7 @@ interface BookingState {
   updateBookingStatus: (id: string, status: Booking['status']) => Promise<void>;
   calculatePrice: (carId: string, startDate: string, endDate: string, pickupTime?: string, returnTime?: string, discountCodeId?: string) => Promise<number>;
   checkAvailability: (carId: string, startDate: string, endDate: string, pickupTime?: string, returnTime?: string) => Promise<boolean>;
+  validateDiscountCode: (code: string) => Promise<DiscountCodeValidationResult>;
 }
 
 export const useBookingStore = create<BookingState>((set) => ({
@@ -283,31 +294,112 @@ export const useBookingStore = create<BookingState>((set) => ({
         .select('price_per_day')
         .eq('id', carId)
         .single();
-      
+
       if (carError || !car) return 0;
-      
+
       // Calculate rental duration
       const rentalDays = calculateRentalDuration(startDate, endDate, pickupTime, returnTime);
-      
+
       // Fiyat hesaplama
       let price = car.price_per_day * rentalDays;
-      
+
       if (discountCodeId) {
         const { data: discount, error: discountError } = await supabase
           .from('discount_codes')
           .select('discount_percentage')
           .eq('id', discountCodeId)
           .single();
-        
+
         if (!discountError && discount) {
           price = price * (1 - discount.discount_percentage / 100);
         }
       }
-      
+
       return price;
     } catch (error) {
       console.error('Error calculating price:', error);
       return 0;
+    }
+  },
+
+  validateDiscountCode: async (code: string): Promise<DiscountCodeValidationResult> => {
+    try {
+      const trimmedCode = code.trim();
+
+      if (!trimmedCode) {
+        return {
+          valid: false,
+          message: 'Please enter a discount code'
+        };
+      }
+
+      // Check if environment variables are set
+      if (!import.meta.env.VITE_SUPABASE_URL || !import.meta.env.VITE_SUPABASE_ANON_KEY) {
+        console.error('Missing Supabase environment variables');
+        return {
+          valid: false,
+          message: 'Configuration error. Please contact support.'
+        };
+      }
+
+      // Call Edge Function
+      const response = await fetch(
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/validate-discount-code?code=${encodeURIComponent(trimmedCode)}`,
+        {
+          method: 'GET',
+          headers: {
+            'Content-Type': 'application/json',
+            'apikey': import.meta.env.VITE_SUPABASE_ANON_KEY,
+          },
+        }
+      );
+
+      if (!response.ok) {
+        const errorText = await response.text().catch(() => 'Unknown error');
+        console.error('Discount validation failed:', response.status, errorText);
+
+        // Better error message based on status code
+        if (response.status >= 500) {
+          return {
+            valid: false,
+            message: 'Server error. Please try again later.'
+          };
+        }
+
+        return {
+          valid: false,
+          message: 'Unable to validate discount code. Please try again.'
+        };
+      }
+
+      const result = await response.json();
+
+      // Validate response structure
+      if (typeof result.valid !== 'boolean' || !result.message) {
+        console.error('Invalid response from discount validation:', result);
+        return {
+          valid: false,
+          message: 'Invalid server response. Please contact support.'
+        };
+      }
+
+      return result;
+
+    } catch (error) {
+      console.error('Error validating discount code:', error);
+
+      // Network error
+      if (error instanceof TypeError && error.message.includes('fetch')) {
+        return {
+          valid: false,
+          message: 'Network error. Please check your connection.'
+        };
+      }
+
+      return {
+        valid: false,
+        message: 'Unable to validate discount code. Please try again.'
+      };
     }
   },
 }));
