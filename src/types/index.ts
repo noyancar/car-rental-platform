@@ -80,7 +80,7 @@ export type DiscountCode = {
   discount_percentage: number;
   valid_from: string;
   valid_to: string;
-  max_uses: number;
+  max_uses?: number | null;
   current_uses: number;
   active: boolean;
 }

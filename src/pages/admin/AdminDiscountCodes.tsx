@@ -27,7 +27,6 @@ const AdminDiscountCodes: React.FC = () => {
     discount_percentage: 0,
     valid_from: new Date().toISOString().split('T')[0],
     valid_to: new Date().toISOString().split('T')[0],
-    max_uses: 100,
     active: true,
   });
   
@@ -44,7 +43,6 @@ const AdminDiscountCodes: React.FC = () => {
         discount_percentage: 0,
         valid_from: new Date().toISOString().split('T')[0],
         valid_to: new Date().toISOString().split('T')[0],
-        max_uses: 100,
         active: true,
       });
       toast.success('Discount code added successfully');
@@ -129,7 +127,6 @@ const AdminDiscountCodes: React.FC = () => {
                   <th className="px-6 py-3 text-left text-sm font-semibold text-secondary-900">Code</th>
                   <th className="px-6 py-3 text-left text-sm font-semibold text-secondary-900">Discount</th>
                   <th className="px-6 py-3 text-left text-sm font-semibold text-secondary-900">Valid Period</th>
-                  <th className="px-6 py-3 text-left text-sm font-semibold text-secondary-900">Usage</th>
                   <th className="px-6 py-3 text-left text-sm font-semibold text-secondary-900">Status</th>
                   <th className="px-6 py-3 text-right text-sm font-semibold text-secondary-900">Actions</th>
                 </tr>
@@ -151,9 +148,6 @@ const AdminDiscountCodes: React.FC = () => {
                         <div>From: {new Date(code.valid_from).toLocaleDateString()}</div>
                         <div>To: {new Date(code.valid_to).toLocaleDateString()}</div>
                       </div>
-                    </td>
-                    <td className="px-6 py-4">
-                      {code.current_uses} / {code.max_uses}
                     </td>
                     <td className="px-6 py-4">
                       <span className={`px-3 py-1 rounded-full text-sm ${
@@ -241,17 +235,6 @@ const AdminDiscountCodes: React.FC = () => {
                   onChange={(e) => editingCode
                     ? setEditingCode({ ...editingCode, valid_to: e.target.value })
                     : setNewCode({ ...newCode, valid_to: e.target.value })
-                  }
-                />
-                
-                <Input
-                  label="Maximum Uses"
-                  type="number"
-                  min="1"
-                  value={editingCode?.max_uses || newCode.max_uses}
-                  onChange={(e) => editingCode
-                    ? setEditingCode({ ...editingCode, max_uses: parseInt(e.target.value) })
-                    : setNewCode({ ...newCode, max_uses: parseInt(e.target.value) })
                   }
                 />
               </div>
