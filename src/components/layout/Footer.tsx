@@ -1,6 +1,7 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { Car, Mail, Phone, MapPin } from 'lucide-react';
+import logo from '../../assets/images/logo.png';
 
 export const Footer: React.FC = () => {
   return (
@@ -10,7 +11,11 @@ export const Footer: React.FC = () => {
           {/* Brand */}
           <div className="text-center md:text-left max-w-xs">
             <div className="flex items-center justify-center md:justify-start mb-4">
-              <Car className="h-7 w-7 md:h-8 md:w-8" />
+              <img
+                src={logo}
+                alt="NYN Rentals Logo"
+                className="h-7 w-7 md:h-8 md:w-8 object-contain"
+              />
               <span className="ml-2 text-lg md:text-xl font-bold">NYN Rentals</span>
             </div>
             <p className="text-secondary-300 text-sm sm:text-base">
