@@ -1,4 +1,5 @@
 import React, { ButtonHTMLAttributes, memo } from 'react';
+import { MetaPixel } from '../../utils/metaPixel';
 
 type ButtonVariant = 'primary' | 'secondary' | 'accent' | 'outline' | 'ghost';
 type ButtonSize = 'sm' | 'md' | 'lg';
@@ -10,6 +11,7 @@ interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
   isLoading?: boolean;
   leftIcon?: React.ReactNode;
   rightIcon?: React.ReactNode;
+  pixel?: { event: string; params?: Record<string, any> };
 }
 
 export const Button = memo<ButtonProps>(({ 
@@ -22,6 +24,8 @@ export const Button = memo<ButtonProps>(({
   children,
   className = '',
   disabled,
+  pixel,
+  onClick,
   ...props
 }) => {
   // Base classes
@@ -49,6 +53,13 @@ export const Button = memo<ButtonProps>(({
   // Loading state classes
   const stateClasses = isLoading ? 'cursor-wait' : '';
   
+  const handleClick = (e: React.MouseEvent<HTMLButtonElement>) => {
+    if (pixel?.event) {
+      MetaPixel.track(pixel.event, pixel.params);
+    }
+    onClick?.(e);
+  };
+
   return (
     <button
       className={`
@@ -60,6 +71,7 @@ export const Button = memo<ButtonProps>(({
         ${className}
       `}
       disabled={disabled || isLoading}
+      onClick={handleClick} 
       {...props}
     >
       {isLoading ? (

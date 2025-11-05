@@ -116,7 +116,11 @@ const CarGrid: React.FC = () => {
             </p>
             
             <Link to={`/cars/${car.id}`} className="mt-auto">
-              <Button variant="primary" fullWidth className="shadow-md hover:shadow-lg">
+              <Button variant="primary" fullWidth className="shadow-md hover:shadow-lg" 
+              pixel={{ 
+                event: "CarViewDetail", 
+                params: { carMake: car.make, carModel: car.model, carYear: car.year }
+              }}>
                 View Details
               </Button>
             </Link>

@@ -231,6 +231,16 @@ const CarFilters: React.FC<CarFiltersProps> = ({ onClose }) => {
           onClick={handleApplyFilters}
           fullWidth
           leftIcon={<Check size={16} />}
+          pixel={{ 
+            event: "CarFilters", 
+            params: { 
+              selectedMake: selectedMake, 
+              selectedModel: selectedModel, 
+              selectedCategory: selectedCategory, 
+              selectedMinPrice: selectedMinPrice, 
+              selectedMaxPrice: selectedMaxPrice 
+            }
+          }}
         >
           Apply Filters
         </Button>

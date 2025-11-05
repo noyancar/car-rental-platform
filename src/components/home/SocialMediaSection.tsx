@@ -1,4 +1,6 @@
 import React from 'react';
+import { MetaPixel } from '../../utils/metaPixel';
+
 import { Facebook as FacebookIcon, Instagram as InstagramIcon, Youtube as YoutubeIcon, LucideIcon } from 'lucide-react';
 
 interface SocialLink {
@@ -46,6 +48,7 @@ const SocialMediaSection: React.FC = () => {
                 <a
                   key={social.name}
                   href={social.url}
+                  onClick={() => trackSocialMediaClick(social.name)}
                   target="_blank"
                   rel="noopener noreferrer"
                   className={`group w-12 h-12 sm:w-14 sm:h-14 md:w-16 md:h-16 rounded-full ${social.bgColor} flex items-center justify-center transition-all duration-300 hover:scale-110 hover:shadow-lg active:scale-95 active:shadow-sm`}
@@ -61,5 +64,10 @@ const SocialMediaSection: React.FC = () => {
     </section>
   );
 };
+
+
+function trackSocialMediaClick(socialMediaName: string) {
+  MetaPixel.track("SocialMediaClick", { platform: socialMediaName });
+}
 
 export default SocialMediaSection;

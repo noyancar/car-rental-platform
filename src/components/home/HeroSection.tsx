@@ -249,6 +249,14 @@ const HeroSection: React.FC = () => {
                 size="lg"
                 leftIcon={<Search size={20} />}
                 className="w-full md:w-auto min-w-[200px] shadow-xl hover:shadow-2xl transform hover:scale-[1.02] transition-all duration-300"
+                pixel={{ event: "SearchCars" , 
+                  params: { 
+                    pickupDate: searchParams.pickupDate, 
+                    returnDate: searchParams.returnDate,
+                    pickupLocation: searchParams.pickupLocation, 
+                    returnLocation: searchParams.returnLocation 
+                  } 
+                }}
               >
                 Search Cars
               </Button>

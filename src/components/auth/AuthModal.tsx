@@ -5,6 +5,7 @@ import { toast } from 'sonner';
 import { Button } from '../ui/Button';
 import { Input } from '../ui/Input';
 import { Modal } from '../ui/Modal';
+import { MetaPixel } from '../../utils/metaPixel';
 
 interface AuthModalProps {
   isOpen: boolean;
@@ -450,6 +451,7 @@ const AuthModal: React.FC<AuthModalProps> = ({
                 setShowPassword(false);
                 setPassword(''); // Clear password when switching modes
                 setEmail(''); // Clear email too for better UX
+                MetaPixel.track('CompleteRegistration', { method: mode === 'signin' ? 'signup' : 'signin' });
               }}
               className="text-primary-700 hover:text-primary-800 font-semibold underline"
             >

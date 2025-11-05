@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { MetaPixel } from '../../utils/metaPixel';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { Car, User, Menu, X, ShieldCheck, ChevronDown } from 'lucide-react';
 import { Button } from '../ui/Button';
@@ -45,6 +46,10 @@ export const Navbar: React.FC = () => {
     navigate('/');
   };
   
+  function trackNavbarClick(linkName: string) {
+    MetaPixel.track('NavbarClick', { label : linkName });
+  }
+
   return (
     <>
       <header 
@@ -55,7 +60,7 @@ export const Navbar: React.FC = () => {
         }`}
       >
         <div className="container-custom mx-auto flex justify-between items-center">
-          <Link to="/" className="flex items-center">
+          <Link to="/" className="flex items-center" onClick={()=>trackNavbarClick("Logo")}>
             <img
               src={logo}
               alt="NYN Rentals Logo"
@@ -70,6 +75,7 @@ export const Navbar: React.FC = () => {
               className={`font-medium hover:text-primary-700 transition-colors ${
                 location.pathname === '/how-it-works' ? 'text-primary-800' : 'text-secondary-700'
               }`}
+              onClick={()=>trackNavbarClick("How It Works")}
             >
               How It Works
             </Link>
@@ -78,6 +84,7 @@ export const Navbar: React.FC = () => {
               className={`font-medium hover:text-primary-700 transition-colors ${
                 location.pathname === '/deals' ? 'text-primary-800' : 'text-secondary-700'
               }`}
+              onClick={()=>trackNavbarClick("Deals")}
             >
               Deals
             </Link>
@@ -125,6 +132,7 @@ export const Navbar: React.FC = () => {
                 variant="primary" 
                 size="sm" 
                 onClick={handleSignInClick}
+                pixel={{ event: "NavbarClick", params: { label: "signIn" } }}
                 leftIcon={<User size={18} />}
               >
                 Sign In
@@ -206,6 +214,7 @@ export const Navbar: React.FC = () => {
                     fullWidth
                     onClick={handleSignInClick}
                     leftIcon={<User size={18} />}
+                    pixel={{ event: "NavbarClick", params: { label: "signIn" } }}
                   >
                     Sign In
                   </Button>
