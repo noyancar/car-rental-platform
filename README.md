@@ -3,24 +3,40 @@ TEST 123
 
 
 Meta Pixel Event List :
-    (CompleteRegistration, 
-            {method:signin || method:signup})
+
+    (SocialMediaClick, { platform: socialMediaName })
+
+    (NavbarClick, { label:linkName })
+
+    (Register, { label: CreateAccount })
+
+    (SearchCars, { label: EditSearch })
+
+    (CarBookNow, { carId: currentCar.id })
+
+    (CancelBooking, { carId: currentCar.id })
+
+    (BookingCompleted, { carId: currentCar.id })
+
+    (ConfirmBooking, { carId: currentCar.id })
+
+    (CompleteRegistration, { method:signin || method:signup })
 
     (CarFilters,
-            { 
-              selectedMake: selectedMake, 
-              selectedModel: selectedModel, 
-              selectedCategory: selectedCategory, 
-              selectedMinPrice: selectedMinPrice, 
-              selectedMaxPrice: selectedMaxPrice 
-            })
+        { 
+            selectedMake: selectedMake, 
+            selectedModel: selectedModel, 
+            selectedCategory: selectedCategory, 
+            selectedMinPrice: selectedMinPrice, 
+            selectedMaxPrice: selectedMaxPrice 
+        })
 
     (CarViewDetail,
-            {
-                carMake:car.make,
-                carModel:car.model,
-                carYear:car.year
-            })
+        {
+            carMake:car.make,
+            carModel:car.model,
+            carYear:car.year
+        })
     
     (SearchCars,
         { 
@@ -30,10 +46,4 @@ Meta Pixel Event List :
             returnLocation: searchParams.returnLocation 
         })
     
-    (SocialMediaClick,{
-        platform: socialMediaName
-    })
 
-    (NavbarClick, {
-        label:linkName
-    })

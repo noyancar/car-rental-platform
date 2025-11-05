@@ -143,6 +143,7 @@ const CarDetailsPage: React.FC = () => {
                       size="md"
                       onClick={handleBookNow}
                       className="w-full sm:w-auto"
+                      pixel={{ event: "CarBookNow", params: {carId: currentCar.id } }}
                     >
                       Book Now
                     </Button>

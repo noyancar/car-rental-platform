@@ -116,6 +116,7 @@ export const Navbar: React.FC = () => {
                   className={`font-medium hover:text-primary-700 transition-colors ${
                     location.pathname === '/profile' ? 'text-primary-800' : 'text-secondary-700'
                   }`}
+                  onClick={()=>trackNavbarClick("Profile")}
                 >
                   Profile
                 </Link>
@@ -123,7 +124,7 @@ export const Navbar: React.FC = () => {
                   variant="outline" 
                   size="sm" 
                   onClick={handleSignOut}
-                >
+                  pixel={{ event: "NavbarClick", params: { label: "SignOut" } }}>
                   Sign Out
                 </Button>
               </div>
@@ -132,7 +133,7 @@ export const Navbar: React.FC = () => {
                 variant="primary" 
                 size="sm" 
                 onClick={handleSignInClick}
-                pixel={{ event: "NavbarClick", params: { label: "signIn" } }}
+                pixel={{ event: "NavbarClick", params: { label: "OpenSignIn" } }}
                 leftIcon={<User size={18} />}
               >
                 Sign In
@@ -160,6 +161,7 @@ export const Navbar: React.FC = () => {
                 className={`block py-2 font-medium ${
                   location.pathname === '/how-it-works' ? 'text-primary-800' : 'text-secondary-700'
                 }`}
+                 onClick={()=>trackNavbarClick("How It Works")}
               >
                 How It Works
               </Link>
@@ -168,6 +170,7 @@ export const Navbar: React.FC = () => {
                 className={`block py-2 font-medium ${
                   location.pathname === '/deals' ? 'text-primary-800' : 'text-secondary-700'
                 }`}
+                onClick={()=>trackNavbarClick("Deals")}
               >
                 Deals
               </Link>
@@ -214,7 +217,7 @@ export const Navbar: React.FC = () => {
                     fullWidth
                     onClick={handleSignInClick}
                     leftIcon={<User size={18} />}
-                    pixel={{ event: "NavbarClick", params: { label: "signIn" } }}
+                    pixel={{ event: "NavbarClick", params: { label: "SignIn" } }}
                   >
                     Sign In
                   </Button>
