@@ -45,34 +45,8 @@ const PaymentCallbackPage: React.FC = () => {
             setMessage('Payment successful! Your booking has been confirmed.');
             toast.success('Payment successful!');
             
-            // Send email notifications in parallel (admin + customer)
-            try {
-              const emailPromises = [
-                // Admin notification
-                supabase.functions.invoke('send-booking-notification', {
-                  body: { bookingId }
-                }),
-                // Customer confirmation
-                supabase.functions.invoke('send-customer-confirmation', {
-                  body: { bookingId }
-                })
-              ];
-              
-              // Use allSettled so one failure doesn't affect the other
-              const results = await Promise.allSettled(emailPromises);
-              
-              results.forEach((result, index) => {
-                if (result.status === 'rejected' || (result.status === 'fulfilled' && result.value.error)) {
-                  const functionName = index === 0 ? 'admin notification' : 'customer confirmation';
-                  console.error(`Failed to send ${functionName}:`, result);
-                } else {
-                  const functionName = index === 0 ? 'Admin' : 'Customer';
-                  console.log(`${functionName} email sent successfully`);
-                }
-              });
-            } catch (notificationError) {
-              console.error('Notification error:', notificationError);
-            }
+            // Email notification is handled by Stripe webhook automatically
+            // No need to send email from here
             
             // Redirect to booking details after a short delay
             setTimeout(() => {

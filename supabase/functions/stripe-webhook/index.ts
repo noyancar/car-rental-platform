@@ -143,6 +143,23 @@ serve(async (req) => {
             console.log(`No booking updated - it may already be confirmed. Booking ID: ${bookingId}`);
           } else {
             console.log(`Booking ${bookingId} confirmed with payment ${paymentIntent.id}`, updatedBookings[0]);
+
+            // Send admin notification email
+            try {
+              console.log('Sending admin notification email...');
+              const emailResult = await supabase.functions.invoke('send-booking-notification', {
+                body: { bookingId }
+              });
+
+              if (emailResult.error) {
+                console.error('Failed to send admin notification:', emailResult.error);
+              } else {
+                console.log('Admin notification email sent successfully');
+              }
+            } catch (emailError) {
+              console.error('Error sending admin notification:', emailError);
+              // Don't throw - email failure shouldn't fail the webhook
+            }
           }
         }
         break;
