@@ -444,6 +444,7 @@ const SearchSummary: React.FC = () => {
             onClick={handleEditToggle}
             leftIcon={<Edit2 size={16} />}
             className="w-full md:w-auto"
+            pixel={{ event: "SearchCars", params: { label: "EditSearch" } }}
           >
             Edit Search
           </Button>

@@ -213,6 +213,8 @@ const BookingDetailsModal: React.FC<BookingDetailsModalProps> = ({ booking, onCl
                     onStatusChange(booking.id, 'confirmed');
                     onClose();
                   }}
+                  pixel={{ event: "ConfirmBooking", params: { carId: booking.car_id } }}
+
                 >
                   Confirm Booking
                 </Button>
@@ -226,6 +228,7 @@ const BookingDetailsModal: React.FC<BookingDetailsModalProps> = ({ booking, onCl
                     onClose();
                   }
                 }}
+                pixel={{ event: "CancelBooking", params: { carId: booking.car_id } }}
               >
                 Cancel Booking
               </Button>
@@ -236,6 +239,7 @@ const BookingDetailsModal: React.FC<BookingDetailsModalProps> = ({ booking, onCl
                     onStatusChange(booking.id, 'completed');
                     onClose();
                   }}
+                  pixel={{ event: "BookingCompleted", params: { carId: booking.car_id } }}
                 >
                   Mark as Completed
                 </Button>

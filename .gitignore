@@ -33,7 +33,7 @@ test-*.sh
 test-*.js
 debug-*.sh
 *.md
-!README.md
+README.md
 CLEANUP_*.sql
 
 # Supabase temp files

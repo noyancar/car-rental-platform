@@ -145,6 +145,7 @@ const Register: React.FC = () => {
                 variant="primary"
                 fullWidth
                 isLoading={loading}
+                pixel={{ event: "Register", params: { label: "CreateAccount" } }}
               >
                 Create Account
               </Button>
