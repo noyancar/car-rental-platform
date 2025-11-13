@@ -1,5 +1,6 @@
 import { format } from 'date-fns';
 import type { User, Booking, Car } from '../types';
+import { parseDateInLocalTimezone } from './dateUtils';
 
 // Helper function to convert data to CSV format
 const convertToCSV = (headers: string[], data: any[][]): string => {
@@ -43,17 +44,17 @@ interface CustomerWithStats extends User {
 
 export const exportCustomersCSV = (customers: CustomerWithStats[]) => {
   const headers = ['Name', 'Phone', 'Email', 'Total Bookings', 'Total Spent ($)', 'Last Booking', 'Status'];
-  
+
   const data = customers.map(customer => [
     `${customer.first_name || ''} ${customer.last_name || ''}`.trim() || 'No name',
     customer.phone || '',
     customer.email || '',
     customer.total_bookings || 0,
     (customer.total_spent || 0).toFixed(2),
-    customer.last_booking_date ? format(new Date(customer.last_booking_date), 'MM/dd/yyyy') : 'Never',
+    customer.last_booking_date ? format(parseDateInLocalTimezone(customer.last_booking_date), 'MM/dd/yyyy') : 'Never',
     customer.is_blacklisted ? 'Blacklisted' : 'Active'
   ]);
-  
+
   const csvContent = convertToCSV(headers, data);
   const filename = `customers_${format(new Date(), 'yyyy-MM-dd')}.csv`;
   downloadCSV(csvContent, filename);
@@ -79,12 +80,12 @@ export const exportMonthlyRevenueCSV = (bookings: BookingWithCar[], month: Date)
   });
   
   const data = monthlyBookings.map(booking => {
-    const startDate = new Date(booking.start_date);
-    const endDate = new Date(booking.end_date);
+    const startDate = parseDateInLocalTimezone(booking.start_date);
+    const endDate = parseDateInLocalTimezone(booking.end_date);
     const days = Math.ceil((endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24)) + 1;
     const dailyRate = booking.car?.daily_rate || 0;
     const total = booking.grand_total || booking.total_price || 0;
-    
+
     return [
       format(startDate, 'MM/dd/yyyy'),
       booking.customer_name || 'Unknown',
@@ -118,20 +119,20 @@ export const exportCarPerformanceCSV = (cars: Car[], bookings: Booking[]) => {
   // Calculate stats for each car
   const carStats = cars.map(car => {
     const carBookings = bookings.filter(b => b.car_id === car.id && b.status === 'confirmed');
-    
+
     const totalDays = carBookings.reduce((sum, booking) => {
-      const start = new Date(booking.start_date);
-      const end = new Date(booking.end_date);
+      const start = parseDateInLocalTimezone(booking.start_date);
+      const end = parseDateInLocalTimezone(booking.end_date);
       return sum + Math.ceil((end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24)) + 1;
     }, 0);
-    
+
     const totalRevenue = carBookings.reduce((sum, b) => sum + (b.grand_total || b.total_price || 0), 0);
-    
+
     // Assume we're looking at the last 90 days for occupancy calculation
     const daysInPeriod = 90;
     const occupancyRate = (totalDays / daysInPeriod * 100).toFixed(1);
     const avgDailyRevenue = totalDays > 0 ? (totalRevenue / totalDays).toFixed(2) : '0.00';
-    
+
     return [
       `${car.make} ${car.model}`,
       car.license_plate || 'N/A',

@@ -66,24 +66,34 @@ Deno.serve(async (req) => {
     // Get pickup and return times
     const pickupTime = booking.pickup_time || '10:00';
     const returnTime = booking.return_time || '10:00';
-    
+
+    // Parse dates in local timezone to avoid shifting (e.g., Hawaii timezone issue)
+    // Input format: 'YYYY-MM-DD'
+    const parseLocalDate = (dateStr: string) => {
+      const [year, month, day] = dateStr.split('-').map(Number);
+      return new Date(year, month - 1, day); // month is 0-indexed
+    };
+
+    const startDateObj = parseLocalDate(booking.start_date);
+    const endDateObj = parseLocalDate(booking.end_date);
+
     // Format dates for English locale
-    const startDate = new Date(booking.start_date).toLocaleDateString('en-US', {
+    const startDate = startDateObj.toLocaleDateString('en-US', {
       weekday: 'long',
       year: 'numeric',
       month: 'long',
       day: 'numeric'
     })
-    const endDate = new Date(booking.end_date).toLocaleDateString('en-US', {
+    const endDate = endDateObj.toLocaleDateString('en-US', {
       weekday: 'long',
       year: 'numeric',
       month: 'long',
       day: 'numeric'
     })
-    
+
     // Calculate rental days
     const days = Math.ceil(
-      (new Date(booking.end_date).getTime() - new Date(booking.start_date).getTime()) / 
+      (endDateObj.getTime() - startDateObj.getTime()) /
       (1000 * 60 * 60 * 24)
     )
     

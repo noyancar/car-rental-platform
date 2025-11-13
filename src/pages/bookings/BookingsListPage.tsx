@@ -6,6 +6,7 @@ import { Button } from '../../components/ui/Button';
 import { PageHeader } from '../../components/ui/PageHeader';
 import { useBookingStore } from '../../stores/bookingStore';
 import { calculateRentalDuration } from '../../utils/bookingPriceCalculations';
+import { parseDateInLocalTimezone } from '../../utils/dateUtils';
 
 const BookingsListPage: React.FC = () => {
   const { bookings, loading, error, fetchUserBookings } = useBookingStore();
@@ -130,7 +131,7 @@ const BookingsListPage: React.FC = () => {
                         <div className="flex items-center text-secondary-600">
                           <Calendar className="h-5 w-5 mr-2" />
                           <span>
-                            {format(new Date(booking.start_date), 'MMM d, yyyy')} - {format(new Date(booking.end_date), 'MMM d, yyyy')}
+                            {format(parseDateInLocalTimezone(booking.start_date), 'MMM d, yyyy')} - {format(parseDateInLocalTimezone(booking.end_date), 'MMM d, yyyy')}
                           </span>
                         </div>
                         

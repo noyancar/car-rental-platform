@@ -3,6 +3,7 @@ import { X, User, Car, MapPin, Calendar, DollarSign, Phone, Mail, CreditCard, Cl
 import { format } from 'date-fns';
 import { Button } from '../ui/Button';
 import type { Booking } from '../../types';
+import { parseDateInLocalTimezone } from '../../utils/dateUtils';
 
 interface BookingDetailsModalProps {
   booking: Booking | null;
@@ -113,12 +114,12 @@ const BookingDetailsModal: React.FC<BookingDetailsModalProps> = ({ booking, onCl
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm">
               <div>
                 <span className="text-gray-600">Pickup:</span>
-                <p className="font-medium">{format(new Date(booking.start_date), 'MMM d, yyyy')}</p>
+                <p className="font-medium">{format(parseDateInLocalTimezone(booking.start_date), 'MMM d, yyyy')}</p>
                 <p className="text-gray-500">{booking.pickup_time}</p>
               </div>
               <div>
                 <span className="text-gray-600">Return:</span>
-                <p className="font-medium">{format(new Date(booking.end_date), 'MMM d, yyyy')}</p>
+                <p className="font-medium">{format(parseDateInLocalTimezone(booking.end_date), 'MMM d, yyyy')}</p>
                 <p className="text-gray-500">{booking.return_time}</p>
               </div>
             </div>
@@ -166,7 +167,7 @@ const BookingDetailsModal: React.FC<BookingDetailsModalProps> = ({ booking, onCl
                       <span>${extra.total_price}</span>
                     </div>
                   ))}
-                  {booking.extras_total > 0 && (
+                  {booking.extras_total && booking.extras_total > 0 && (
                     <div className="flex justify-between font-medium border-t pt-1">
                       <span>Extras Total:</span>
                       <span>${booking.extras_total}</span>
@@ -174,13 +175,13 @@ const BookingDetailsModal: React.FC<BookingDetailsModalProps> = ({ booking, onCl
                   )}
                 </div>
               )}
-              {booking.delivery_fee > 0 && (
+              {booking.delivery_fee && booking.delivery_fee > 0 && (
                 <div className="flex justify-between">
                   <span>Delivery Fee:</span>
                   <span className="font-medium">${booking.delivery_fee}</span>
                 </div>
               )}
-              {booking.discount_amount > 0 && (
+              {booking.discount_amount && booking.discount_amount > 0 && (
                 <div className="flex justify-between text-green-600">
                   <span>Discount:</span>
                   <span className="font-medium">-${booking.discount_amount}</span>

@@ -8,6 +8,7 @@ import { PageHeader } from '../../components/ui/PageHeader';
 import { useCarStore } from '../../stores/carStore';
 import { useSearchStore } from '../../stores/searchStore';
 import { toast } from 'sonner';
+import { parseDateInLocalTimezone } from '../../utils/dateUtils';
 
 const CarDetailsPage: React.FC = () => {
   const { id } = useParams();
@@ -134,7 +135,7 @@ const CarDetailsPage: React.FC = () => {
                       </p>
                       {isSearchPerformed && (
                         <p className="text-sm text-gray-600 mt-1">
-                          {format(new Date(searchParams.pickupDate), 'MMM d')} - {format(new Date(searchParams.returnDate), 'MMM d')}
+                          {format(parseDateInLocalTimezone(searchParams.pickupDate), 'MMM d')} - {format(parseDateInLocalTimezone(searchParams.returnDate), 'MMM d')}
                         </p>
                       )}
                     </div>

@@ -9,6 +9,7 @@ import CustomerDetailsModal from '../../components/admin/CustomerDetailsModal';
 import BlacklistModal from '../../components/admin/BlacklistModal';
 import { exportCustomersCSV } from '../../utils/csvExport';
 import type { User as Customer } from '../../types';
+import { parseDateInLocalTimezone } from '../../utils/dateUtils';
 
 interface CustomerWithStats extends Customer {
   is_blacklisted?: boolean;
@@ -215,7 +216,7 @@ const AdminCustomers: React.FC = () => {
                     </div>
                     {customer.last_booking_date && (
                       <div className="text-xs text-gray-500 mt-1">
-                        Last: {format(new Date(customer.last_booking_date), 'MMM d, yyyy')}
+                        Last: {format(parseDateInLocalTimezone(customer.last_booking_date), 'MMM d, yyyy')}
                       </div>
                     )}
                   </td>

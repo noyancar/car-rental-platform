@@ -5,6 +5,7 @@ import { toast } from 'sonner';
 import { Button } from '../ui/Button';
 import { useAdminStore } from '../../stores/adminStore';
 import type { User as Customer, Booking } from '../../types';
+import { parseDateInLocalTimezone } from '../../utils/dateUtils';
 
 interface CustomerWithStats extends Customer {
   is_blacklisted?: boolean;
@@ -178,7 +179,7 @@ const CustomerDetailsModal: React.FC<CustomerDetailsModalProps> = ({ customer, o
                             <div className="flex items-center justify-between">
                               <span className="text-gray-600">Last Booking</span>
                               <span className="font-semibold">
-                                {format(new Date(customer.last_booking_date), 'MMM d, yyyy')}
+                                {format(parseDateInLocalTimezone(customer.last_booking_date), 'MMM d, yyyy')}
                               </span>
                             </div>
                           </div>
@@ -211,7 +212,7 @@ const CustomerDetailsModal: React.FC<CustomerDetailsModalProps> = ({ customer, o
                               </span>
                             </div>
                             <div className="text-sm text-gray-600">
-                              {format(new Date(booking.start_date), 'MMM d')} - {format(new Date(booking.end_date), 'MMM d, yyyy')}
+                              {format(parseDateInLocalTimezone(booking.start_date), 'MMM d')} - {format(parseDateInLocalTimezone(booking.end_date), 'MMM d, yyyy')}
                             </div>
                           </div>
                           <div className="text-right">
