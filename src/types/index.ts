@@ -72,6 +72,27 @@ export interface Booking {
   stripe_payment_status?: 'pending' | 'processing' | 'succeeded' | 'failed' | 'canceled';
   stripe_payment_method_id?: string;
   expires_at?: string | null; // Expiry timestamp for draft bookings
+  // Customer information fields
+  first_name?: string;
+  last_name?: string;
+  email?: string;
+  phone?: string;
+  customer_email?: string;
+  customer_name?: string;
+  stripe_customer_id?: string;
+  // Pricing breakdown fields
+  car_rental_subtotal?: number;
+  subtotal?: number;
+  pickup_delivery_fee?: number;
+  return_delivery_fee?: number;
+  delivery_fee?: number;
+  discount_amount?: number;
+  extras_total?: number;
+  grand_total?: number;
+  refunded_amount?: number;
+  stripe_refund_id?: string;
+  // Extras relation
+  booking_extras?: BookingExtra[];
 }
 
 export type DiscountCode = {

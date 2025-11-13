@@ -13,6 +13,7 @@ import { supabase } from '../lib/supabase';
 import { BookingWithExtras } from '../types';
 import { calculateBookingPriceBreakdown } from '../utils/bookingPriceCalculations';
 import { isBookingExpired } from '../utils/bookingHelpers';
+import { parseDateInLocalTimezone } from '../utils/dateUtils';
 
 const PaymentPage: React.FC = () => {
   const { bookingId } = useParams();
@@ -293,7 +294,7 @@ const PaymentPage: React.FC = () => {
   
   // Calculate rental duration for display
   const rentalDuration = Math.ceil(
-    (new Date(booking.end_date).getTime() - new Date(booking.start_date).getTime()) / 
+    (parseDateInLocalTimezone(booking.end_date).getTime() - parseDateInLocalTimezone(booking.start_date).getTime()) /
     (1000 * 60 * 60 * 24)
   );
 
@@ -386,7 +387,7 @@ const PaymentPage: React.FC = () => {
                     <div className="space-y-2 text-sm text-gray-600 mb-4">
                       <div className="flex items-center">
                         <Calendar className="w-4 h-4 mr-2" />
-                        {format(new Date(booking.start_date), 'MMM d')} - {format(new Date(booking.end_date), 'MMM d, yyyy')} ({rentalDuration} days)
+                        {format(parseDateInLocalTimezone(booking.start_date), 'MMM d')} - {format(parseDateInLocalTimezone(booking.end_date), 'MMM d, yyyy')} ({rentalDuration} days)
                       </div>
                       
                       {/* Pickup Location */}

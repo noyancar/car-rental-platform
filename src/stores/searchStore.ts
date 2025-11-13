@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import { supabase } from '../lib/supabase';
 import type { Car } from '../types';
+import { parseDateInLocalTimezone } from '../utils/dateUtils';
 
 interface SearchFilters {
   make?: string;
@@ -151,9 +152,9 @@ export const useSearchStore = create<SearchState>((set, get) => ({
     
     // If pickup date is changed, set default return date to next day (but allow same-day)
     if (params.pickupDate && params.pickupDate !== currentParams.pickupDate) {
-      const pickupDate = new Date(params.pickupDate);
-      const returnDate = new Date(newParams.returnDate);
-      
+      const pickupDate = parseDateInLocalTimezone(params.pickupDate);
+      const returnDate = parseDateInLocalTimezone(newParams.returnDate);
+
       // If return date is before new pickup date, set it to next day by default
       if (returnDate < pickupDate) {
         const nextDay = new Date(pickupDate);
@@ -167,12 +168,12 @@ export const useSearchStore = create<SearchState>((set, get) => ({
         newParams.returnDate = nextDay.toISOString().split('T')[0];
       }
     }
-    
+
     // If return date is changed, validate based on pickup date
     if (params.returnDate) {
-      const pickupDate = new Date(newParams.pickupDate);
-      const returnDate = new Date(params.returnDate);
-      
+      const pickupDate = parseDateInLocalTimezone(newParams.pickupDate);
+      const returnDate = parseDateInLocalTimezone(params.returnDate);
+
       // Return date must not be before pickup date
       if (returnDate < pickupDate) {
         // Set to same day as pickup (allow same-day rental)
@@ -207,9 +208,9 @@ export const useSearchStore = create<SearchState>((set, get) => ({
     if (params.pickupDate) {
       const todayDate = new Date();
       todayDate.setHours(0, 0, 0, 0);
-      const selectedPickup = new Date(params.pickupDate);
+      const selectedPickup = parseDateInLocalTimezone(params.pickupDate);
       selectedPickup.setHours(0, 0, 0, 0);
-      
+
       if (selectedPickup < todayDate) {
         newParams.pickupDate = getTodayDate();
         newParams.returnDate = getTomorrowDate();

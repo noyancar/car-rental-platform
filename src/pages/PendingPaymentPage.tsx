@@ -9,6 +9,7 @@ import { useAuthStore } from '../stores/authStore';
 import { useBookingStore } from '../stores/bookingStore';
 import { useCarStore } from '../stores/carStore';
 import { useExtrasStore } from '../stores/extrasStore';
+import { parseDateInLocalTimezone } from '../utils/dateUtils';
 
 const PendingPaymentPage: React.FC = () => {
   const navigate = useNavigate();
@@ -182,7 +183,7 @@ const PendingPaymentPage: React.FC = () => {
                       <div className="flex items-center gap-4 text-sm text-gray-600 mt-2">
                         <div className="flex items-center">
                           <Calendar className="w-4 h-4 mr-1" />
-                          {format(new Date(pendingBooking.start_date), 'MMM d')} - {format(new Date(pendingBooking.end_date), 'MMM d, yyyy')}
+                          {format(parseDateInLocalTimezone(pendingBooking.start_date), 'MMM d')} - {format(parseDateInLocalTimezone(pendingBooking.end_date), 'MMM d, yyyy')}
                         </div>
                         <div>{rentalDuration} days</div>
                       </div>

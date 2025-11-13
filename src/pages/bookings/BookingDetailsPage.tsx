@@ -9,6 +9,7 @@ import { supabase } from '../../lib/supabase';
 import { toast } from 'sonner';
 import { calculateBookingPriceBreakdown } from '../../utils/bookingPriceCalculations';
 import { formatBookingId } from '../../utils/bookingHelpers';
+import { parseDateInLocalTimezone } from '../../utils/dateUtils';
 
 const BookingDetailsPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
@@ -190,7 +191,7 @@ const BookingDetailsPage: React.FC = () => {
                 <p className="text-secondary-600 text-sm sm:text-base">Pickup</p>
                 <div className="mt-1">
                   <p className="text-sm sm:text-base">
-                    📍 {format(new Date(currentBooking.start_date), 'MMM d, yyyy')} at {currentBooking.pickup_time || '10:00 AM'}
+                    📍 {format(parseDateInLocalTimezone(currentBooking.start_date), 'MMM d, yyyy')} at {currentBooking.pickup_time || '10:00 AM'}
                   </p>
                   {currentBooking.pickup_location && (
                     <p className="text-xs sm:text-sm text-secondary-500 mt-1">
@@ -205,7 +206,7 @@ const BookingDetailsPage: React.FC = () => {
                 <p className="text-secondary-600 text-sm sm:text-base">Return</p>
                 <div className="mt-1">
                   <p className="text-sm sm:text-base">
-                    📍 {format(new Date(currentBooking.end_date), 'MMM d, yyyy')} at {currentBooking.return_time || '10:00 AM'}
+                    📍 {format(parseDateInLocalTimezone(currentBooking.end_date), 'MMM d, yyyy')} at {currentBooking.return_time || '10:00 AM'}
                   </p>
                   {currentBooking.return_location && (
                     <p className="text-xs sm:text-sm text-secondary-500 mt-1">
