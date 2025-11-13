@@ -28,6 +28,10 @@ import DealsPage from './pages/DealsPage';
 import ProfilePage from './pages/ProfilePage';
 import QRStatsPage from './pages/QRStatsPage';
 
+// Legal pages
+import PrivacyPolicy from './pages/legal/PrivacyPolicy';
+import TermsOfService from './pages/legal/TermsOfService';
+
 // Admin pages
 import AdminDashboard from './pages/admin/AdminDashboard';
 import AdminCars from './pages/admin/AdminCars';
@@ -120,6 +124,10 @@ function App() {
             <Route path="/how-it-works" element={<HowItWorksPage />} />
             <Route path="/deals" element={<DealsPage />} />
             <Route path="/qr-stats" element={<QRStatsPage />} />
+
+            {/* Legal routes */}
+            <Route path="/privacy" element={<PrivacyPolicy />} />
+            <Route path="/terms" element={<TermsOfService />} />
             
             {/* Semi-Protected routes - Allow anonymous but show auth modal at checkout */}
             <Route path="/booking/:carId" element={<BookingPage />} />
