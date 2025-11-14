@@ -28,7 +28,7 @@ export const DatePickerCard: React.FC<DatePickerCardProps> = ({
 
     const pickup = parseISO(pickupDate);
     const return_ = parseISO(returnDate);
-    
+
     if (!isValid(pickup) || !isValid(return_)) {
       setValidationMessage('Invalid date format');
       return false;
@@ -47,12 +47,12 @@ export const DatePickerCard: React.FC<DatePickerCardProps> = ({
   const handlePickupDateChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const newPickupDate = e.target.value;
     setPickupDate(newPickupDate);
-    
+
     // Clear return date if it's before new pickup date
     if (returnDate && isBefore(parseISO(returnDate), parseISO(newPickupDate))) {
       setReturnDate('');
     }
-    
+
     setValidationMessage('');
   };
 

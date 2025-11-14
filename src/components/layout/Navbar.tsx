@@ -52,10 +52,10 @@ export const Navbar: React.FC = () => {
 
   return (
     <>
-      <header 
-        className={`fixed w-full z-50 transition-all duration-300 ${
-          isScrolled || isMenuOpen || location.pathname !== '/' 
-            ? 'bg-white shadow-md py-2 sm:py-3' 
+      <header
+        className={`relative w-full z-50 transition-all duration-300 ${
+          isScrolled || isMenuOpen || location.pathname !== '/'
+            ? 'bg-white shadow-md py-2 sm:py-3'
             : 'bg-transparent py-3 sm:py-4 md:py-5'
         }`}
       >

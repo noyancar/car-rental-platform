@@ -37,7 +37,7 @@ Meta Pixel Event List :
             carModel:car.model,
             carYear:car.year
         })
-    
+        
     (SearchCars,
         { 
             pickupDate: searchParams.pickupDate, 

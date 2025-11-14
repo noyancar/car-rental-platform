@@ -41,7 +41,7 @@ const FeaturedCarsSection: React.FC<FeaturedCarsSectionProps> = ({ featuredCars,
                     alt={`${car.make} ${car.model}`}
                     className="w-full h-full object-cover transform group-hover:scale-105 transition-transform duration-300"
                   />
-                  <div className="absolute bottom-0 left-0 bg-primary-800 text-white px-2 py-0.5 sm:px-3 sm:py-1 text-sm sm:text-base">
+                  <div className="absolute bottom-0 left-0 bg-success-700 text-white px-2 py-0.5 sm:px-3 sm:py-1 text-sm sm:text-base">
                     ${car.price_per_day}/day
                   </div>
                 </div>
@@ -64,6 +64,7 @@ const FeaturedCarsSection: React.FC<FeaturedCarsSectionProps> = ({ featuredCars,
                     variant="primary" 
                     fullWidth
                     onClick={scrollToSearch}
+                    style={{ backgroundColor: '#c51b37' }}
                   >
                     Check Availability
                   </Button>
