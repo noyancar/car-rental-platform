@@ -16,8 +16,6 @@ const HOURS = Array.from({ length: 24 }, (_, i) => {
   return { value: `${hour}:00`, label: `${hour}:00` };
 });
 
-const { url } = await put('articles/blob.txt', 'Hello World!', { access: 'public' });
-
 
 // Helper function to check if a time should be disabled
 const isTimeDisabled = (time: string, pickupTime: string, isSameDay: boolean): boolean => {
