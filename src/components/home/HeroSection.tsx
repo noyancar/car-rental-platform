@@ -337,7 +337,7 @@ const HeroSection: React.FC = () => {
           playsInline
           className="w-full h-[80vh] object-cover"
         >
-          <source src="/src/assets/video/homepage.mp4" type="video/mp4" />
+          <source src="https://cafeproject.blob.core.windows.net/nyncarrentals/homepage.mp4" type="video/mp4" />
           {/* Fallback image if video doesn't load */}
           <div
             className="w-full h-full bg-cover bg-center"
