@@ -10,7 +10,7 @@ const TermsOfService: React.FC = () => {
           </h1>
 
           <p className="text-sm text-secondary-600 mb-8">
-            Last Updated: November 9, 2025
+            Last Updated: November 13, 2024
           </p>
 
           <div className="space-y-6 text-secondary-700 leading-relaxed">

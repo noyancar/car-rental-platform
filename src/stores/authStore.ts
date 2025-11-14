@@ -24,25 +24,30 @@ export const useAuthStore = create<AuthState>((set) => ({
   signUp: async (email: string, password: string) => {
     try {
       set({ loading: true, error: null });
-      
+
       const { data, error } = await supabase.auth.signUp({
         email,
         password,
         options: {
           emailRedirectTo: `${window.location.origin}/auth/callback`,
+          data: {
+            terms_accepted_at: new Date().toISOString(),
+            privacy_accepted_at: new Date().toISOString(),
+            terms_version: '2024-11-13'
+          }
         },
       });
-      
+
       if (error) throw error;
-      
+
       if (data.user) {
         const { error: profileError } = await supabase
           .from('profiles')
           .insert([{ id: data.user.id }]);
-          
+
         if (profileError) throw profileError;
-        
-        set({ 
+
+        set({
           user: data.user as User,
           isAdmin: false // New users are never admins by default
         });
