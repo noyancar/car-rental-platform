@@ -10,11 +10,15 @@ import { useSearchStore } from '../../stores/searchStore';
 import { LocationSelector } from '../ui/LocationSelector';
 import { useLocations } from '../../hooks/useLocations';
 import { useDeliveryFees } from '../../hooks/useDeliveryFees';
+import { put } from "@vercel/blob";
 
 const HOURS = Array.from({ length: 24 }, (_, i) => {
   const hour = i.toString().padStart(2, '0');
   return { value: `${hour}:00`, label: `${hour}:00` };
 });
+
+const { url } = await put('articles/blob.txt', 'Hello World!', { access: 'public' });
+
 
 // Helper function to check if a time should be disabled
 const isTimeDisabled = (time: string, pickupTime: string, isSameDay: boolean): boolean => {
@@ -33,6 +37,8 @@ const HeroSection: React.FC = () => {
     updateSearchParams,
     searchCars
   } = useSearchStore();
+
+
   const { DEFAULT_LOCATION } = useLocations();
 
   const [pickupLocation, setPickupLocation] = useState(
@@ -326,7 +332,7 @@ const HeroSection: React.FC = () => {
   );
 
   return (
-    <section className="relative min-h-[65vh] sm:min-h-[65vh] md:min-h-[65vh] flex items-start overflow-hidden bg-[#b80000ff]">
+    <section className="relative min-h-[65vh] sm:min-h-[65vh] md:min-h-[65vh] flex items-start overflow-hidden">
       
       {/* Background Video */}
       <div className="absolute inset-0 z-0">
@@ -337,12 +343,12 @@ const HeroSection: React.FC = () => {
           playsInline
           className="w-full h-[80vh] object-cover"
         >
-          <source src="https://cafeproject.blob.core.windows.net/nyncarrentals/homepage.mp4" type="video/mp4" />
+          <source src="https://azu023qxep7q7kax.public.blob.vercel-storage.com/homepage.mp4" type="video/mp4" />
           {/* Fallback image if video doesn't load */}
           <div
             className="w-full h-full bg-cover bg-center"
             style={{
-              backgroundImage: 'url(https://images.unsplash.com/photo-1598135753163-6167c1a1ad65?auto=compress&cs=tinysrgb&w=1920&q=80)',
+              backgroundImage: 'url(https://azu023qxep7q7kax.public.blob.vercel-storage.com/bgimg.jpeg)',
               backgroundPosition: 'center 30%'
             }}
           ></div>

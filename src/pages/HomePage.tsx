@@ -31,7 +31,7 @@ export const HomePage: React.FC = () => {
       <SimpleBanner
         title="Adventure Awaits You"
         subtitle="Discover Hawaii's hidden gems with our premium vehicles. Your island journey starts here."
-        backgroundImage="/src/assets/images/bgimg.jpeg"
+        backgroundImage="https://azu023qxep7q7kax.public.blob.vercel-storage.com/bgimg.jpeg"
         backgroundColor="#1e1e1eff" // optional, defaults to dark gray
       />
 
