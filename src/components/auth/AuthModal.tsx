@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { X, Mail, Loader2, Check, Eye, EyeOff } from 'lucide-react';
+import { Link } from 'react-router-dom';
 import { supabase } from '../../lib/supabase';
 import { toast } from 'sonner';
 import { Button } from '../ui/Button';
@@ -37,6 +38,7 @@ const AuthModal: React.FC<AuthModalProps> = ({
   const [magicLinkSent, setMagicLinkSent] = useState(false);
   const [resetEmailSent, setResetEmailSent] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+  const [termsAccepted, setTermsAccepted] = useState(false);
 
   // Reset form when modal closes
   const handleClose = () => {
@@ -46,13 +48,20 @@ const AuthModal: React.FC<AuthModalProps> = ({
     setShowPassword(false);
     setMagicLinkSent(false);
     setResetEmailSent(false);
+    setTermsAccepted(false);
     onClose();
   };
 
   const handleGoogleLogin = async () => {
     try {
+      // For signup mode, check terms acceptance
+      if (mode === 'signup' && !termsAccepted) {
+        toast.error('Please accept the Terms of Service and Privacy Policy');
+        return;
+      }
+
       setLoading(true);
-      
+
       // Store current URL for redirect after OAuth
       const currentPath = window.location.pathname;
       if (currentPath === '/payment/pending') {
@@ -61,14 +70,14 @@ const AuthModal: React.FC<AuthModalProps> = ({
         // On payment page, store it
         localStorage.setItem('authRedirectUrl', currentPath);
       }
-      
+
       const { error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
           redirectTo: `${window.location.origin}/auth/callback`
         }
       });
-      
+
       if (error) throw error;
     } catch (error) {
       console.error('Google login error:', error);
@@ -80,21 +89,33 @@ const AuthModal: React.FC<AuthModalProps> = ({
 
   const handleEmailPassword = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     try {
       setLoading(true);
-      
+
       if (mode === 'signup') {
+        // Check terms acceptance for signup
+        if (!termsAccepted) {
+          toast.error('Please accept the Terms of Service and Privacy Policy');
+          setLoading(false);
+          return;
+        }
+
         const { error } = await supabase.auth.signUp({
           email,
           password,
           options: {
-            emailRedirectTo: `${window.location.origin}/auth/callback`
+            emailRedirectTo: `${window.location.origin}/auth/callback`,
+            data: {
+              terms_accepted_at: new Date().toISOString(),
+              privacy_accepted_at: new Date().toISOString(),
+              terms_version: '2024-11-13'
+            }
           }
         });
-        
+
         if (error) throw error;
-        
+
         toast.success('Account created! Please check your email to verify.');
         onSuccess?.();
         handleClose();
@@ -387,6 +408,30 @@ const AuthModal: React.FC<AuthModalProps> = ({
               {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
             </button>
           </div>
+
+          {/* Terms and Privacy checkbox - only show for signup */}
+          {mode === 'signup' && (
+            <div className="flex items-start">
+              <input
+                id="terms"
+                name="terms"
+                type="checkbox"
+                checked={termsAccepted}
+                onChange={(e) => setTermsAccepted(e.target.checked)}
+                className="h-4 w-4 mt-0.5 text-primary-600 focus:ring-primary-500 border-gray-300 rounded cursor-pointer"
+              />
+              <label htmlFor="terms" className="ml-2 block text-xs sm:text-sm text-gray-700">
+                I agree to the{' '}
+                <Link to="/terms" className="font-medium text-primary-700 hover:text-primary-600 underline" target="_blank">
+                  Terms of Service
+                </Link>{' '}
+                and{' '}
+                <Link to="/privacy" className="font-medium text-primary-700 hover:text-primary-600 underline" target="_blank">
+                  Privacy Policy
+                </Link>
+              </label>
+            </div>
+          )}
 
           <Button
             type="submit"

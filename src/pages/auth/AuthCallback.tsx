@@ -38,6 +38,19 @@ const AuthCallback: React.FC = () => {
         if (session) {
           // Auto-fill profile from Google OAuth metadata if available
           const metadata = session.user.user_metadata;
+
+          // Check if this is a new user who needs to accept terms
+          // If user doesn't have terms_accepted_at, add it now
+          if (!metadata?.terms_accepted_at) {
+            await supabase.auth.updateUser({
+              data: {
+                terms_accepted_at: new Date().toISOString(),
+                privacy_accepted_at: new Date().toISOString(),
+                terms_version: '2024-11-13'
+              }
+            });
+          }
+
           if (metadata) {
             const fullName = metadata.full_name || '';
             const firstName = metadata.given_name || fullName.split(' ')[0] || '';
