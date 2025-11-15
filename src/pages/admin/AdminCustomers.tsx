@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Search, User, AlertCircle, Ban, Check, MessageSquare, Calendar, DollarSign, Download } from 'lucide-react';
+import { Search, User, AlertCircle, Ban, Check, MessageSquare, Calendar, DollarSign, Download, Shield, ShieldOff } from 'lucide-react';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
 import { Button } from '../../components/ui/Button';
@@ -20,12 +20,13 @@ interface CustomerWithStats extends Customer {
 }
 
 const AdminCustomers: React.FC = () => {
-  const { 
+  const {
     allCustomers,
-    loading, 
+    loading,
     error,
     fetchAllCustomers,
-    toggleCustomerBlacklist
+    toggleCustomerBlacklist,
+    updateUserRole
   } = useAdminStore();
   
   const [searchTerm, setSearchTerm] = useState('');
@@ -51,26 +52,42 @@ const AdminCustomers: React.FC = () => {
 
   const handleBlacklistConfirm = async (reason?: string) => {
     if (!blacklistModalData.customer) return;
-    
+
     const customer = blacklistModalData.customer;
     const success = await toggleCustomerBlacklist(
-      customer.id, 
-      blacklistModalData.isBlacklisting, 
+      customer.id,
+      blacklistModalData.isBlacklisting,
       reason
     );
-    
+
     if (success) {
       toast.success(
-        blacklistModalData.isBlacklisting 
-          ? 'Customer has been blacklisted' 
+        blacklistModalData.isBlacklisting
+          ? 'Customer has been blacklisted'
           : 'Customer has been removed from blacklist'
       );
       await fetchAllCustomers();
     } else {
       toast.error('Failed to update customer status');
     }
-    
+
     setBlacklistModalData({ isOpen: false, customer: null, isBlacklisting: true });
+  };
+
+  const handleRoleToggle = async (customer: CustomerWithStats) => {
+    const newRole = customer.role === 'admin' ? 'user' : 'admin';
+    const success = await updateUserRole(customer.id, newRole);
+
+    if (success) {
+      toast.success(
+        newRole === 'admin'
+          ? `${customer.email} is now an admin`
+          : `${customer.email} is now a regular user`
+      );
+      await fetchAllCustomers();
+    } else {
+      toast.error('Failed to update user role');
+    }
   };
 
   const filteredCustomers = allCustomers.filter(customer => {
@@ -172,6 +189,9 @@ const AdminCustomers: React.FC = () => {
                   Stats
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Role
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Status
                 </th>
                 <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
@@ -221,6 +241,18 @@ const AdminCustomers: React.FC = () => {
                     )}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
+                    {customer.role === 'admin' ? (
+                      <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-purple-100 text-purple-800">
+                        <Shield size={12} className="mr-1" />
+                        Admin
+                      </span>
+                    ) : (
+                      <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-gray-100 text-gray-800">
+                        User
+                      </span>
+                    )}
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap">
                     {customer.is_blacklisted ? (
                       <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-red-100 text-red-800">
                         Blacklisted
@@ -240,6 +272,15 @@ const AdminCustomers: React.FC = () => {
                         leftIcon={<MessageSquare size={16} />}
                       >
                         Details
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => handleRoleToggle(customer)}
+                        className={customer.role === 'admin' ? "text-gray-600 border-gray-600" : "text-purple-600 border-purple-600"}
+                        leftIcon={customer.role === 'admin' ? <ShieldOff size={16} /> : <Shield size={16} />}
+                      >
+                        {customer.role === 'admin' ? 'Remove Admin' : 'Make Admin'}
                       </Button>
                       <Button
                         variant="outline"
