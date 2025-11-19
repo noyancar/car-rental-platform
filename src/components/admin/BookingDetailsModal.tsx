@@ -2,6 +2,7 @@ import React from 'react';
 import { X, User, Car, MapPin, Calendar, DollarSign, Phone, Mail, CreditCard, Clock } from 'lucide-react';
 import { format } from 'date-fns';
 import { Button } from '../ui/Button';
+import { PriceBreakdown } from '../booking/PriceBreakdown';
 import type { Booking } from '../../types';
 import { parseDateInLocalTimezone } from '../../utils/dateUtils';
 
@@ -153,11 +154,21 @@ const BookingDetailsModal: React.FC<BookingDetailsModalProps> = ({ booking, onCl
               <DollarSign size={20} />
               Payment Information
             </h3>
-            <div className="space-y-2 text-sm">
-              <div className="flex justify-between">
-                <span>Subtotal:</span>
-                <span className="font-medium">${booking.subtotal || booking.total_price}</span>
+
+            {/* Seasonal Pricing Breakdown */}
+            {booking.car_id && (
+              <div className="mb-4">
+                <PriceBreakdown
+                  carId={booking.car_id}
+                  startDate={booking.start_date}
+                  endDate={booking.end_date}
+                  startTime={booking.pickup_time || undefined}
+                  endTime={booking.return_time || undefined}
+                />
               </div>
+            )}
+
+            <div className="space-y-2 text-sm">
               {booking.booking_extras && booking.booking_extras.length > 0 && (
                 <div className="space-y-1">
                   <div className="text-gray-600 text-xs mt-2">Additional Services:</div>

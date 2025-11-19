@@ -18,6 +18,7 @@ import { useAuthStore } from '../../stores/authStore';
 import { useSearchStore } from '../../stores/searchStore';
 import { useExtrasStore } from '../../stores/extrasStore';
 import ExtrasModal from '../../components/booking/ExtrasModal';
+import { PriceBreakdown } from '../../components/booking/PriceBreakdown';
 import { cn } from '../../lib/utils';
 
 const HOURS = Array.from({ length: 24 }, (_, i) => {
@@ -784,23 +785,20 @@ const BookingPage: React.FC = () => {
                     </div>
                   </div>
 
-                  {/* Price Breakdown */}
-                  {isAvailable && !isEditingDates && (
+                  {/* Price Breakdown with Seasonal Pricing */}
+                  {isAvailable && !isEditingDates && carId && (
                     <div className="border-t pt-4">
-                      <h4 className="font-semibold mb-3">Price Summary</h4>
-                      <div className="space-y-2 text-sm">
-                        <div className="flex justify-between">
-                          <span className="text-gray-600">Daily Rate:</span>
-                          <span>${currentCar.price_per_day}</span>
-                        </div>
-                        <div className="flex justify-between">
-                          <span className="text-gray-600">Duration:</span>
-                          <span>{rentalDuration} days</span>
-                        </div>
-                        <div className="flex justify-between">
-                          <span className="text-gray-600">Car Rental:</span>
-                          <span>${totalPrice}</span>
-                        </div>
+                      <PriceBreakdown
+                        carId={carId}
+                        startDate={startDate}
+                        endDate={endDate}
+                        startTime={pickupTime}
+                        endTime={returnTime}
+                        className="mb-4"
+                      />
+
+                      {/* Additional Fees */}
+                      <div className="mt-4 space-y-2 text-sm">
                         {appliedDiscount && (
                           <div className="flex justify-between text-green-600">
                             <span>Discount ({appliedDiscount.discount_percentage}%):</span>
@@ -814,7 +812,7 @@ const BookingPage: React.FC = () => {
                           </div>
                         )}
                         <div className="flex justify-between font-bold text-lg pt-2 border-t">
-                          <span>Total:</span>
+                          <span>Grand Total:</span>
                           <span>${(carRentalAfterDiscount + deliveryFees.totalFee).toFixed(2)}</span>
                         </div>
                       </div>
@@ -877,14 +875,20 @@ const BookingPage: React.FC = () => {
                     </div>
                   </div>
 
-                  {/* Price Summary */}
-                  {isAvailable && !isEditingDates && (
+                  {/* Price Summary with Seasonal Pricing (Mobile) */}
+                  {isAvailable && !isEditingDates && carId && (
                     <div className="border-t pt-4">
+                      <PriceBreakdown
+                        carId={carId}
+                        startDate={startDate}
+                        endDate={endDate}
+                        startTime={pickupTime}
+                        endTime={returnTime}
+                        className="mb-4"
+                      />
+
+                      {/* Additional Fees */}
                       <div className="space-y-2 text-sm">
-                        <div className="flex justify-between">
-                          <span className="text-gray-600">Car Rental ({rentalDuration} days):</span>
-                          <span>${totalPrice}</span>
-                        </div>
                         {appliedDiscount && (
                           <div className="flex justify-between text-green-600">
                             <span>Discount ({appliedDiscount.discount_percentage}%):</span>
@@ -898,7 +902,7 @@ const BookingPage: React.FC = () => {
                           </div>
                         )}
                         <div className="flex justify-between font-bold text-lg pt-2 border-t">
-                          <span>Total:</span>
+                          <span>Grand Total:</span>
                           <span className="text-primary-600">${(carRentalAfterDiscount + deliveryFees.totalFee).toFixed(2)}</span>
                         </div>
                       </div>

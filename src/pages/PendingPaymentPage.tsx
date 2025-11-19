@@ -5,6 +5,7 @@ import { format } from 'date-fns';
 import { toast } from 'sonner';
 import { Button } from '../components/ui/Button';
 import { AuthModal } from '../components/auth';
+import { PriceBreakdown } from '../components/booking/PriceBreakdown';
 import { useAuthStore } from '../stores/authStore';
 import { useBookingStore } from '../stores/bookingStore';
 import { useCarStore } from '../stores/carStore';
@@ -195,6 +196,19 @@ const PendingPaymentPage: React.FC = () => {
                       <p className="text-sm text-gray-600">Total</p>
                     </div>
                   </div>
+
+                  {/* Seasonal Pricing Breakdown */}
+                  {pendingBooking.car_id && (
+                    <div className="border-t pt-4 mt-4">
+                      <PriceBreakdown
+                        carId={pendingBooking.car_id}
+                        startDate={pendingBooking.start_date}
+                        endDate={pendingBooking.end_date}
+                        startTime={pendingBooking.pickup_time}
+                        endTime={pendingBooking.return_time}
+                      />
+                    </div>
+                  )}
 
                   {pendingBooking.extras && pendingBooking.extras.length > 0 && (
                     <div className="border-t pt-4">

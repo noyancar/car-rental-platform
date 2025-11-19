@@ -171,3 +171,41 @@ export interface BookingWithExtras extends Booking {
   grand_total?: number;
   booking_extras?: BookingExtra[];
 }
+
+// Seasonal Pricing Types
+export interface CarSeasonalPricing {
+  id: string;
+  car_id: string;
+  name: string;
+  description?: string;
+  price_per_day: number;
+  valid_from: string;
+  valid_to: string;
+  priority: number;
+  active: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface DailyPriceBreakdown {
+  date: string;
+  price: number;
+  pricing_name: string;
+  is_special_price: boolean;
+}
+
+export interface PriceCalculationResult {
+  total_price: number;
+  daily_breakdown: DailyPriceBreakdown[];
+  base_price_days: number;
+  special_price_days: number;
+  average_per_day: number;
+}
+
+export interface PricingPreview {
+  date: string;
+  price_per_day: number;
+  pricing_name: string;
+  is_special_price: boolean;
+  priority: number;
+}
