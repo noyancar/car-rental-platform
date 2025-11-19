@@ -47,6 +47,7 @@ import AdminSeasonalPricing from './pages/admin/AdminSeasonalPricing';
 // Stores
 import { useAuthStore } from './stores/authStore';
 import { useLocationStore } from './stores/locationStore';
+import CampaignSection from './components/layout/CampaignSection';
 
 // Protected Route component
 const ProtectedRoute: React.FC<{ element: React.ReactElement; adminOnly?: boolean }> = ({ 
@@ -114,8 +115,9 @@ function App() {
     <Router>
       <ScrollToTop />
       <div className="flex flex-col min-h-screen">
+        <CampaignSection/>
         <Navbar />
-        <main className="flex-grow pt-14 sm:pt-16 md:pt-20">
+        <main className="flex-grow">
           <Routes>
             {/* Public routes */}
             <Route path="/" element={<HomePage />} />

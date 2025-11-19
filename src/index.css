@@ -120,7 +120,7 @@
   }
 
   .price-tag {
-    @apply bg-accent-500 text-white px-3 py-1.5 sm:px-4 sm:py-2 rounded-lg font-semibold shadow-lg text-sm sm:text-base;
+    @apply bg-success-700 text-white px-3 py-1.5 sm:px-4 sm:py-2 rounded-lg font-semibold shadow-lg text-sm sm:text-base;
   }
 
   .nav-link-active {
@@ -169,6 +169,33 @@
 
 .slide-up {
   @apply animate-slide-up;
+}
+
+/* Cyberpunk LED border animation */
+@keyframes led-border {
+  0% {
+    background-position: 0% 0%;
+  }
+  100% {
+    background-position: 200% 200%;
+  }
+}
+
+.animate-glow {
+  position: relative;
+  border: 5px solid transparent;
+  background:
+    linear-gradient(white, white) padding-box,
+    linear-gradient(
+      90deg,
+      rgba(255, 80, 0, 0) 0%,
+      rgb(255, 0, 0) 25%,
+      rgb(144, 4, 4) 50%,
+      rgba(255, 80, 0, 0) 75%,
+      rgba(255, 80, 0, 0) 100%
+    ) border-box;
+  background-size: 200% 200%;
+  animation: led-border 3s linear infinite;
 }
 
 @layer utilities {
