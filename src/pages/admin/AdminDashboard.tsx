@@ -1,7 +1,9 @@
 import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Car, CalendarCheck, Tag, Megaphone, Users, Clock, Package, MapPin, UserCheck, Calendar } from 'lucide-react';
+import { format } from 'date-fns';
+import { Car, CalendarCheck, Tag, Megaphone, Users, Clock, Package, MapPin, UserCheck, Calendar, TrendingUp } from 'lucide-react';
 import { useAdminStore } from '../../stores/adminStore';
+import { parseDateInLocalTimezone } from '../../utils/dateUtils';
 
 const AdminDashboard: React.FC = () => {
   const { 
@@ -43,8 +45,8 @@ const AdminDashboard: React.FC = () => {
   
   const activeBookings = allBookings.filter(booking => {
     if (booking.status !== 'confirmed') return false;
-    const startDate = new Date(booking.start_date);
-    const endDate = new Date(booking.end_date);
+    const startDate = parseDateInLocalTimezone(booking.start_date);
+    const endDate = parseDateInLocalTimezone(booking.end_date);
     startDate.setHours(0, 0, 0, 0);
     endDate.setHours(23, 59, 59, 999);
     return today >= startDate && today <= endDate;
@@ -91,7 +93,7 @@ const AdminDashboard: React.FC = () => {
 
   const upcomingBookings = allBookings.filter(booking => {
     if (booking.status !== 'confirmed') return false;
-    const startDate = new Date(booking.start_date);
+    const startDate = parseDateInLocalTimezone(booking.start_date);
     return startDate > today && startDate <= nextWeek;
   });
   
@@ -168,7 +170,7 @@ const AdminDashboard: React.FC = () => {
                         {booking.car?.make} {booking.car?.model}
                       </p>
                       <p className="text-sm text-secondary-500">
-                        {new Date(booking.start_date).toLocaleDateString()} - {new Date(booking.end_date).toLocaleDateString()}
+                        {format(parseDateInLocalTimezone(booking.start_date), 'MM/dd/yyyy')} - {format(parseDateInLocalTimezone(booking.end_date), 'MM/dd/yyyy')}
                       </p>
                     </div>
                   </div>
@@ -245,7 +247,7 @@ const AdminDashboard: React.FC = () => {
                 </div>
               </Link>
               
-              <Link 
+              <Link
                 to="/admin/locations"
                 className="flex items-center p-4 bg-blue-50 rounded-lg hover:bg-blue-100 transition-colors"
               >
@@ -253,6 +255,17 @@ const AdminDashboard: React.FC = () => {
                 <div>
                   <p className="font-medium">Location Management</p>
                   <p className="text-sm text-secondary-500">Delivery fees & locations</p>
+                </div>
+              </Link>
+
+              <Link
+                to="/admin/seasonal-pricing"
+                className="flex items-center p-4 bg-orange-50 rounded-lg hover:bg-orange-100 transition-colors"
+              >
+                <TrendingUp className="h-6 w-6 text-orange-600 mr-3" />
+                <div>
+                  <p className="font-medium">Seasonal Pricing</p>
+                  <p className="text-sm text-secondary-500">Date-based pricing</p>
                 </div>
               </Link>
               

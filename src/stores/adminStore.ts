@@ -59,6 +59,7 @@ interface AdminState {
   // Customer management
   fetchAllCustomers: () => Promise<void>;
   toggleCustomerBlacklist: (userId: string, blacklist: boolean, reason?: string | null) => Promise<boolean>;
+  updateUserRole: (userId: string, role: 'user' | 'admin') => Promise<boolean>;
   getCustomerBookings: (userId: string) => Promise<Booking[]>;
   getCustomerNotes: (userId: string) => Promise<CustomerNote[]>;
   addCustomerNote: (userId: string, note: string) => Promise<boolean>;
@@ -587,33 +588,33 @@ export const useAdminStore = create<AdminState>((set, get) => ({
   toggleCustomerBlacklist: async (userId: string, blacklist: boolean, reason?: string | null) => {
     try {
       set({ loading: true, error: null });
-      
+
       // First check current user is admin
       const { data: { user } } = await supabase.auth.getUser();
-      
+
       const { data: adminProfile } = await supabase
         .from('profiles')
         .select('role')
         .eq('id', user?.id || '')
         .single();
-      
+
       const updateData: any = { is_blacklisted: blacklist };
       if (blacklist) {
         updateData.blacklist_reason = reason;
       } else {
         updateData.blacklist_reason = null;
       }
-      
+
       const { data, error } = await supabase
         .from('profiles')
         .update(updateData)
         .eq('id', userId)
         .select();
-      
+
       if (error) {
         throw error;
       }
-      
+
       return true;
     } catch (error) {
       console.error('Error toggling blacklist:', error);
@@ -623,7 +624,30 @@ export const useAdminStore = create<AdminState>((set, get) => ({
       set({ loading: false });
     }
   },
-  
+
+  updateUserRole: async (userId: string, role: 'user' | 'admin') => {
+    try {
+      set({ loading: true, error: null });
+
+      const { error } = await supabase
+        .from('profiles')
+        .update({ role })
+        .eq('id', userId);
+
+      if (error) {
+        throw error;
+      }
+
+      return true;
+    } catch (error) {
+      console.error('Error updating user role:', error);
+      set({ error: (error as Error).message });
+      return false;
+    } finally {
+      set({ loading: false });
+    }
+  },
+
   getCustomerBookings: async (userId: string) => {
     try {
       const { data, error } = await supabase

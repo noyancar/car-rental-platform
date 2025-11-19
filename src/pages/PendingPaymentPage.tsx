@@ -5,10 +5,12 @@ import { format } from 'date-fns';
 import { toast } from 'sonner';
 import { Button } from '../components/ui/Button';
 import { AuthModal } from '../components/auth';
+import { PriceBreakdown } from '../components/booking/PriceBreakdown';
 import { useAuthStore } from '../stores/authStore';
 import { useBookingStore } from '../stores/bookingStore';
 import { useCarStore } from '../stores/carStore';
 import { useExtrasStore } from '../stores/extrasStore';
+import { parseDateInLocalTimezone } from '../utils/dateUtils';
 
 const PendingPaymentPage: React.FC = () => {
   const navigate = useNavigate();
@@ -182,7 +184,7 @@ const PendingPaymentPage: React.FC = () => {
                       <div className="flex items-center gap-4 text-sm text-gray-600 mt-2">
                         <div className="flex items-center">
                           <Calendar className="w-4 h-4 mr-1" />
-                          {format(new Date(pendingBooking.start_date), 'MMM d')} - {format(new Date(pendingBooking.end_date), 'MMM d, yyyy')}
+                          {format(parseDateInLocalTimezone(pendingBooking.start_date), 'MMM d')} - {format(parseDateInLocalTimezone(pendingBooking.end_date), 'MMM d, yyyy')}
                         </div>
                         <div>{rentalDuration} days</div>
                       </div>
@@ -194,6 +196,19 @@ const PendingPaymentPage: React.FC = () => {
                       <p className="text-sm text-gray-600">Total</p>
                     </div>
                   </div>
+
+                  {/* Seasonal Pricing Breakdown */}
+                  {pendingBooking.car_id && (
+                    <div className="border-t pt-4 mt-4">
+                      <PriceBreakdown
+                        carId={pendingBooking.car_id}
+                        startDate={pendingBooking.start_date}
+                        endDate={pendingBooking.end_date}
+                        startTime={pendingBooking.pickup_time}
+                        endTime={pendingBooking.return_time}
+                      />
+                    </div>
+                  )}
 
                   {pendingBooking.extras && pendingBooking.extras.length > 0 && (
                     <div className="border-t pt-4">

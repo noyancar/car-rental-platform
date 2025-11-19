@@ -8,11 +8,13 @@ import { AuthModal } from '../components/auth';
 import ProfileCompletionForm from '../components/payment/ProfileCompletionForm';
 import StripeProvider from '../components/payment/StripeProvider';
 import StripePaymentForm from '../components/payment/StripePaymentForm';
+import { PriceBreakdown } from '../components/booking/PriceBreakdown';
 import { useAuthStore } from '../stores/authStore';
 import { supabase } from '../lib/supabase';
 import { BookingWithExtras } from '../types';
 import { calculateBookingPriceBreakdown } from '../utils/bookingPriceCalculations';
 import { isBookingExpired } from '../utils/bookingHelpers';
+import { parseDateInLocalTimezone } from '../utils/dateUtils';
 
 const PaymentPage: React.FC = () => {
   const { bookingId } = useParams();
@@ -293,7 +295,7 @@ const PaymentPage: React.FC = () => {
   
   // Calculate rental duration for display
   const rentalDuration = Math.ceil(
-    (new Date(booking.end_date).getTime() - new Date(booking.start_date).getTime()) / 
+    (parseDateInLocalTimezone(booking.end_date).getTime() - parseDateInLocalTimezone(booking.start_date).getTime()) /
     (1000 * 60 * 60 * 24)
   );
 
@@ -386,7 +388,7 @@ const PaymentPage: React.FC = () => {
                     <div className="space-y-2 text-sm text-gray-600 mb-4">
                       <div className="flex items-center">
                         <Calendar className="w-4 h-4 mr-2" />
-                        {format(new Date(booking.start_date), 'MMM d')} - {format(new Date(booking.end_date), 'MMM d, yyyy')} ({rentalDuration} days)
+                        {format(parseDateInLocalTimezone(booking.start_date), 'MMM d')} - {format(parseDateInLocalTimezone(booking.end_date), 'MMM d, yyyy')} ({rentalDuration} days)
                       </div>
                       
                       {/* Pickup Location */}
@@ -410,19 +412,27 @@ const PaymentPage: React.FC = () => {
                       </div>
                     </div>
 
-                    {/* Price Breakdown */}
-                    <div className="border-t pt-4 space-y-3">
-                      <div className="flex justify-between">
-                        <div className="flex flex-col">
-                          <span className="text-gray-600">Car Rental</span>
-                          {booking.discount_code && (
-                            <span className="text-xs text-green-600 mt-0.5">
-                              {booking.discount_code.code} ({booking.discount_code.discount_percentage}% off applied)
-                            </span>
-                          )}
-                        </div>
-                        <span>${carTotal.toFixed(2)}</span>
+                    {/* Seasonal Pricing Breakdown */}
+                    {booking.car_id && (
+                      <div className="border-t pt-4">
+                        <PriceBreakdown
+                          carId={booking.car_id}
+                          startDate={booking.start_date}
+                          endDate={booking.end_date}
+                          startTime={booking.pickup_time || undefined}
+                          endTime={booking.return_time || undefined}
+                          className="mb-4"
+                        />
                       </div>
+                    )}
+
+                    {/* Price Breakdown (Additional Fees) */}
+                    <div className="border-t pt-4 space-y-3">
+                      {booking.discount_code && (
+                        <div className="flex justify-between text-green-600 text-sm mb-2">
+                          <span>Discount Applied: {booking.discount_code.code} ({booking.discount_code.discount_percentage}% off)</span>
+                        </div>
+                      )}
 
                       {/* Delivery Fee */}
                       {priceBreakdown.totalDeliveryFee > 0 && (

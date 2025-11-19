@@ -4,11 +4,13 @@ import { ArrowLeft, Calendar, Clock, Car as CarIcon, CreditCard, CheckCircle, XC
 import { useNavigate } from 'react-router-dom';
 import { format } from 'date-fns';
 import { Button } from '../../components/ui/Button';
+import { PriceBreakdown } from '../../components/booking/PriceBreakdown';
 import { useBookingStore } from '../../stores/bookingStore';
 import { supabase } from '../../lib/supabase';
 import { toast } from 'sonner';
 import { calculateBookingPriceBreakdown } from '../../utils/bookingPriceCalculations';
 import { formatBookingId } from '../../utils/bookingHelpers';
+import { parseDateInLocalTimezone } from '../../utils/dateUtils';
 
 const BookingDetailsPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
@@ -190,7 +192,7 @@ const BookingDetailsPage: React.FC = () => {
                 <p className="text-secondary-600 text-sm sm:text-base">Pickup</p>
                 <div className="mt-1">
                   <p className="text-sm sm:text-base">
-                    📍 {format(new Date(currentBooking.start_date), 'MMM d, yyyy')} at {currentBooking.pickup_time || '10:00 AM'}
+                    📍 {format(parseDateInLocalTimezone(currentBooking.start_date), 'MMM d, yyyy')} at {currentBooking.pickup_time || '10:00 AM'}
                   </p>
                   {currentBooking.pickup_location && (
                     <p className="text-xs sm:text-sm text-secondary-500 mt-1">
@@ -205,7 +207,7 @@ const BookingDetailsPage: React.FC = () => {
                 <p className="text-secondary-600 text-sm sm:text-base">Return</p>
                 <div className="mt-1">
                   <p className="text-sm sm:text-base">
-                    📍 {format(new Date(currentBooking.end_date), 'MMM d, yyyy')} at {currentBooking.return_time || '10:00 AM'}
+                    📍 {format(parseDateInLocalTimezone(currentBooking.end_date), 'MMM d, yyyy')} at {currentBooking.return_time || '10:00 AM'}
                   </p>
                   {currentBooking.return_location && (
                     <p className="text-xs sm:text-sm text-secondary-500 mt-1">
@@ -228,9 +230,22 @@ const BookingDetailsPage: React.FC = () => {
             </div>
           </div>
           
+          {/* Seasonal Daily Breakdown */}
+          {currentBooking.car_id && (
+            <div className="p-6 border-t">
+              <PriceBreakdown
+                carId={currentBooking.car_id}
+                startDate={currentBooking.start_date}
+                endDate={currentBooking.end_date}
+                startTime={currentBooking.pickup_time || undefined}
+                endTime={currentBooking.return_time || undefined}
+              />
+            </div>
+          )}
+
           {/* Price Breakdown */}
           <div className="p-6 border-t">
-            <h2 className="text-lg font-semibold mb-4">Price Breakdown</h2>
+            <h2 className="text-lg font-semibold mb-4">Price Summary</h2>
             <div className="space-y-2">
               {(() => {
                 // Use centralized price breakdown calculation

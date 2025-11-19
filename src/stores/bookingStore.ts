@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import { supabase } from '../lib/supabase';
-import type { Booking } from '../types';
+import type { Booking, PriceCalculationResult } from '../types';
 import { useLocationStore } from './locationStore';
 import { calculateRentalDuration } from '../utils/bookingPriceCalculations';
 import { filterActiveBookings } from '../utils/bookingHelpers';
@@ -34,6 +34,7 @@ interface BookingState {
   }) => Promise<Booking | null>;
   updateBookingStatus: (id: string, status: Booking['status']) => Promise<void>;
   calculatePrice: (carId: string, startDate: string, endDate: string, pickupTime?: string, returnTime?: string, discountCodeId?: string) => Promise<number>;
+  calculatePriceWithBreakdown: (carId: string, startDate: string, endDate: string, startTime?: string, endTime?: string) => Promise<PriceCalculationResult | null>;
   checkAvailability: (carId: string, startDate: string, endDate: string, pickupTime?: string, returnTime?: string) => Promise<boolean>;
   validateDiscountCode: (code: string) => Promise<DiscountCodeValidationResult>;
 }
@@ -289,20 +290,32 @@ export const useBookingStore = create<BookingState>((set) => ({
   
   calculatePrice: async (carId: string, startDate: string, endDate: string, pickupTime: string = '10:00', returnTime: string = '10:00', discountCodeId?: string) => {
     try {
-      const { data: car, error: carError } = await supabase
-        .from('cars')
-        .select('price_per_day')
-        .eq('id', carId)
-        .single();
-
-      if (carError || !car) return 0;
-
-      // Calculate rental duration
+      // Calculate the actual rental duration considering time
       const rentalDays = calculateRentalDuration(startDate, endDate, pickupTime, returnTime);
 
-      // Fiyat hesaplama
-      let price = car.price_per_day * rentalDays;
+      // Backend calculate_car_price uses INCLUSIVE date counting (both start and end dates are counted)
+      // Adjust end date for backend's inclusive calculation
+      const adjustedEndDate = new Date(startDate);
+      adjustedEndDate.setDate(adjustedEndDate.getDate() + (rentalDays - 1));
+      const backendEndDate = adjustedEndDate.toISOString().split('T')[0];
 
+      // Use the new PostgreSQL function for price calculation
+      const { data, error } = await supabase.rpc('calculate_car_price', {
+        p_car_id: carId,
+        p_start_date: startDate,
+        p_end_date: backendEndDate
+      });
+
+      if (error) {
+        console.error('Error calculating price:', error);
+        return 0;
+      }
+
+      if (!data || data.length === 0) return 0;
+
+      let price = data[0].total_price;
+
+      // Apply discount if provided
       if (discountCodeId) {
         const { data: discount, error: discountError } = await supabase
           .from('discount_codes')
@@ -400,6 +413,47 @@ export const useBookingStore = create<BookingState>((set) => ({
         valid: false,
         message: 'Unable to validate discount code. Please try again.'
       };
+    }
+  },
+
+  calculatePriceWithBreakdown: async (
+    carId: string,
+    startDate: string,
+    endDate: string,
+    startTime?: string,
+    endTime?: string
+  ): Promise<PriceCalculationResult | null> => {
+    try {
+      // Calculate the actual rental duration considering time
+      const rentalDays = calculateRentalDuration(startDate, endDate, startTime, endTime);
+
+      // Backend calculate_car_price uses INCLUSIVE date counting (both start and end dates are counted)
+      // So if rental is 1 day (e.g., Nov 17 10:00 - Nov 18 10:00), we need:
+      // start_date = Nov 17, end_date = Nov 17 (same day, backend will count 1 day)
+      // If rental is 2 days, we need: start_date = Nov 17, end_date = Nov 18 (backend will count 2 days)
+
+      // Adjust end date for backend's inclusive calculation
+      const adjustedEndDate = new Date(startDate);
+      adjustedEndDate.setDate(adjustedEndDate.getDate() + (rentalDays - 1));
+      const backendEndDate = adjustedEndDate.toISOString().split('T')[0];
+
+      const { data, error } = await supabase.rpc('calculate_car_price', {
+        p_car_id: carId,
+        p_start_date: startDate,
+        p_end_date: backendEndDate
+      });
+
+      if (error) {
+        console.error('Error calculating price with breakdown:', error);
+        return null;
+      }
+
+      if (!data || data.length === 0) return null;
+
+      return data[0];
+    } catch (error) {
+      console.error('Error calculating price with breakdown:', error);
+      return null;
     }
   },
 }));

@@ -8,6 +8,7 @@ import { useSearchStore } from '../../stores/searchStore';
 import { LocationSelector, LocationDisplay } from '../ui/LocationSelector';
 import { useLocations } from '../../hooks/useLocations';
 import { useDeliveryFees } from '../../hooks/useDeliveryFees';
+import { parseDateInLocalTimezone, parseDateTimeInLocalTimezone } from '../../utils/dateUtils';
 
 const HOURS = Array.from({ length: 24 }, (_, i) => {
   const hour = i.toString().padStart(2, '0');
@@ -45,7 +46,9 @@ const SearchSummary: React.FC = () => {
   
   
   const formatDate = (dateString: string): string => {
-    return format(new Date(dateString), 'MMM d, yyyy');
+    // Use timezone-safe parsing to avoid date shifting
+    const date = parseDateInLocalTimezone(dateString);
+    return format(date, 'MMM d, yyyy');
   };
   
   const handleEditToggle = () => {
@@ -109,9 +112,9 @@ const SearchSummary: React.FC = () => {
     
     // If pickup date is changed
     if (key === 'pickupDate') {
-      const pickupDate = new Date(value);
-      const returnDate = new Date(updatedParams.returnDate);
-      
+      const pickupDate = parseDateInLocalTimezone(value);
+      const returnDate = parseDateInLocalTimezone(updatedParams.returnDate);
+
       // If return date is before new pickup date, set it to next day by default
       if (returnDate < pickupDate) {
         const nextDay = new Date(pickupDate);
@@ -122,9 +125,9 @@ const SearchSummary: React.FC = () => {
     
     // If return date is changed
     if (key === 'returnDate') {
-      const pickupDate = new Date(updatedParams.pickupDate);
-      const returnDate = new Date(value);
-      
+      const pickupDate = parseDateInLocalTimezone(updatedParams.pickupDate);
+      const returnDate = parseDateInLocalTimezone(value);
+
       // Return date must not be before pickup date
       if (returnDate < pickupDate) {
         updatedParams.returnDate = updatedParams.pickupDate;
@@ -367,7 +370,7 @@ const SearchSummary: React.FC = () => {
                 <CalendarClock className="w-4 h-4 text-primary-600 mt-0.5 flex-shrink-0" />
                 <div className="text-sm">
                   <span className="font-medium">
-                    {format(new Date(searchParams.pickupDate), 'MMM d')} - {format(new Date(searchParams.returnDate), 'MMM d, yyyy')}
+                    {format(parseDateInLocalTimezone(searchParams.pickupDate), 'MMM d')} - {format(parseDateInLocalTimezone(searchParams.returnDate), 'MMM d, yyyy')}
                   </span>
                   <span className="text-gray-500 block">
                     {searchParams.pickupTime} - {searchParams.returnTime}

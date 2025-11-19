@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { Search, Filter, CheckCircle, XCircle, AlertCircle, Eye, Download, Calendar } from 'lucide-react';
 import { toast } from 'sonner';
+import { format } from 'date-fns';
 import { Button } from '../../components/ui/Button';
 import { Input } from '../../components/ui/Input';
 import { Select } from '../../components/ui/Select';
@@ -11,6 +12,7 @@ import BookingDetailsModal from '../../components/admin/BookingDetailsModal';
 import { exportMonthlyRevenueCSV } from '../../utils/csvExport';
 import type { Booking } from '../../types';
 import { isBookingExpired, formatBookingId } from '../../utils/bookingHelpers';
+import { parseDateInLocalTimezone } from '../../utils/dateUtils';
 
 const AdminBookings: React.FC = () => {
   const { 
@@ -115,8 +117,8 @@ const AdminBookings: React.FC = () => {
       } else {
         const today = new Date();
         today.setHours(0, 0, 0, 0);
-        const startDate = new Date(booking.start_date);
-        const endDate = new Date(booking.end_date);
+        const startDate = parseDateInLocalTimezone(booking.start_date);
+        const endDate = parseDateInLocalTimezone(booking.end_date);
         startDate.setHours(0, 0, 0, 0);
         endDate.setHours(23, 59, 59, 999);
         matchesStatus = today >= startDate && today <= endDate;
@@ -124,9 +126,9 @@ const AdminBookings: React.FC = () => {
     } else if (statusFilter) {
       matchesStatus = booking.status === statusFilter;
     }
-    
+
     const matchesDate = !dateFilter || (
-      new Date(booking.start_date).toISOString().split('T')[0] === dateFilter
+      booking.start_date === dateFilter
     );
     
     return matchesSearch && matchesStatus && matchesDate;
@@ -248,8 +250,8 @@ const AdminBookings: React.FC = () => {
                     </td>
                     <td className="px-6 py-4">
                       <div className="text-sm">
-                        <div>Start: {new Date(booking.start_date).toLocaleDateString()}</div>
-                        <div>End: {new Date(booking.end_date).toLocaleDateString()}</div>
+                        <div>Start: {format(parseDateInLocalTimezone(booking.start_date), 'MM/dd/yyyy')}</div>
+                        <div>End: {format(parseDateInLocalTimezone(booking.end_date), 'MM/dd/yyyy')}</div>
                       </div>
                     </td>
                     <td className="px-6 py-4">

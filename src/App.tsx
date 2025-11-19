@@ -28,6 +28,10 @@ import DealsPage from './pages/DealsPage';
 import ProfilePage from './pages/ProfilePage';
 import QRStatsPage from './pages/QRStatsPage';
 
+// Legal pages
+import PrivacyPolicy from './pages/legal/PrivacyPolicy';
+import TermsOfService from './pages/legal/TermsOfService';
+
 // Admin pages
 import AdminDashboard from './pages/admin/AdminDashboard';
 import AdminCars from './pages/admin/AdminCars';
@@ -38,6 +42,7 @@ import AdminExtras from './pages/admin/AdminExtras';
 import LocationManagement from './pages/admin/LocationManagement';
 import AdminCustomers from './pages/admin/AdminCustomers';
 import AdminCalendar from './pages/admin/AdminCalendar';
+import AdminSeasonalPricing from './pages/admin/AdminSeasonalPricing';
 
 // Stores
 import { useAuthStore } from './stores/authStore';
@@ -122,6 +127,10 @@ function App() {
             <Route path="/how-it-works" element={<HowItWorksPage />} />
             <Route path="/deals" element={<DealsPage />} />
             <Route path="/qr-stats" element={<QRStatsPage />} />
+
+            {/* Legal routes */}
+            <Route path="/privacy" element={<PrivacyPolicy />} />
+            <Route path="/terms" element={<TermsOfService />} />
             
             {/* Semi-Protected routes - Allow anonymous but show auth modal at checkout */}
             <Route path="/booking/:carId" element={<BookingPage />} />
@@ -168,7 +177,10 @@ function App() {
             <Route path="/admin/calendar" element={
               <ProtectedRoute element={<AdminCalendar />} adminOnly />
             } />
-            
+            <Route path="/admin/seasonal-pricing" element={
+              <ProtectedRoute element={<AdminSeasonalPricing />} adminOnly />
+            } />
+
             {/* Fallback route */}
             <Route path="*" element={<Navigate to="/" />} />
           </Routes>

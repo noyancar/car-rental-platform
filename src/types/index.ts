@@ -72,6 +72,27 @@ export interface Booking {
   stripe_payment_status?: 'pending' | 'processing' | 'succeeded' | 'failed' | 'canceled';
   stripe_payment_method_id?: string;
   expires_at?: string | null; // Expiry timestamp for draft bookings
+  // Customer information fields
+  first_name?: string;
+  last_name?: string;
+  email?: string;
+  phone?: string;
+  customer_email?: string;
+  customer_name?: string;
+  stripe_customer_id?: string;
+  // Pricing breakdown fields
+  car_rental_subtotal?: number;
+  subtotal?: number;
+  pickup_delivery_fee?: number;
+  return_delivery_fee?: number;
+  delivery_fee?: number;
+  discount_amount?: number;
+  extras_total?: number;
+  grand_total?: number;
+  refunded_amount?: number;
+  stripe_refund_id?: string;
+  // Extras relation
+  booking_extras?: BookingExtra[];
 }
 
 export type DiscountCode = {
@@ -149,4 +170,42 @@ export interface BookingWithExtras extends Booking {
   extras_total?: number;
   grand_total?: number;
   booking_extras?: BookingExtra[];
+}
+
+// Seasonal Pricing Types
+export interface CarSeasonalPricing {
+  id: string;
+  car_id: string;
+  name: string;
+  description?: string;
+  price_per_day: number;
+  valid_from: string;
+  valid_to: string;
+  priority: number;
+  active: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface DailyPriceBreakdown {
+  date: string;
+  price: number;
+  pricing_name: string;
+  is_special_price: boolean;
+}
+
+export interface PriceCalculationResult {
+  total_price: number;
+  daily_breakdown: DailyPriceBreakdown[];
+  base_price_days: number;
+  special_price_days: number;
+  average_per_day: number;
+}
+
+export interface PricingPreview {
+  date: string;
+  price_per_day: number;
+  pricing_name: string;
+  is_special_price: boolean;
+  priority: number;
 }

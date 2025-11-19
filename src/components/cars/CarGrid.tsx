@@ -1,11 +1,66 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Star, Car as CarIcon, Calendar, MapPin } from 'lucide-react';
+import { Star, Car as CarIcon, Calendar, MapPin, Tag } from 'lucide-react';
 import { Button } from '../ui/Button';
 import { useSearchStore } from '../../stores/searchStore';
+import { useBookingStore } from '../../stores/bookingStore';
+import { calculateRentalDuration } from '../../utils/bookingPriceCalculations';
+import type { Car, PriceCalculationResult } from '../../types';
+
+interface CarWithPricing extends Car {
+  calculatedPrice?: PriceCalculationResult;
+  priceLoading?: boolean;
+}
 
 const CarGrid: React.FC = () => {
-  const { filteredResults, loading, isSearchPerformed, error } = useSearchStore();
+  const { filteredResults, loading, isSearchPerformed, error, searchParams } = useSearchStore();
+  const { calculatePriceWithBreakdown } = useBookingStore();
+  const [carsWithPricing, setCarsWithPricing] = useState<CarWithPricing[]>([]);
+
+  // Calculate pricing for each car when search is performed
+  useEffect(() => {
+    if (isSearchPerformed && filteredResults.length > 0) {
+      const loadPricing = async () => {
+        const carsWithInitialState = filteredResults.map(car => ({
+          ...car,
+          priceLoading: true
+        }));
+        setCarsWithPricing(carsWithInitialState);
+
+        // Calculate prices in parallel
+        const pricingPromises = filteredResults.map(async (car) => {
+          try {
+            const priceResult = await calculatePriceWithBreakdown(
+              car.id,
+              searchParams.pickupDate,
+              searchParams.returnDate,
+              searchParams.pickupTime,
+              searchParams.returnTime
+            );
+            return {
+              ...car,
+              calculatedPrice: priceResult || undefined,
+              priceLoading: false
+            };
+          } catch (error) {
+            console.error(`Error calculating price for car ${car.id}:`, error);
+            return {
+              ...car,
+              calculatedPrice: undefined,
+              priceLoading: false
+            };
+          }
+        });
+
+        const results = await Promise.all(pricingPromises);
+        setCarsWithPricing(results);
+      };
+
+      loadPricing();
+    } else {
+      setCarsWithPricing([]);
+    }
+  }, [filteredResults, isSearchPerformed, searchParams.pickupDate, searchParams.returnDate, searchParams.pickupTime, searchParams.returnTime, calculatePriceWithBreakdown]);
   
   if (loading) {
     return (
@@ -61,7 +116,7 @@ const CarGrid: React.FC = () => {
     );
   }
   
-  if (filteredResults.length === 0) {
+  if (carsWithPricing.length === 0 && !loading) {
     return (
       <div className="bg-gray-50 p-6 sm:p-8 md:p-12 text-center rounded-2xl shadow-md">
         <CarIcon className="w-10 h-10 sm:w-12 sm:h-12 mx-auto mb-3 sm:mb-4 text-primary-600" />
@@ -75,21 +130,50 @@ const CarGrid: React.FC = () => {
       </div>
     );
   }
-  
+
+  // Calculate rental days using existing time-based calculation
+  const rentalDays = calculateRentalDuration(
+    searchParams.pickupDate,
+    searchParams.returnDate,
+    searchParams.pickupTime,
+    searchParams.returnTime
+  );
+
   return (
     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
-      {filteredResults.map(car => (
+      {carsWithPricing.map(car => {
+        const hasSpecialPricing = car.calculatedPrice && car.calculatedPrice.special_price_days > 0;
+        const displayPrice = car.calculatedPrice
+          ? car.calculatedPrice.average_per_day
+          : car.price_per_day;
+        const totalPrice = car.calculatedPrice
+          ? car.calculatedPrice.total_price
+          : car.price_per_day * rentalDays;
+
+        return (
         <div key={car.id} className="bg-white rounded-xl shadow-hawaii overflow-hidden group hover:shadow-card-hover hover:-translate-y-1 transition-all duration-300 flex flex-col h-full min-h-[400px] sm:min-h-[450px]">
           <div className="relative h-48 sm:h-52 md:h-56 overflow-hidden">
-            <img 
-              src={car.image_urls && car.image_urls.length > 0 
-                ? car.image_urls[car.main_image_index || 0] 
-                : car.image_url} 
+            <img
+              src={car.image_urls && car.image_urls.length > 0
+                ? car.image_urls[car.main_image_index || 0]
+                : car.image_url}
               alt={`${car.make} ${car.model}`}
               className="w-full h-full object-cover transform group-hover:scale-110 transition-transform duration-500"
             />
+            {/* Special Pricing Badge */}
+            {hasSpecialPricing && (
+              <div className="absolute top-2 right-2 bg-orange-500 text-white px-2 py-1 rounded-lg text-xs font-semibold flex items-center gap-1 shadow-lg">
+                <Tag className="w-3 h-3" />
+                Special Price
+              </div>
+            )}
+            {/* Price Tag */}
             <div className="absolute bottom-0 left-0 price-tag m-2 sm:m-3">
-              ${car.price_per_day}/day
+              {car.priceLoading ? (
+                <span className="animate-pulse">Loading...</span>
+              ) : (
+                <>${displayPrice.toFixed(0)}/day</>
+              )}
             </div>
           </div>
           <div className="p-4 sm:p-5 md:p-6 flex flex-col flex-grow">
@@ -110,15 +194,25 @@ const CarGrid: React.FC = () => {
               <p><span className="font-semibold text-volcanic-700">Seats:</span> {car.seats}</p>
               <p><span className="font-semibold text-volcanic-700">Transmission:</span> {car.transmission}</p>
             </div>
-            
+
+            {/* Total Price Display */}
+            {!car.priceLoading && (
+              <div className="bg-primary-50 border border-primary-200 rounded-lg p-3 mb-3 sm:mb-4">
+                <div className="flex justify-between items-center">
+                  <span className="text-xs sm:text-sm text-volcanic-600">Total for {rentalDays} {rentalDays === 1 ? 'day' : 'days'}:</span>
+                  <span className="text-lg sm:text-xl font-bold text-primary-700">${totalPrice.toFixed(0)}</span>
+                </div>
+              </div>
+            )}
+
             <p className="text-volcanic-600 text-xs sm:text-sm line-clamp-2 mb-4 sm:mb-6 flex-grow">
               {car.description}
             </p>
             
             <Link to={`/cars/${car.id}`} className="mt-auto">
-              <Button variant="primary" fullWidth className="shadow-md hover:shadow-lg" 
-              pixel={{ 
-                event: "CarViewDetail", 
+              <Button variant="primary" fullWidth className="shadow-md hover:shadow-lg"
+              pixel={{
+                event: "CarViewDetail",
                 params: { carMake: car.make, carModel: car.model, carYear: car.year }
               }}>
                 View Details
@@ -126,7 +220,8 @@ const CarGrid: React.FC = () => {
             </Link>
           </div>
         </div>
-      ))}
+        );
+      })}
     </div>
   );
 };

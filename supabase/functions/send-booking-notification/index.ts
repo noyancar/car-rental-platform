@@ -16,7 +16,7 @@ Deno.serve(async (req) => {
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!
     const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
     const resendApiKey = Deno.env.get('RESEND_API_KEY')
-    const adminEmail = Deno.env.get('ADMIN_EMAIL') || 'admin@yourcarrental.com'
+    const adminEmail = 'nynrentals@gmail.com'
     
     const supabase = createClient(supabaseUrl, supabaseServiceKey)
     
@@ -57,9 +57,16 @@ Deno.serve(async (req) => {
     }
     
     // Extract names from customer_name if first_name/last_name don't exist
-    const firstName = booking.first_name || booking.customer_name?.split(' ')[0] || 'Customer';
+    const firstName = booking.first_name || booking.customer_name?.split(' ')[0] || '';
     const lastName = booking.last_name || booking.customer_name?.split(' ').slice(1).join(' ') || '';
     const customerEmail = booking.email || booking.customer_email || 'N/A';
+
+    // Customer display name (show 'Customer' if name not available)
+    const customerName = (firstName && lastName)
+      ? `${firstName} ${lastName}`
+      : firstName
+      ? firstName
+      : 'Customer';
     
     // Get customer phone - check multiple possible fields
     const customerPhone = booking.phone || booking.customer_phone || 'N/A';
@@ -68,23 +75,33 @@ Deno.serve(async (req) => {
     const pickupTime = booking.pickup_time || '10:00';
     const returnTime = booking.return_time || '10:00';
     
+    // Parse dates in local timezone to avoid shifting (e.g., Hawaii timezone issue)
+    // Input format: 'YYYY-MM-DD'
+    const parseLocalDate = (dateStr: string) => {
+      const [year, month, day] = dateStr.split('-').map(Number);
+      return new Date(year, month - 1, day); // month is 0-indexed
+    };
+
+    const startDateObj = parseLocalDate(booking.start_date);
+    const endDateObj = parseLocalDate(booking.end_date);
+
     // Format dates for English locale
-    const startDate = new Date(booking.start_date).toLocaleDateString('en-US', {
+    const startDate = startDateObj.toLocaleDateString('en-US', {
       weekday: 'long',
       year: 'numeric',
       month: 'long',
       day: 'numeric'
     })
-    const endDate = new Date(booking.end_date).toLocaleDateString('en-US', {
+    const endDate = endDateObj.toLocaleDateString('en-US', {
       weekday: 'long',
       year: 'numeric',
       month: 'long',
       day: 'numeric'
     })
-    
+
     // Calculate rental days
     const days = Math.ceil(
-      (new Date(booking.end_date).getTime() - new Date(booking.start_date).getTime()) / 
+      (endDateObj.getTime() - startDateObj.getTime()) /
       (1000 * 60 * 60 * 24)
     )
     
@@ -100,169 +117,91 @@ Deno.serve(async (req) => {
       ).join('');
     }
     
-    // Email HTML template for Admin (English)
+    // Email HTML template for Admin - Simple and Clean
     const emailHtml = `
       <!DOCTYPE html>
       <html>
         <head>
           <style>
-            body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
-            .container { max-width: 600px; margin: 0 auto; padding: 20px; }
-            .header { background: #1e40af; color: white; padding: 20px; text-align: center; border-radius: 10px 10px 0 0; }
-            .content { background: #f9fafb; padding: 30px; border: 1px solid #e5e7eb; border-radius: 0 0 10px 10px; }
-            .booking-details { background: white; padding: 20px; border-radius: 8px; margin: 20px 0; }
-            .detail-row { padding: 10px 0; border-bottom: 1px solid #e5e7eb; }
-            .detail-row:last-child { border-bottom: none; }
-            .label { font-weight: bold; color: #6b7280; }
-            .value { color: #111827; }
-            .total { font-size: 24px; font-weight: bold; color: #059669; }
-            .button { display: inline-block; background: #1e40af; color: #ffffff !important; padding: 12px 30px; text-decoration: none !important; border-radius: 6px; margin-top: 20px; font-weight: 600; }
-            .button:hover { background: #1e3a8a; color: #ffffff !important; text-decoration: none !important; }
-            .footer { text-align: center; color: #6b7280; font-size: 12px; margin-top: 30px; }
-            .extras-list { margin: 0; padding-left: 20px; }
-            .extras-list li { margin: 5px 0; }
+            body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; background: #f5f5f5; margin: 0; padding: 20px; }
+            .container { max-width: 600px; margin: 0 auto; background: white; border-radius: 8px; overflow: hidden; }
+            .header { background: #2563eb; color: white; padding: 20px; text-align: center; }
+            .header h1 { margin: 0; font-size: 24px; }
+            .content { padding: 30px; }
+            .info-row { display: flex; padding: 12px 0; border-bottom: 1px solid #e5e7eb; }
+            .info-row:last-child { border-bottom: none; }
+            .info-label { font-weight: 600; color: #666; min-width: 150px; }
+            .info-value { color: #111; flex: 1; }
+            .extras-list { margin: 5px 0 0 0; padding-left: 20px; }
+            .extras-list li { margin: 3px 0; }
           </style>
         </head>
         <body>
           <div class="container">
             <div class="header">
-              <h1>🚗 New Booking Confirmed!</h1>
+              <h1>🚗 New Booking</h1>
             </div>
             <div class="content">
-              <p>A new car rental booking has been confirmed and payment received.</p>
-              
-              <div class="booking-details">
-                <h2>Booking Details</h2>
-                <table style="width: 100%;">
-                  <tr class="detail-row">
-                    <td class="label" style="width: 40%;">Booking ID:</td>
-                    <td class="value" style="text-align: right;">#${booking.id.slice(0, 8).toUpperCase()}</td>
-                  </tr>
-                  <tr class="detail-row">
-                    <td class="label">Customer:</td>
-                    <td class="value" style="text-align: right;">${firstName} ${lastName}</td>
-                  </tr>
-                  <tr class="detail-row">
-                    <td class="label">Email:</td>
-                    <td class="value" style="text-align: right;">${customerEmail}</td>
-                  </tr>
-                </table>
-                ${customerPhone !== 'N/A' ? `
-                <div class="detail-row">
-                  <span class="label">Phone:</span>
-                  <span class="value">${customerPhone}</span>
-                </div>
-                ` : ''}
+              <div class="info-row">
+                <div class="info-label">Booking No:</div>
+                <div class="info-value"><strong>#${booking.id.slice(0, 8).toUpperCase()}</strong></div>
               </div>
-              
-              <div class="booking-details">
-                <h2>Car Information</h2>
-                <div class="detail-row">
-                  <span class="label">Vehicle:</span>
-                  <span class="value">${booking.car.make} ${booking.car.model} ${booking.car.year}</span>
-                </div>
-                <div class="detail-row">
-                  <span class="label">License Plate:</span>
-                  <span class="value">${booking.car.license_plate || 'N/A'}</span>
-                </div>
-                <div class="detail-row">
-                  <span class="label">Category:</span>
-                  <span class="value">${booking.car.category.charAt(0).toUpperCase() + booking.car.category.slice(1)}</span>
-                </div>
-                <div class="detail-row">
-                  <span class="label">Transmission:</span>
-                  <span class="value">${booking.car.transmission || 'Automatic'}</span>
-                </div>
+
+              <div class="info-row">
+                <div class="info-label">Vehicle:</div>
+                <div class="info-value">${booking.car.make} ${booking.car.model} ${booking.car.year}</div>
               </div>
-              
-              <div class="booking-details">
-                <h2>Rental Period</h2>
-                <div class="detail-row">
-                  <span class="label">Pick-up:</span>
-                  <span class="value">${startDate} at ${pickupTime}</span>
-                </div>
-                <div class="detail-row">
-                  <span class="label">Return:</span>
-                  <span class="value">${endDate} at ${returnTime}</span>
-                </div>
-                <div class="detail-row">
-                  <span class="label">Duration:</span>
-                  <span class="value">${days} ${days === 1 ? 'day' : 'days'}</span>
-                </div>
-                <div class="detail-row">
-                  <span class="label">Pick-up Location:</span>
-                  <span class="value">${pickupLocationName}</span>
-                </div>
-                ${returnLocationName !== pickupLocationName ? `
-                <div class="detail-row">
-                  <span class="label">Return Location:</span>
-                  <span class="value">${returnLocationName}</span>
-                </div>
-                ` : ''}
+
+              <div class="info-row">
+                <div class="info-label">Customer Name:</div>
+                <div class="info-value">${customerName}</div>
               </div>
-              
-              <div class="booking-details">
-                <h2>Payment Information</h2>
-                <table style="width: 100%;">
-                  <tr class="detail-row">
-                    <td class="label" style="width: 40%;">Car Rental:</td>
-                    <td class="value" style="text-align: right;">$${(booking.base_price || booking.car_rental_subtotal || booking.total_price)?.toFixed(2)}</td>
-                  </tr>
-                ${booking.extras_total && booking.extras_total > 0 ? `
-                  <tr class="detail-row">
-                    <td class="label">Extras:</td>
-                    <td class="value" style="text-align: right;">$${booking.extras_total.toFixed(2)}</td>
-                  </tr>
-                ${extrasListHtml ? `
-                <div class="detail-row">
-                  <span class="label"></span>
-                  <span class="value">
+
+              ${customerEmail !== 'N/A' ? `
+              <div class="info-row">
+                <div class="info-label">Email:</div>
+                <div class="info-value">${customerEmail}</div>
+              </div>
+              ` : ''}
+
+              ${customerPhone !== 'N/A' ? `
+              <div class="info-row">
+                <div class="info-label">Phone:</div>
+                <div class="info-value">${customerPhone}</div>
+              </div>
+              ` : ''}
+
+              <div class="info-row">
+                <div class="info-label">Pick-up:</div>
+                <div class="info-value">${startDate} - ${pickupTime}</div>
+              </div>
+
+              <div class="info-row">
+                <div class="info-label">Pick-up Location:</div>
+                <div class="info-value">${pickupLocationName}</div>
+              </div>
+
+              <div class="info-row">
+                <div class="info-label">Return:</div>
+                <div class="info-value">${endDate} - ${returnTime}</div>
+              </div>
+
+              <div class="info-row">
+                <div class="info-label">Return Location:</div>
+                <div class="info-value">${returnLocationName}</div>
+              </div>
+
+              <div class="info-row">
+                <div class="info-label">Extras:</div>
+                <div class="info-value">
+                  ${booking.booking_extras && booking.booking_extras.length > 0 ? `
                     <ul class="extras-list">
-                      ${extrasListHtml}
+                      ${booking.booking_extras.map(item =>
+                        `<li>${item.extras.name} (x${item.quantity})</li>`
+                      ).join('')}
                     </ul>
-                  </span>
+                  ` : 'No extras'}
                 </div>
-                ` : ''}
-                ` : ''}
-                ${booking.pickup_delivery_fee && booking.pickup_delivery_fee > 0 ? `
-                  <tr class="detail-row">
-                    <td class="label">Pick-up Delivery Fee:</td>
-                    <td class="value" style="text-align: right;">$${booking.pickup_delivery_fee.toFixed(2)}</td>
-                  </tr>
-                ` : ''}
-                ${booking.return_delivery_fee && booking.return_delivery_fee > 0 ? `
-                <div class="detail-row">
-                  <span class="label">Return Delivery Fee:</span>
-                  <span class="value">$${booking.return_delivery_fee.toFixed(2)}</span>
-                </div>
-                ` : ''}
-                ${booking.discount_amount && booking.discount_amount > 0 ? `
-                <div class="detail-row">
-                  <span class="label">Discount:</span>
-                  <span class="value">-$${booking.discount_amount.toFixed(2)}</span>
-                </div>
-                ` : ''}
-                  <tr class="detail-row" style="border-top: 2px solid #374151; padding-top: 10px;">
-                    <td class="label" style="font-size: 18px; font-weight: bold;">Total Paid:</td>
-                    <td class="value total" style="text-align: right;">$${(booking.grand_total || booking.total_price).toFixed(2)}</td>
-                  </tr>
-                  <tr class="detail-row">
-                    <td class="label">Payment Method:</td>
-                    <td class="value" style="text-align: right;">Stripe (${booking.stripe_payment_status || 'Paid'})</td>
-                  </tr>
-                </table>
-              </div>
-              
-              <center>
-                <a href="${Deno.env.get('SITE_URL') || 'http://localhost:5173'}/admin/bookings" class="button">
-                  View in Admin Panel
-                </a>
-              </center>
-              
-              <div class="footer">
-                <p>This is an automated notification from your car rental system.</p>
-                <p>Booking created at: ${new Date(booking.created_at).toLocaleString('en-US')}</p>
-                <p>© 2025 Car Rental Company</p>
               </div>
             </div>
           </div>
@@ -279,9 +218,9 @@ Deno.serve(async (req) => {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          from: 'onboarding@resend.dev', // Resend test email
+          from: 'bookings@nynrentals.com', // Resend verified domain
           to: adminEmail,
-          subject: `New Booking - ${firstName} ${lastName}`,
+          subject: `New Booking - ${customerName}`,
           html: emailHtml,
         }),
       })
