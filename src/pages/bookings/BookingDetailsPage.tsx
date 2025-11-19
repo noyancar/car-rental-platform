@@ -4,6 +4,7 @@ import { ArrowLeft, Calendar, Clock, Car as CarIcon, CreditCard, CheckCircle, XC
 import { useNavigate } from 'react-router-dom';
 import { format } from 'date-fns';
 import { Button } from '../../components/ui/Button';
+import { PriceBreakdown } from '../../components/booking/PriceBreakdown';
 import { useBookingStore } from '../../stores/bookingStore';
 import { supabase } from '../../lib/supabase';
 import { toast } from 'sonner';
@@ -229,9 +230,22 @@ const BookingDetailsPage: React.FC = () => {
             </div>
           </div>
           
+          {/* Seasonal Daily Breakdown */}
+          {currentBooking.car_id && (
+            <div className="p-6 border-t">
+              <PriceBreakdown
+                carId={currentBooking.car_id}
+                startDate={currentBooking.start_date}
+                endDate={currentBooking.end_date}
+                startTime={currentBooking.pickup_time || undefined}
+                endTime={currentBooking.return_time || undefined}
+              />
+            </div>
+          )}
+
           {/* Price Breakdown */}
           <div className="p-6 border-t">
-            <h2 className="text-lg font-semibold mb-4">Price Breakdown</h2>
+            <h2 className="text-lg font-semibold mb-4">Price Summary</h2>
             <div className="space-y-2">
               {(() => {
                 // Use centralized price breakdown calculation

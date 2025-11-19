@@ -8,6 +8,7 @@ import { AuthModal } from '../components/auth';
 import ProfileCompletionForm from '../components/payment/ProfileCompletionForm';
 import StripeProvider from '../components/payment/StripeProvider';
 import StripePaymentForm from '../components/payment/StripePaymentForm';
+import { PriceBreakdown } from '../components/booking/PriceBreakdown';
 import { useAuthStore } from '../stores/authStore';
 import { supabase } from '../lib/supabase';
 import { BookingWithExtras } from '../types';
@@ -411,19 +412,27 @@ const PaymentPage: React.FC = () => {
                       </div>
                     </div>
 
-                    {/* Price Breakdown */}
-                    <div className="border-t pt-4 space-y-3">
-                      <div className="flex justify-between">
-                        <div className="flex flex-col">
-                          <span className="text-gray-600">Car Rental</span>
-                          {booking.discount_code && (
-                            <span className="text-xs text-green-600 mt-0.5">
-                              {booking.discount_code.code} ({booking.discount_code.discount_percentage}% off applied)
-                            </span>
-                          )}
-                        </div>
-                        <span>${carTotal.toFixed(2)}</span>
+                    {/* Seasonal Pricing Breakdown */}
+                    {booking.car_id && (
+                      <div className="border-t pt-4">
+                        <PriceBreakdown
+                          carId={booking.car_id}
+                          startDate={booking.start_date}
+                          endDate={booking.end_date}
+                          startTime={booking.pickup_time || undefined}
+                          endTime={booking.return_time || undefined}
+                          className="mb-4"
+                        />
                       </div>
+                    )}
+
+                    {/* Price Breakdown (Additional Fees) */}
+                    <div className="border-t pt-4 space-y-3">
+                      {booking.discount_code && (
+                        <div className="flex justify-between text-green-600 text-sm mb-2">
+                          <span>Discount Applied: {booking.discount_code.code} ({booking.discount_code.discount_percentage}% off)</span>
+                        </div>
+                      )}
 
                       {/* Delivery Fee */}
                       {priceBreakdown.totalDeliveryFee > 0 && (

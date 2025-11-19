@@ -42,6 +42,7 @@ import AdminExtras from './pages/admin/AdminExtras';
 import LocationManagement from './pages/admin/LocationManagement';
 import AdminCustomers from './pages/admin/AdminCustomers';
 import AdminCalendar from './pages/admin/AdminCalendar';
+import AdminSeasonalPricing from './pages/admin/AdminSeasonalPricing';
 
 // Stores
 import { useAuthStore } from './stores/authStore';
@@ -174,7 +175,10 @@ function App() {
             <Route path="/admin/calendar" element={
               <ProtectedRoute element={<AdminCalendar />} adminOnly />
             } />
-            
+            <Route path="/admin/seasonal-pricing" element={
+              <ProtectedRoute element={<AdminSeasonalPricing />} adminOnly />
+            } />
+
             {/* Fallback route */}
             <Route path="*" element={<Navigate to="/" />} />
           </Routes>

@@ -1,27 +1,56 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
-import { ArrowLeft, Users, Gauge, Car as CarIcon, Fuel, Car } from 'lucide-react';
+import { ArrowLeft, Users, Gauge, Car as CarIcon, Fuel, Car, Tag, TrendingUp } from 'lucide-react';
 import { format } from 'date-fns';
 import { Button } from '../../components/ui/Button';
 import { SimpleImageViewer } from '../../components/ui/SimpleImageViewer';
 import { PageHeader } from '../../components/ui/PageHeader';
 import { useCarStore } from '../../stores/carStore';
 import { useSearchStore } from '../../stores/searchStore';
+import { useBookingStore } from '../../stores/bookingStore';
 import { toast } from 'sonner';
 import { parseDateInLocalTimezone } from '../../utils/dateUtils';
+import type { PriceCalculationResult } from '../../types';
 
 const CarDetailsPage: React.FC = () => {
   const { id } = useParams();
   const navigate = useNavigate();
   const { currentCar, loading, error, fetchCarById } = useCarStore();
   const { searchParams, isSearchPerformed } = useSearchStore();
-  
+  const { calculatePriceWithBreakdown } = useBookingStore();
+  const [priceCalculation, setPriceCalculation] = useState<PriceCalculationResult | null>(null);
+  const [priceLoading, setPriceLoading] = useState(false);
   
   useEffect(() => {
     if (id) {
       fetchCarById(id);
     }
   }, [id, fetchCarById]);
+
+  // Calculate pricing when car and search params are available
+  useEffect(() => {
+    const loadPricing = async () => {
+      if (currentCar && isSearchPerformed && id) {
+        setPriceLoading(true);
+        try {
+          const result = await calculatePriceWithBreakdown(
+            id,
+            searchParams.pickupDate,
+            searchParams.returnDate,
+            searchParams.pickupTime,
+            searchParams.returnTime
+          );
+          setPriceCalculation(result);
+        } catch (error) {
+          console.error('Error calculating price:', error);
+        } finally {
+          setPriceLoading(false);
+        }
+      }
+    };
+
+    loadPricing();
+  }, [currentCar, isSearchPerformed, id, searchParams.pickupDate, searchParams.returnDate, searchParams.pickupTime, searchParams.returnTime, calculatePriceWithBreakdown]);
   
   
   // Function to proceed to booking
@@ -128,11 +157,39 @@ const CarDetailsPage: React.FC = () => {
               
                 {/* Price and Booking Section */}
                 <div className="border-t border-b border-gray-100 py-4 mb-6">
+                  {/* Special Pricing Badge */}
+                  {priceCalculation && priceCalculation.special_price_days > 0 && (
+                    <div className="mb-4 bg-orange-50 border border-orange-200 rounded-lg p-3 flex items-center gap-2">
+                      <Tag className="w-5 h-5 text-orange-600" />
+                      <div>
+                        <p className="text-sm font-semibold text-orange-900">Special Pricing Active!</p>
+                        <p className="text-xs text-orange-700">
+                          {priceCalculation.special_price_days} of {priceCalculation.base_price_days + priceCalculation.special_price_days} days have special pricing
+                        </p>
+                      </div>
+                    </div>
+                  )}
+
                   <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
                     <div>
-                      <p className="text-3xl font-bold text-primary-800">
-                        ${currentCar.price_per_day}<span className="text-lg font-normal text-gray-600">/day</span>
-                      </p>
+                      {priceLoading ? (
+                        <p className="text-3xl font-bold text-primary-800 animate-pulse">
+                          Loading...
+                        </p>
+                      ) : priceCalculation ? (
+                        <>
+                          <p className="text-3xl font-bold text-primary-800">
+                            ${priceCalculation.average_per_day.toFixed(0)}<span className="text-lg font-normal text-gray-600">/day avg</span>
+                          </p>
+                          <p className="text-xl font-semibold text-gray-700 mt-1">
+                            Total: ${priceCalculation.total_price.toFixed(0)}
+                          </p>
+                        </>
+                      ) : (
+                        <p className="text-3xl font-bold text-primary-800">
+                          ${currentCar.price_per_day}<span className="text-lg font-normal text-gray-600">/day</span>
+                        </p>
+                      )}
                       {isSearchPerformed && (
                         <p className="text-sm text-gray-600 mt-1">
                           {format(parseDateInLocalTimezone(searchParams.pickupDate), 'MMM d')} - {format(parseDateInLocalTimezone(searchParams.returnDate), 'MMM d')}
