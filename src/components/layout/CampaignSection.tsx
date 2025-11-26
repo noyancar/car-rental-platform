@@ -21,32 +21,73 @@ interface TimeLeft {
   seconds: number;
 }
 
+
 const CampaignSection: React.FC = () => {
-  // Campaign configuration - easily customizable
-  const campaign: CampaignConfig = {
-    enabled: true,
-    message: 'Discount on Selected Rentals! - Limited Time Offer.',
-    discount: 'Early Black Friday Special Deals',
-    linkText: 'View Deals',
-    linkUrl: '/deals',
-    bgColor: 'bg-gradient-to-r from-[#b20622ff] to-[#c51b37]',
-    expiryDate: '2025-11-25T23:59:59', // Set your expiry date here
-    showTimer: true, // Set to false to hide timer
+  // Campaign configurations - multiple campaigns with automatic rotation
+  const campaigns: CampaignConfig[] = [
+    {
+      enabled: true,
+      message: 'Discount on Selected Rentals! - Limited Time Offer.',
+      discount: 'Black Friday Special Deals',
+      linkText: 'View Deals',
+      linkUrl: '/deals',
+      bgColor: 'bg-gradient-to-r from-[#b20622ff] to-[#c51b37]',
+      expiryDate: '2025-11-28T23:59:59',
+      showTimer: true,
+    },
+    {
+      enabled: true,
+      message: 'Discount on Selected Rentals! - Limited Time Offer.',
+      discount: 'Cyber Monday Special Deals',
+      linkText: 'View Deals',
+      linkUrl: '/deals',
+      bgColor: 'bg-gradient-to-r from-[#1e3a8a] to-[#3b82f6]',
+      expiryDate: '2025-11-30T23:59:59',
+      showTimer: true,
+    },
+    {
+      enabled: true,
+      message: 'Discount on Selected Rentals! - Limited Time Offer.',
+      discount: 'Travel Tuesday Week Special Deals',
+      linkText: 'View Deals',
+      linkUrl: '/deals',
+      bgColor: 'bg-gradient-to-r from-[#15803d] to-[#22c55e]',
+      expiryDate: '2025-12-07T23:59:59',
+      showTimer: true,
+    },
+  ];
+
+  // Find the first active (not expired) campaign
+  const getActiveCampaign = (): CampaignConfig | null => {
+    const now = new Date().getTime();
+    return campaigns.find(campaign => {
+      if (!campaign.enabled) return false;
+      if (!campaign.expiryDate) return true;
+      return new Date(campaign.expiryDate).getTime() > now;
+    }) || null;
   };
 
+  const [activeCampaign, setActiveCampaign] = useState<CampaignConfig | null>(getActiveCampaign());
   const [timeLeft, setTimeLeft] = useState<TimeLeft | null>(null);
-  const [isExpired, setIsExpired] = useState(false);
 
   useEffect(() => {
-    if (!campaign.expiryDate) {
+    // Check for active campaign every second
+    const checkActiveCampaign = () => {
+      const newActiveCampaign = getActiveCampaign();
+      setActiveCampaign(newActiveCampaign);
+    };
+
+    if (!activeCampaign?.expiryDate) {
+      setTimeLeft(null);
       return;
     }
 
     const calculateTimeLeft = () => {
-      const difference = new Date(campaign.expiryDate!).getTime() - new Date().getTime();
+      const difference = new Date(activeCampaign.expiryDate!).getTime() - new Date().getTime();
 
       if (difference <= 0) {
-        setIsExpired(true);
+        // Campaign expired, find next active campaign
+        checkActiveCampaign();
         setTimeLeft(null);
         return;
       }
@@ -66,15 +107,15 @@ const CampaignSection: React.FC = () => {
     const timer = setInterval(calculateTimeLeft, 1000);
 
     return () => clearInterval(timer);
-  }, [campaign.expiryDate]);
+  }, [activeCampaign?.expiryDate]);
 
-  // Don't render if campaign is disabled or expired
-  if (!campaign.enabled || isExpired) {
+  // Don't render if no active campaign
+  if (!activeCampaign) {
     return null;
   }
 
   return (
-    <section className={`relative w-full ${campaign.bgColor} py-3 px-4 shadow-lg z-10`}>
+    <section className={`relative w-full ${activeCampaign.bgColor} py-3 px-4 shadow-lg z-10`}>
       <div className="container-custom mx-auto">
         <div className="flex items-center justify-between gap-4">
           {/* Left side: Campaign info */}
@@ -88,17 +129,17 @@ const CampaignSection: React.FC = () => {
             <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-3">
               <div className="flex items-center gap-2">
                 <span className="text-white font-black uppercase tracking-wide" style={{ fontSize: 'clamp(0.75rem, 3.5vw, 1.25rem)' }}>
-                  {campaign.discount}
+                  {activeCampaign.discount}
                 </span>
               </div>
               <span className="text-white/95 font-medium" style={{ fontSize: 'clamp(0.625rem, 2.5vw, 1rem)' }}>
-                {campaign.message}
+                {activeCampaign.message}
               </span>
             </div>
           </div>
 
           {/* Right side: Countdown Timer */}
-          {campaign.showTimer && timeLeft && (
+          {activeCampaign.showTimer && timeLeft && (
             <div className="flex items-center gap-1.5 sm:gap-2 md:gap-3">
               <div className="flex items-center gap-0.5 sm:gap-1 md:gap-2">
                 {timeLeft.days > 0 && (
