@@ -218,12 +218,18 @@ class AnalyticsTracker {
       // Use sendBeacon for reliability during page unload
       // sendBeacon queues data to be sent even if page is closing
       try {
-        const blob = new Blob([JSON.stringify(exitData)], { type: 'application/json' });
-        const sent = navigator.sendBeacon(EDGE_FUNCTION_URL, blob);
-
-        if (!sent) {
-          console.warn('[Analytics] Failed to send page exit beacon');
-        }
+        // sendBeacon doesn't support custom headers, so use fetch with keepalive
+        fetch(EDGE_FUNCTION_URL, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${ANON_KEY}`,
+          },
+          body: JSON.stringify(exitData),
+          keepalive: true, // Ensures request completes even if page closes
+        }).catch((error) => {
+          console.error('[Analytics] Error sending page exit:', error);
+        });
       } catch (error) {
         console.error('[Analytics] Error sending page exit:', error);
       }
