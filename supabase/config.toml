@@ -20,3 +20,9 @@ entrypoint = "./functions/send-customer-confirmation/index.ts"
 # Specifies static files to be bundled with the function. Supports glob patterns.
 # For example, if you want to serve static HTML pages in your function:
 # static_files = [ "./functions/send-customer-confirmation/*.html" ]
+
+[functions.track-event]
+enabled = true
+verify_jwt = false  # Anonymous tracking allowed
+import_map = "./functions/track-event/deno.json"
+entrypoint = "./functions/track-event/index.ts"

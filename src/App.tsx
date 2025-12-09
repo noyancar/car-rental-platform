@@ -7,6 +7,9 @@ import { Navbar } from './components/layout/Navbar';
 import { Footer } from './components/layout/Footer';
 import ScrollToTop from './components/utils/ScrollToTop';
 
+// Analytics
+import { AnalyticsProvider } from './components/analytics/AnalyticsProvider';
+
 // Auth components
 import { AuthModal } from './components/auth';
 
@@ -43,6 +46,8 @@ import LocationManagement from './pages/admin/LocationManagement';
 import AdminCustomers from './pages/admin/AdminCustomers';
 import AdminCalendar from './pages/admin/AdminCalendar';
 import AdminSeasonalPricing from './pages/admin/AdminSeasonalPricing';
+import AdminAnalytics from './pages/admin/AdminAnalytics';
+import AdminAnalyticsDetails from './pages/admin/AdminAnalyticsDetails';
 
 // Stores
 import { useAuthStore } from './stores/authStore';
@@ -113,12 +118,13 @@ function App() {
   
   return (
     <Router>
-      <ScrollToTop />
-      <div className="flex flex-col min-h-screen">
-        <CampaignSection/>
-        <Navbar />
-        <main className="flex-grow">
-          <Routes>
+        <AnalyticsProvider>
+        <ScrollToTop />
+        <div className="flex flex-col min-h-screen">
+          <CampaignSection/>
+          <Navbar />
+          <main className="flex-grow">
+            <Routes>
             {/* Public routes */}
             <Route path="/" element={<HomePage />} />
             <Route path="/auth/callback" element={<AuthCallback />} />
@@ -180,6 +186,12 @@ function App() {
             <Route path="/admin/seasonal-pricing" element={
               <ProtectedRoute element={<AdminSeasonalPricing />} adminOnly />
             } />
+            <Route path="/admin/analytics" element={
+              <ProtectedRoute element={<AdminAnalytics />} adminOnly />
+            } />
+            <Route path="/admin/analytics/details" element={
+              <ProtectedRoute element={<AdminAnalyticsDetails />} adminOnly />
+            } />
 
             {/* Fallback route */}
             <Route path="*" element={<Navigate to="/" />} />
@@ -187,9 +199,10 @@ function App() {
         </main>
         <Footer />
       </div>
-      
-      <Toaster position="top-right" closeButton richColors />
-    </Router>
+
+        <Toaster position="top-right" closeButton richColors />
+    </AnalyticsProvider>
+      </Router>
   );
 }
 

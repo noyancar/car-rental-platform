@@ -1,5 +1,6 @@
 import React, { useEffect } from 'react';
 import { useCarStore } from '../stores/carStore';
+import { tracker } from '../lib/analytics/tracker';
 
 // Import components using barrel export
 import {
@@ -9,16 +10,29 @@ import {
   TestimonialsSection,
   SocialMediaSection
 } from '../components/home';
+
+
+
 import CampaignSection from '../components/layout/CampaignSection';
 import SimpleBanner from '../components/home/SimpleBanner';
 
 export const HomePage: React.FC = () => {
   const { featuredCars, fetchFeaturedCars, loading } = useCarStore();
 
-  useEffect(() => {
-    fetchFeaturedCars();
-  }, [fetchFeaturedCars]);
-  
+useEffect(() => {
+  fetchFeaturedCars();
+
+  // Track funnel stage 1: Homepage view
+  tracker.trackFunnelStage(
+    'homepage',                 // 1. stage (string)
+    1,                          // 2. step (number) <-- You were missing this
+    undefined,            // 3. carId (string?) <-- Pass undefined to skip this
+    {                           // 4. metadata (any?)
+      carsDisplayed: featuredCars.length,
+    }
+  );
+}, [fetchFeaturedCars, featuredCars.length]);
+
   return (
     <div>
       <HeroSection />

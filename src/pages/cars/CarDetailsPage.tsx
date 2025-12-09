@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { ArrowLeft, Users, Gauge, Car as CarIcon, Fuel, Car, Tag, TrendingUp } from 'lucide-react';
 import { format } from 'date-fns';
@@ -11,6 +11,7 @@ import { useBookingStore } from '../../stores/bookingStore';
 import { toast } from 'sonner';
 import { parseDateInLocalTimezone } from '../../utils/dateUtils';
 import type { PriceCalculationResult } from '../../types';
+import { tracker } from '../../lib/analytics/tracker';
 
 const CarDetailsPage: React.FC = () => {
   const { id } = useParams();
@@ -20,12 +21,55 @@ const CarDetailsPage: React.FC = () => {
   const { calculatePriceWithBreakdown } = useBookingStore();
   const [priceCalculation, setPriceCalculation] = useState<PriceCalculationResult | null>(null);
   const [priceLoading, setPriceLoading] = useState(false);
-  
+  const viewStartTimeRef = useRef<number>(Date.now());
+
   useEffect(() => {
     if (id) {
       fetchCarById(id);
     }
   }, [id, fetchCarById]);
+
+  // Track funnel stage 3 and car view when car loads
+  useEffect(() => {
+    if (currentCar && id) {
+      viewStartTimeRef.current = Date.now();
+
+      // Track funnel stage 3: Car details view
+      tracker.trackFunnelStage('car_details', 3, id, {
+        carId: id,
+        carMake: currentCar.make,
+        carModel: currentCar.model,
+        carYear: currentCar.year,
+        pricePerDay: currentCar.price_per_day,
+      });
+
+      // Track car view event
+      tracker.trackCarView({
+        carId: id,
+        carMake: currentCar.make,
+        carModel: currentCar.model,
+        carYear: currentCar.year,
+        category: currentCar.category,
+        pricePerDay: currentCar.price_per_day,
+      });
+
+      // Track time spent when component unmounts
+      return () => {
+        const timeSpent = Math.floor((Date.now() - viewStartTimeRef.current) / 1000);
+        if (timeSpent > 0) {
+          tracker.trackCarView({
+            carId: id,
+            carMake: currentCar.make,
+            carModel: currentCar.model,
+            carYear: currentCar.year,
+            category: currentCar.category,
+            pricePerDay: currentCar.price_per_day,
+            timeSpent,
+          });
+        }
+      };
+    }
+  }, [currentCar, id]);
 
   // Calculate pricing when car and search params are available
   useEffect(() => {
