@@ -53,7 +53,7 @@ class AnalyticsTracker {
   async initSession() {
     // Don't initialize session on admin pages
     if (!this.shouldTrack()) {
-      console.log('[Analytics] Tracking disabled for admin pages');
+      // [DEBUG] console.log('[Analytics] Tracking disabled for admin pages');
       return;
     }
     if (this.sessionInitialized || this.sessionInitializing) return;
@@ -79,10 +79,10 @@ class AnalyticsTracker {
 
       this.sessionInitialized = true;
       this.sessionInitializing = false;
-      console.log('[Analytics] Session initialized:', this.sessionId?.substring(0, 8) + '...');
+      // [DEBUG] console.log('[Analytics] Session initialized:', this.sessionId?.substring(0, 8) + '...');
     } catch (error) {
       this.sessionInitializing = false;
-      console.error('[Analytics] Failed to initialize session:', error);
+      // [DEBUG] console.error('[Analytics] Failed to initialize session:', error);
     }
   }
 
@@ -160,10 +160,10 @@ class AnalyticsTracker {
     if (!this.sessionId) await this.initSession();
     const now = Date.now();
 
-    // AYNI URL'E 750 MILISANİYE İÇİNDE TEKRAR İSTEK ATILMASINI ENGELLE
+    // AYNI URL'E 750 ms İÇİNDE TEKRAR İSTEK ATILMASINI ENGELLE
     // Bu, "burst" (patlama) şeklindeki mükerrer kayıtları %100 engeller.
     if (CACHE.lastTrackedUrl === pageUrl && (now - CACHE.lastTrackedTime < 750)) {
-        console.log('Duplicate tracking prevented:', pageUrl);
+        // [DEBUG] console.log('Duplicate tracking prevented:', pageUrl);
         return;
     }
 
