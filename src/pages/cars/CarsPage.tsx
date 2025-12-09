@@ -1,27 +1,64 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { ChevronDown, ChevronUp, Sliders } from 'lucide-react';
 import { SearchSummary, CarFilters, CarGrid } from '../../components/cars';
 import { useSearchStore } from '../../stores/searchStore';
 import { Button } from '../../components/ui/Button';
+import { tracker } from '../../lib/analytics/tracker';
 
 const CarsPage: React.FC = () => {
-  const { isSearchPerformed, setFilters, searchCars, filteredResults } = useSearchStore();
+  const { isSearchPerformed, setFilters, searchCars, filteredResults, searchParams: searchCriteria, filters } = useSearchStore();
   const [searchParams] = useSearchParams();
   const [showFilters, setShowFilters] = useState(false);
-  
+  const searchTrackedRef = useRef(false);
+
   // Handle URL parameters on component mount
   useEffect(() => {
     const category = searchParams.get('category');
     if (category) {
       // Apply the category filter from URL
       setFilters({ category });
-      
+
       // If no search has been performed yet, don't trigger search
       // Let the user select dates and locations first
       // The category filter will be pre-selected for them
     }
   }, [searchParams]);
+
+  // Track funnel stage 2 and search event when search is performed
+  useEffect(() => {
+    if (isSearchPerformed && !searchTrackedRef.current) {
+      // Track funnel stage 2: Listing view
+      tracker.trackFunnelStage('listing', 2, undefined, {
+        resultsCount: filteredResults.length,
+        pickupLocation: searchCriteria.pickupLocation,
+        returnLocation: searchCriteria.returnLocation,
+        pickupDate: searchCriteria.pickupDate,
+        returnDate: searchCriteria.returnDate,
+      });
+
+      // Track search event with full criteria
+      tracker.trackSearch({
+        searchQuery: `${searchCriteria.pickupLocation} - ${searchCriteria.returnLocation}`,
+        filters: {
+          pickupLocation: searchCriteria.pickupLocation,
+          returnLocation: searchCriteria.returnLocation,
+          pickupDate: searchCriteria.pickupDate,
+          returnDate: searchCriteria.returnDate,
+          pickupTime: searchCriteria.pickupTime,
+          returnTime: searchCriteria.returnTime,
+          make: filters.make,
+          model: filters.model,
+          category: filters.category,
+          minPrice: filters.minPrice,
+          maxPrice: filters.maxPrice,
+        },
+        resultsCount: filteredResults.length,
+      });
+
+      searchTrackedRef.current = true;
+    }
+  }, [isSearchPerformed, filteredResults.length, searchCriteria, filters]);
   
   return (
     <div className="py-6 sm:py-8 md:py-10 bg-white min-h-screen">

@@ -15,6 +15,7 @@ import { BookingWithExtras } from '../types';
 import { calculateBookingPriceBreakdown } from '../utils/bookingPriceCalculations';
 import { isBookingExpired } from '../utils/bookingHelpers';
 import { parseDateInLocalTimezone } from '../utils/dateUtils';
+import { tracker } from '../lib/analytics/tracker';
 
 const PaymentPage: React.FC = () => {
   const { bookingId } = useParams();
@@ -42,6 +43,19 @@ const PaymentPage: React.FC = () => {
       loadBookingDetails();
     }
   }, [bookingId, user]);
+
+  // Track funnel stage 5: Payment page
+  useEffect(() => {
+    if (booking && booking.car) {
+      tracker.trackFunnelStage('payment', 5, booking.car_id, {
+        bookingId: booking.id,
+        carId: booking.car_id,
+        carMake: booking.car.make,
+        carModel: booking.car.model,
+        totalPrice: booking.total_price,
+      });
+    }
+  }, [booking]);
 
   const handleAuthSuccess = () => {
     setShowAuthModal(false);

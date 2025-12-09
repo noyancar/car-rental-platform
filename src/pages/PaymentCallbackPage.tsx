@@ -4,6 +4,7 @@ import { Loader2, CheckCircle, XCircle } from 'lucide-react';
 import { toast } from 'sonner';
 import { supabase } from '../lib/supabase';
 import { Button } from '../components/ui/Button';
+import { tracker } from '../lib/analytics/tracker';
 
 const PaymentCallbackPage: React.FC = () => {
   const navigate = useNavigate();
@@ -44,10 +45,19 @@ const PaymentCallbackPage: React.FC = () => {
             setStatus('success');
             setMessage('Payment successful! Your booking has been confirmed.');
             toast.success('Payment successful!');
-            
+
+            // Track funnel stage 6: Confirmation (success)
+            tracker.trackFunnelStage('confirmation', 6, undefined, {
+              bookingId,
+              paymentStatus: 'succeeded',
+            });
+
+            // Complete the funnel
+            tracker.completeFunnelStage('confirmation');
+
             // Email notification is handled by Stripe webhook automatically
             // No need to send email from here
-            
+
             // Redirect to booking details after a short delay
             setTimeout(() => {
               navigate(`/bookings/${bookingId}`);
@@ -57,7 +67,13 @@ const PaymentCallbackPage: React.FC = () => {
             setStatus('success');
             setMessage('Payment processing... You will receive a confirmation email shortly.');
             toast.success('Payment submitted successfully!');
-            
+
+            // Track funnel stage 6: Confirmation (processing)
+            tracker.trackFunnelStage('confirmation', 6, undefined, {
+              bookingId,
+              paymentStatus: 'processing',
+            });
+
             setTimeout(() => {
               navigate(`/bookings/${bookingId}`);
             }, 3000);

@@ -20,6 +20,7 @@ import { useExtrasStore } from '../../stores/extrasStore';
 import ExtrasModal from '../../components/booking/ExtrasModal';
 import { PriceBreakdown } from '../../components/booking/PriceBreakdown';
 import { cn } from '../../lib/utils';
+import { tracker } from '../../lib/analytics/tracker';
 
 const HOURS = Array.from({ length: 24 }, (_, i) => {
   const hour = i.toString().padStart(2, '0');
@@ -126,13 +127,28 @@ const BookingPage: React.FC = () => {
     if (carId) {
       fetchCarById(carId);
     }
-    
+
     // If user navigated here without search parameters, redirect to car details
     if (!isSearchPerformed && carId) {
       toast.info('Please select rental dates first');
       navigate(`/cars/${carId}`);
     }
   }, [carId, fetchCarById, isSearchPerformed, navigate]);
+
+  // Track funnel stage 4: Checkout/Booking page
+  useEffect(() => {
+    if (currentCar && carId) {
+      tracker.trackFunnelStage('checkout', 4, carId, {
+        carId,
+        carMake: currentCar.make,
+        carModel: currentCar.model,
+        pickupDate: startDate,
+        returnDate: endDate,
+        pickupLocation,
+        returnLocation,
+      });
+    }
+  }, [currentCar, carId]);
   
   // Validate dates and return status
   const validateDates = useCallback(() => {
