@@ -26,3 +26,9 @@ enabled = true
 verify_jwt = false  # Anonymous tracking allowed
 import_map = "./functions/track-event/deno.json"
 entrypoint = "./functions/track-event/index.ts"
+
+[functions.sitemap]
+enabled = true
+verify_jwt = false  # Public sitemap, no auth required
+entrypoint = "./functions/sitemap/index.ts"
+
