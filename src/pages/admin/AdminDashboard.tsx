@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { format } from 'date-fns';
-import { Car, CalendarCheck, Tag, Megaphone, Users, Clock, Package, MapPin, UserCheck, Calendar, TrendingUp, BarChartBigIcon} from 'lucide-react';
+import { Car, CalendarCheck, Tag, Rss, Megaphone, Users, Clock, Package, MapPin, UserCheck, Calendar, TrendingUp, BarChartBigIcon} from 'lucide-react';
 import { useAdminStore } from '../../stores/adminStore';
 import { parseDateInLocalTimezone } from '../../utils/dateUtils';
 
@@ -88,6 +88,11 @@ const AdminDashboard: React.FC = () => {
       icon: <BarChartBigIcon className="h-6 w-6 text-primary-600" />,
       link: '/admin/analytics',
     },
+    {
+      title:"Blog Management",
+      icon: <Rss  className="h-6 w-6 text-primary-600" />,
+      link: '/admin/blog',
+    }
   ];
   
   const recentBookings = allBookings.slice(0, 5);

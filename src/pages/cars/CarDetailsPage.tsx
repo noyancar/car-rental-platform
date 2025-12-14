@@ -12,6 +12,7 @@ import { toast } from 'sonner';
 import { parseDateInLocalTimezone } from '../../utils/dateUtils';
 import type { PriceCalculationResult } from '../../types';
 import { tracker } from '../../lib/analytics/tracker';
+import { SEO } from '../../components/seo/SEO';
 
 const CarDetailsPage: React.FC = () => {
   const { id } = useParams();
@@ -154,16 +155,27 @@ const CarDetailsPage: React.FC = () => {
     { label: `${currentCar.make} ${currentCar.model} ${currentCar.year}`, path: `/cars/${id}` }
   ];
   
+  // Generate dynamic meta description
+  const metaDescription = `Rent a ${currentCar.year} ${currentCar.make} ${currentCar.model} in Honolulu, Oahu for $${currentCar.price_per_day}/day. ${currentCar.transmission} transmission, ${currentCar.seats} seats. Available for pickup across Oahu. Book online with instant confirmation.`;
+
   return (
-    <div className="min-h-screen pt-2 pb-12 bg-secondary-50">
-      <div className="container-custom">
-        <PageHeader
-          title={`${currentCar.make} ${currentCar.model} ${currentCar.year}`}
-          subtitle={`$${currentCar.price_per_day}/day`}
-          breadcrumbItems={breadcrumbItems}
-          fallbackPath="/cars"
-          className="lg:hidden"
-        />
+    <>
+      <SEO
+        title={`${currentCar.year} ${currentCar.make} ${currentCar.model} - Rent from $${currentCar.price_per_day}/day`}
+        description={metaDescription}
+        canonical={`https://nynrentals.com/cars/${id}`}
+        ogType="product"
+        ogImage={currentCar.images?.[0] || '/og-default.jpg'}
+      />
+      <div className="min-h-screen pt-2 pb-12 bg-secondary-50">
+        <div className="container-custom">
+          <PageHeader
+            title={`${currentCar.make} ${currentCar.model} ${currentCar.year}`}
+            subtitle={`$${currentCar.price_per_day}/day`}
+            breadcrumbItems={breadcrumbItems}
+            fallbackPath="/cars"
+            className="lg:hidden"
+          />
         
         {/* Desktop Layout - Side by Side */}
         <div className="lg:grid lg:grid-cols-12 lg:gap-8">
@@ -352,6 +364,7 @@ const CarDetailsPage: React.FC = () => {
         </div>
       </div>
     </div>
+    </>
   );
 };
 

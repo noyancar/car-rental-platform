@@ -70,8 +70,26 @@ export const Navbar: React.FC = () => {
           </Link>
           
           <nav className="hidden md:flex items-center space-x-8">
-            <Link 
-              to="/how-it-works" 
+            <Link
+              to="/nyncars"
+              className={`font-medium hover:text-primary-700 transition-colors ${
+                location.pathname === '/nyncars' ? 'text-primary-800' : 'text-secondary-700'
+              }`}
+              onClick={()=>trackNavbarClick("NYN Cars")}
+            >
+              NYN Cars
+            </Link>
+            <Link
+              to="/blog"
+              className={`font-medium hover:text-primary-700 transition-colors ${
+                location.pathname.startsWith('/blog') ? 'text-primary-800' : 'text-secondary-700'
+              }`}
+              onClick={()=>trackNavbarClick("Blog")}
+            >
+              Blog
+            </Link>
+            <Link
+              to="/how-it-works"
               className={`font-medium hover:text-primary-700 transition-colors ${
                 location.pathname === '/how-it-works' ? 'text-primary-800' : 'text-secondary-700'
               }`}
@@ -79,8 +97,8 @@ export const Navbar: React.FC = () => {
             >
               How It Works
             </Link>
-            <Link 
-              to="/deals" 
+            <Link
+              to="/deals"
               className={`font-medium hover:text-primary-700 transition-colors ${
                 location.pathname === '/deals' ? 'text-primary-800' : 'text-secondary-700'
               }`}
@@ -156,8 +174,26 @@ export const Navbar: React.FC = () => {
         {isMenuOpen && (
           <div className="md:hidden bg-white shadow-md">
             <div className="container mx-auto px-3 sm:px-4 py-3 sm:py-4 space-y-2 sm:space-y-3">
-              <Link 
-                to="/how-it-works" 
+              <Link
+                to="/nyncars"
+                className={`block py-2 font-medium ${
+                  location.pathname === '/nyncars' ? 'text-primary-800' : 'text-secondary-700'
+                }`}
+                onClick={()=>trackNavbarClick("NYN Cars")}
+              >
+                NYN Cars
+              </Link>
+              <Link
+                to="/blog"
+                className={`block py-2 font-medium ${
+                  location.pathname.startsWith('/blog') ? 'text-primary-800' : 'text-secondary-700'
+                }`}
+                onClick={()=>trackNavbarClick("Blog")}
+              >
+                Blog
+              </Link>
+              <Link
+                to="/how-it-works"
                 className={`block py-2 font-medium ${
                   location.pathname === '/how-it-works' ? 'text-primary-800' : 'text-secondary-700'
                 }`}
@@ -165,8 +201,8 @@ export const Navbar: React.FC = () => {
               >
                 How It Works
               </Link>
-              <Link 
-                to="/deals" 
+              <Link
+                to="/deals"
                 className={`block py-2 font-medium ${
                   location.pathname === '/deals' ? 'text-primary-800' : 'text-secondary-700'
                 }`}

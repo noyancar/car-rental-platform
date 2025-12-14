@@ -1,6 +1,7 @@
 import React, { useEffect } from 'react';
 import { useCarStore } from '../stores/carStore';
 import { tracker } from '../lib/analytics/tracker';
+import { SEO } from '../components/seo/SEO';
 
 // Import components using barrel export
 import {
@@ -34,27 +35,35 @@ useEffect(() => {
 }, [fetchFeaturedCars, featuredCars.length]);
 
   return (
-    <div>
-      <HeroSection />
-      
-      <FeaturedCarsSection
-        featuredCars={featuredCars}
-        loading={loading}
+    <>
+      <SEO
+        title="Car Rental Honolulu, Oahu | Affordable Hawaii Car Rentals"
+        description="Rent the perfect car for your Oahu adventure with NYN Rentals. Wide selection of vehicles, transparent pricing, island-wide delivery. Daily, weekly, and monthly rentals available in Honolulu and across Hawaii."
+        canonical="https://nynrentals.com/"
+        ogType="website"
       />
+      <div>
+        <HeroSection />
 
-      <SimpleBanner
-        title="Adventure Awaits You"
-        subtitle="Discover Hawaii's hidden gems with our premium vehicles. Your island journey starts here."
-        backgroundImage="https://azu023qxep7q7kax.public.blob.vercel-storage.com/bgimg.jpeg"
-        backgroundColor="#1e1e1eff" // optional, defaults to dark gray
-      />
+        <FeaturedCarsSection
+          featuredCars={featuredCars}
+          loading={loading}
+        />
 
-      <FeaturesSection />
+        <SimpleBanner
+          title="Adventure Awaits You"
+          subtitle="Discover Hawaii's hidden gems with our premium vehicles. Your island journey starts here."
+          backgroundImage="https://azu023qxep7q7kax.public.blob.vercel-storage.com/bgimg.jpeg"
+          backgroundColor="#1e1e1eff" // optional, defaults to dark gray
+        />
 
-      <SocialMediaSection />
+        <FeaturesSection />
 
-      <TestimonialsSection />
-    </div>
+        <SocialMediaSection />
+
+        <TestimonialsSection />
+      </div>
+    </>
   );
 };
 

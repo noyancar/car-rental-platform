@@ -209,3 +209,30 @@ export interface PricingPreview {
   is_special_price: boolean;
   priority: number;
 }
+
+// Blog Types
+export interface BlogPost {
+  id: string;
+  title: string;
+  slug: string;
+  excerpt?: string;
+  content: string;
+  featured_image_url?: string;
+  author_id?: string;
+  author_name?: string;
+  published: boolean;
+  published_at?: string;
+  created_at: string;
+  updated_at: string;
+
+  // SEO fields
+  meta_title?: string;
+  meta_description?: string;
+  keywords?: string[];
+
+  // Blog specific fields
+  category?: string;
+  tags?: string[];
+  read_time_minutes?: number;
+  views_count: number;
+}

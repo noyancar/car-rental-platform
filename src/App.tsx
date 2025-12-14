@@ -20,6 +20,9 @@ import AuthCallback from './pages/auth/AuthCallback';
 import { HomePage } from './pages/HomePage';
 import CarsPage from './pages/cars/CarsPage';
 import CarDetailsPage from './pages/cars/CarDetailsPage';
+import NYNCarsPage from './pages/NYNCarsPage';
+import BlogPage from './pages/BlogPage';
+import BlogPostPage from './pages/BlogPostPage';
 import BookingPage from './pages/bookings/BookingPage';
 import BookingsListPage from './pages/bookings/BookingsListPage';
 import BookingDetailsPage from './pages/bookings/BookingDetailsPage';
@@ -48,6 +51,7 @@ import AdminCalendar from './pages/admin/AdminCalendar';
 import AdminSeasonalPricing from './pages/admin/AdminSeasonalPricing';
 import AdminAnalytics from './pages/admin/AdminAnalytics';
 import AdminAnalyticsDetails from './pages/admin/AdminAnalyticsDetails';
+import AdminBlog from './pages/admin/AdminBlog';
 
 // Stores
 import { useAuthStore } from './stores/authStore';
@@ -130,6 +134,9 @@ function App() {
             <Route path="/auth/callback" element={<AuthCallback />} />
             <Route path="/cars" element={<CarsPage />} />
             <Route path="/cars/:id" element={<CarDetailsPage />} />
+            <Route path="/nyncars" element={<NYNCarsPage />} />
+            <Route path="/blog" element={<BlogPage />} />
+            <Route path="/blog/:slug" element={<BlogPostPage />} />
             <Route path="/how-it-works" element={<HowItWorksPage />} />
             <Route path="/deals" element={<DealsPage />} />
             <Route path="/qr-stats" element={<QRStatsPage />} />
@@ -191,6 +198,9 @@ function App() {
             } />
             <Route path="/admin/analytics/details" element={
               <ProtectedRoute element={<AdminAnalyticsDetails />} adminOnly />
+            } />
+            <Route path="/admin/blog" element={
+              <ProtectedRoute element={<AdminBlog />} adminOnly />
             } />
 
             {/* Fallback route */}

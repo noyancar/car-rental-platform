@@ -5,6 +5,7 @@ import { SearchSummary, CarFilters, CarGrid } from '../../components/cars';
 import { useSearchStore } from '../../stores/searchStore';
 import { Button } from '../../components/ui/Button';
 import { tracker } from '../../lib/analytics/tracker';
+import { SEO } from '../../components/seo/SEO';
 
 const CarsPage: React.FC = () => {
   const { isSearchPerformed, setFilters, searchCars, filteredResults, searchParams: searchCriteria, filters } = useSearchStore();
@@ -61,12 +62,19 @@ const CarsPage: React.FC = () => {
   }, [isSearchPerformed, filteredResults.length, searchCriteria, filters]);
   
   return (
-    <div className="py-6 sm:py-8 md:py-10 bg-white min-h-screen">
-      <div className="container-custom">
-        {/* Search Form - Always visible */}
-        <div className="mb-6 sm:mb-8">
-          <SearchSummary />
-        </div>
+    <>
+      <SEO
+        title="Browse Rental Cars in Oahu | Available Vehicles Honolulu"
+        description="Explore our wide selection of rental cars in Honolulu and Oahu. From economy to luxury vehicles. Filter by type, price, and features. Book your perfect car online with instant confirmation."
+        canonical="https://nynrentals.com/cars"
+        ogType="website"
+      />
+      <div className="py-6 sm:py-8 md:py-10 bg-white min-h-screen">
+        <div className="container-custom">
+          {/* Search Form - Always visible */}
+          <div className="mb-6 sm:mb-8">
+            <SearchSummary />
+          </div>
         
         {/* Mobile Filter Toggle Button */}
         {isSearchPerformed && (
@@ -102,6 +110,7 @@ const CarsPage: React.FC = () => {
         </div>
       </div>
     </div>
+    </>
   );
 };
 

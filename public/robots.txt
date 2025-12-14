@@ -1,0 +1,41 @@
+# Robots.txt for NYN Rentals Car Rental Platform
+# Honolulu, Oahu, Hawaii
+# Updated: December 2025
+
+User-agent: *
+Allow: /
+Disallow: /admin/
+Disallow: /admin/*
+Disallow: /payment/callback
+Disallow: /auth/callback
+Disallow: /api/
+Disallow: /profile
+Disallow: /bookings
+
+# Sitemap location
+Sitemap: https://nynrentals.com/sitemap.xml
+
+# Crawl delay for aggressive bots
+User-agent: AhrefsBot
+Crawl-delay: 10
+Disallow: /admin/
+
+User-agent: SemrushBot
+Crawl-delay: 10
+Disallow: /admin/
+
+User-agent: DotBot
+Crawl-delay: 10
+
+# Block bad bots 
+User-agent: MJ12bot
+Disallow: /
+
+# Allow Google, Bing
+User-agent: Googlebot
+Allow: /
+Disallow: /admin/
+
+User-agent: Bingbot
+Allow: /
+Disallow: /admin/
