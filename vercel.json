@@ -9,7 +9,7 @@
       "destination": "https://lwhqqhlvmtbcugzasamf.supabase.co/functions/v1/qr-redirect/:code"
     },
     {
-      "source": "/(.*)",
+      "source": "/((?!.*\\.(jpg|jpeg|png|svg|ico|webp|gif|css|js|json|xml|txt|woff|woff2|ttf|eot)).*)",
       "destination": "/index.html"
     }
   ],
