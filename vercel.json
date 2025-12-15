@@ -33,6 +33,10 @@
       "destination": "/index.html"
     },
     {
+      "source": "/index.html",
+      "destination": "/index.html"
+    },
+    {
       "source": "/",
       "destination": "https://lwhqqhlvmtbcugzasamf.supabase.co/functions/v1/inject-meta-tags/"
     },
