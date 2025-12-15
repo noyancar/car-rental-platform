@@ -9,36 +9,8 @@
       "destination": "https://lwhqqhlvmtbcugzasamf.supabase.co/functions/v1/qr-redirect/:code"
     },
     {
-      "source": "/blog/:slug",
-      "destination": "/api/inject-meta-tags"
-    },
-    {
-      "source": "/blog",
-      "destination": "/api/inject-meta-tags"
-    },
-    {
-      "source": "/cars/:id",
-      "destination": "/api/inject-meta-tags"
-    },
-    {
-      "source": "/cars",
-      "destination": "/api/inject-meta-tags"
-    },
-    {
-      "source": "/deals",
-      "destination": "/api/inject-meta-tags"
-    },
-    {
-      "source": "/how-it-works",
-      "destination": "/api/inject-meta-tags"
-    },
-    {
-      "source": "/nyncars",
-      "destination": "/api/inject-meta-tags"
-    },
-    {
-      "source": "/",
-      "destination": "/api/inject-meta-tags"
+      "source": "/(.*)",
+      "destination": "/index.html"
     }
   ],
   "headers": [
