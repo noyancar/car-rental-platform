@@ -32,8 +32,3 @@ enabled = true
 verify_jwt = false  # Public sitemap, no auth required
 entrypoint = "./functions/sitemap/index.ts"
 
-[functions.inject-meta-tags]
-enabled = true
-verify_jwt = false  # Public SSR rendering for SEO
-entrypoint = "./functions/inject-meta-tags/index.ts"
-

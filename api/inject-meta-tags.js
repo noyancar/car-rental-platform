@@ -1,53 +1,43 @@
-import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-}
-
-// In-memory cache for HTML template and metadata
-const htmlCache = new Map<string, { content: string, timestamp: number }>()
-const metaCache = new Map<string, { data: any, timestamp: number }>()
-const HTML_CACHE_TTL = 60 * 60 * 1000 // 1 hour
+// In-memory cache for metadata
+const metaCache = new Map()
 const META_CACHE_TTL = 5 * 60 * 1000 // 5 minutes
 
-interface MetaData {
-  title: string
-  description: string
-  image: string
-  url: string
-  type?: string
+export const config = {
+  runtime: 'edge',
 }
 
-serve(async (req) => {
-  // Handle CORS preflight
-  if (req.method === 'OPTIONS') {
-    return new Response('ok', { headers: corsHeaders })
-  }
+export default async function handler(request) {
+  const url = new URL(request.url)
+  // Vercel rewrite passes the original path, so we just use pathname directly
+  const path = url.pathname || '/'
+
+  console.log(`[inject-meta-tags] Processing path: ${path}`)
 
   try {
-    const url = new URL(req.url)
-    // Strip both local and production path prefixes
-    const path = url.pathname
-      .replace(/^\/functions\/v1\/inject-meta-tags/, '') // Production
-      .replace(/^\/inject-meta-tags/, '') // Local
-      || '/'
-
-    console.log(`[inject-meta-tags] Processing path: ${path}`)
-
     // Get metadata based on path
     const metaData = await getMetaData(path)
 
-    // Get base HTML template
-    const baseHTML = await getBaseHTML()
+    // Fetch base HTML from origin (Vercel static hosting)
+    const baseURL = url.origin
+    const htmlResponse = await fetch(`${baseURL}/__template.html`, {
+      headers: {
+        'User-Agent': 'Vercel-EdgeFunction/1.0'
+      }
+    })
+
+    if (!htmlResponse.ok) {
+      throw new Error(`Failed to fetch template: ${htmlResponse.status}`)
+    }
+
+    const baseHTML = await htmlResponse.text()
 
     // Inject meta tags
     const finalHTML = injectMetaTags(baseHTML, metaData)
 
     return new Response(finalHTML, {
       headers: {
-        ...corsHeaders,
         'Content-Type': 'text/html; charset=utf-8',
         'Cache-Control': 'public, s-maxage=300, stale-while-revalidate=600',
       },
@@ -55,18 +45,17 @@ serve(async (req) => {
   } catch (error) {
     console.error('[inject-meta-tags] Error:', error)
 
-    // Fallback: serve basic HTML with generic meta tags
-    const fallbackHTML = await getFallbackHTML()
-    return new Response(fallbackHTML, {
+    // Fallback to redirect to origin
+    return new Response(null, {
+      status: 302,
       headers: {
-        ...corsHeaders,
-        'Content-Type': 'text/html; charset=utf-8',
+        'Location': url.origin + path,
       },
     })
   }
-})
+}
 
-async function getMetaData(path: string): Promise<MetaData> {
+async function getMetaData(path) {
   // Check cache first
   const cached = metaCache.get(path)
   if (cached && (Date.now() - cached.timestamp < META_CACHE_TTL)) {
@@ -75,11 +64,11 @@ async function getMetaData(path: string): Promise<MetaData> {
   }
 
   const supabase = createClient(
-    Deno.env.get('SUPABASE_URL') ?? '',
-    Deno.env.get('SUPABASE_ANON_KEY') ?? ''
+    process.env.SUPABASE_URL,
+    process.env.SUPABASE_ANON_KEY
   )
 
-  let metaData: MetaData
+  let metaData
 
   // Homepage
   if (path === '/' || path === '') {
@@ -205,7 +194,7 @@ async function getMetaData(path: string): Promise<MetaData> {
   return metaData
 }
 
-function getDefaultMeta(): MetaData {
+function getDefaultMeta() {
   return {
     title: 'NYN Rentals | Premium Car Rental in Honolulu, Oahu, Hawaii',
     description: 'Rent the perfect car for your Oahu adventure. Wide selection, transparent pricing, exceptional service.',
@@ -215,102 +204,9 @@ function getDefaultMeta(): MetaData {
   }
 }
 
-async function getBaseHTML(): Promise<string> {
-  // Check cache first
-  const cacheKey = 'base-html'
-  const cached = htmlCache.get(cacheKey)
-  if (cached && (Date.now() - cached.timestamp < HTML_CACHE_TTL)) {
-    console.log('[Cache HIT] Base HTML template')
-    return cached.content
-  }
-
-  try {
-    // Fetch the real built index.html from Vercel
-    // /__template.html serves static file directly (no edge function = no loop)
-    console.log('[getBaseHTML] Fetching built index.html from /__template.html')
-    const response = await fetch('https://nynrentals.com/__template.html', {
-      headers: {
-        'User-Agent': 'NYN-EdgeFunction/1.0'
-      }
-    })
-
-    if (!response.ok) {
-      throw new Error(`Failed to fetch template: ${response.status}`)
-    }
-
-    const html = await response.text()
-
-    // Cache the result
-    htmlCache.set(cacheKey, { content: html, timestamp: Date.now() })
-    console.log('[getBaseHTML] Built index.html fetched and cached')
-
-    return html
-  } catch (error) {
-    console.error('[getBaseHTML] Error fetching built template, using fallback:', error)
-    // Fallback to embedded template if fetch fails
-    return getHTMLTemplate()
-  }
-}
-
-function getHTMLTemplate(): string {
-  // This will be replaced with actual index.html content during deployment
-  // For now, using a minimal template that includes all necessary structure
-  return `<!doctype html>
-<html lang="en-US">
-  <head>
-    <meta charset="UTF-8" />
-    <link rel="icon" type="image/png" href="/favicon.png" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta name="msvalidate.01" content="38CD0B07CDE7FEA6F9396DABE18223D2" />
-    <title>NYN Rentals | Car Rental Made Easy</title>
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700&family=Playfair+Display:wght@700&display=swap" rel="stylesheet">
-    <script src="https://analytics.ahrefs.com/analytics.js" data-key="rngGL9BPU93c/6hceiTyPQ" async></script>
-    <script id="Cookiebot" src="https://consent.cookiebot.com/uc.js" data-cbid="bdad8320-a2b5-4a16-8e08-cb8f2cc9f975" data-blockingmode="auto" type="text/javascript"></script>
-    <script type="text/plain" data-cookieconsent="marketing">
-      !function(f,b,e,v,n,t,s)
-      {if(f.fbq)return;n=f.fbq=function(){n.callMethod?
-      n.callMethod.apply(n,arguments):n.queue.push(arguments)};
-      if(!f._fbq)f._fbq=n;n.push=n;n.loaded=!0;n.version='2.0';
-      n.queue=[];t=b.createElement(e);t.async=!0;
-      t.src=v;s=b.getElementsByTagName(e)[0];
-      s.parentNode.insertBefore(t,s)}(window, document,'script',
-      'https://connect.facebook.net/en_US/fbevents.js');
-      fbq('init', '693362250036935');
-      fbq('track', 'PageView');
-    </script>
-  </head>
-  <body>
-    <noscript><img height="1" width="1" style="display:none"
-      src="https://www.facebook.com/tr?id=693362250036935&ev=PageView&noscript=1"
-    /></noscript>
-    <div id="root"></div>
-    <script type="module" src="/src/main.tsx"></script>
-  </body>
-</html>`
-}
-
-async function getFallbackHTML(): Promise<string> {
-  return `<!DOCTYPE html>
-<html lang="en-US">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>NYN Rentals | Car Rental Made Easy</title>
-  <meta name="description" content="Premium car rental service in Honolulu, Oahu, Hawaii.">
-</head>
-<body>
-  <h1>NYN Rentals</h1>
-  <p>Loading...</p>
-  <script>window.location.href = 'https://nynrentals.com';</script>
-</body>
-</html>`
-}
-
-function injectMetaTags(html: string, meta: MetaData): string {
+function injectMetaTags(html, meta) {
   // Escape special characters in meta content
-  const escapeHtml = (str: string) => {
+  const escapeHtml = (str) => {
     return str
       .replace(/&/g, '&amp;')
       .replace(/</g, '&lt;')
