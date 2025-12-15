@@ -9,32 +9,8 @@
       "destination": "https://lwhqqhlvmtbcugzasamf.supabase.co/functions/v1/qr-redirect/:code"
     },
     {
-      "source": "/admin/:path*",
-      "destination": "/index.html"
-    },
-    {
-      "source": "/auth/:path*",
-      "destination": "/index.html"
-    },
-    {
-      "source": "/profile",
-      "destination": "/index.html"
-    },
-    {
-      "source": "/bookings/:path*",
-      "destination": "/index.html"
-    },
-    {
-      "source": "/booking/:path*",
-      "destination": "/index.html"
-    },
-    {
-      "source": "/payment/:path*",
-      "destination": "/index.html"
-    },
-    {
       "source": "/(.*)",
-      "destination": "https://lwhqqhlvmtbcugzasamf.supabase.co/functions/v1/inject-meta-tags"
+      "destination": "/index.html"
     }
   ],
   "headers": [
