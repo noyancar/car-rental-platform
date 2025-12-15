@@ -44,7 +44,7 @@ export function SEO({
   const currentUrl = canonical || siteUrl;
 
   // Ensure ogImage is absolute URL, fallback to default if not provided
-  const defaultOgImage = `${siteUrl}/og-default.jpg`;
+  const defaultOgImage = `${siteUrl}/og-home.jpg`;
   const imageUrl = ogImage || defaultOgImage;
   const absoluteOgImage = imageUrl.startsWith('http')
     ? imageUrl

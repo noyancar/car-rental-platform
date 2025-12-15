@@ -165,7 +165,7 @@ const CarDetailsPage: React.FC = () => {
         description={metaDescription}
         canonical={`https://nynrentals.com/cars/${id}`}
         ogType="product"
-        ogImage={currentCar.images?.[0] || '/og-default.jpg'}
+        ogImage={currentCar.images?.[0] || '/og-home.jpg'}
       />
       <div className="min-h-screen pt-2 pb-12 bg-secondary-50">
         <div className="container-custom">
