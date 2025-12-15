@@ -33,7 +33,7 @@
       "destination": "/index.html"
     },
     {
-      "source": "/index.html",
+      "source": "/__template.html",
       "destination": "/index.html"
     },
     {

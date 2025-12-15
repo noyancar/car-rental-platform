@@ -221,28 +221,79 @@ function getDefaultMeta(): MetaData {
 }
 
 async function getBaseHTML(): Promise<string> {
-  // Check cache
-  const cached = htmlCache.get('base')
+  // Check cache first
+  const cacheKey = 'base-html'
+  const cached = htmlCache.get(cacheKey)
   if (cached && (Date.now() - cached.timestamp < HTML_CACHE_TTL)) {
+    console.log('[Cache HIT] Base HTML template')
     return cached.content
   }
 
   try {
-    // Fetch from production
-    const response = await fetch('https://nynrentals.com/index.html')
+    // Fetch the real built index.html from Vercel
+    // /__template.html serves static file directly (no edge function = no loop)
+    console.log('[getBaseHTML] Fetching built index.html from /__template.html')
+    const response = await fetch('https://nynrentals.com/__template.html', {
+      headers: {
+        'User-Agent': 'NYN-EdgeFunction/1.0'
+      }
+    })
+
     if (!response.ok) {
-      throw new Error(`Failed to fetch HTML: ${response.status}`)
+      throw new Error(`Failed to fetch template: ${response.status}`)
     }
+
     const html = await response.text()
 
-    // Cache it
-    htmlCache.set('base', { content: html, timestamp: Date.now() })
+    // Cache the result
+    htmlCache.set(cacheKey, { content: html, timestamp: Date.now() })
+    console.log('[getBaseHTML] Built index.html fetched and cached')
 
     return html
   } catch (error) {
-    console.error('[HTML] Failed to fetch base HTML:', error)
-    return getFallbackHTML()
+    console.error('[getBaseHTML] Error fetching built template, using fallback:', error)
+    // Fallback to embedded template if fetch fails
+    return getHTMLTemplate()
   }
+}
+
+function getHTMLTemplate(): string {
+  // This will be replaced with actual index.html content during deployment
+  // For now, using a minimal template that includes all necessary structure
+  return `<!doctype html>
+<html lang="en-US">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/png" href="/favicon.png" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="msvalidate.01" content="38CD0B07CDE7FEA6F9396DABE18223D2" />
+    <title>NYN Rentals | Car Rental Made Easy</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700&family=Playfair+Display:wght@700&display=swap" rel="stylesheet">
+    <script src="https://analytics.ahrefs.com/analytics.js" data-key="rngGL9BPU93c/6hceiTyPQ" async></script>
+    <script id="Cookiebot" src="https://consent.cookiebot.com/uc.js" data-cbid="bdad8320-a2b5-4a16-8e08-cb8f2cc9f975" data-blockingmode="auto" type="text/javascript"></script>
+    <script type="text/plain" data-cookieconsent="marketing">
+      !function(f,b,e,v,n,t,s)
+      {if(f.fbq)return;n=f.fbq=function(){n.callMethod?
+      n.callMethod.apply(n,arguments):n.queue.push(arguments)};
+      if(!f._fbq)f._fbq=n;n.push=n;n.loaded=!0;n.version='2.0';
+      n.queue=[];t=b.createElement(e);t.async=!0;
+      t.src=v;s=b.getElementsByTagName(e)[0];
+      s.parentNode.insertBefore(t,s)}(window, document,'script',
+      'https://connect.facebook.net/en_US/fbevents.js');
+      fbq('init', '693362250036935');
+      fbq('track', 'PageView');
+    </script>
+  </head>
+  <body>
+    <noscript><img height="1" width="1" style="display:none"
+      src="https://www.facebook.com/tr?id=693362250036935&ev=PageView&noscript=1"
+    /></noscript>
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>`
 }
 
 async function getFallbackHTML(): Promise<string> {
