@@ -36,6 +36,11 @@ serve(async (req) => {
 
     console.log(`[inject-meta-tags] Processing path: ${path}`)
 
+    // Safety: If static file somehow reaches here, redirect to origin
+    if (/\.(js|css|png|jpg|jpeg|gif|svg|ico|json|woff|woff2|ttf|eot|txt|html)$/i.test(path)) {
+      return Response.redirect(`https://nynrentals.com${path}`, 302)
+    }
+
     // Get metadata based on path
     const metaData = await getMetaData(path)
 
