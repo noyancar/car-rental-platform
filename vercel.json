@@ -1,6 +1,22 @@
 {
   "rewrites": [
     {
+      "source": "/og-:file*.jpg",
+      "destination": "/og-:file*.jpg"
+    },
+    {
+      "source": "/robots.txt",
+      "destination": "/robots.txt"
+    },
+    {
+      "source": "/favicon.ico",
+      "destination": "/favicon.ico"
+    },
+    {
+      "source": "/assets/:path*",
+      "destination": "/assets/:path*"
+    },
+    {
       "source": "/sitemap.xml",
       "destination": "https://lwhqqhlvmtbcugzasamf.supabase.co/functions/v1/sitemap"
     },
@@ -9,7 +25,7 @@
       "destination": "https://lwhqqhlvmtbcugzasamf.supabase.co/functions/v1/qr-redirect/:code"
     },
     {
-      "source": "/:path*",
+      "source": "/(.*)",
       "destination": "/index.html"
     }
   ],
