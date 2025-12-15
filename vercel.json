@@ -1,21 +1,5 @@
 {
   "rewrites": [
-{
-      "source": "/og-:file*.jpg",
-      "destination": "/og-:file*.jpg"
-    },
-    {
-      "source": "/robots.txt",
-      "destination": "/robots.txt"
-    },
-    {
-      "source": "/favicon.ico",
-      "destination": "/favicon.ico"
-    },
-    {
-      "source": "/assets/:path*",
-      "destination": "/assets/:path*"
-    },
     {
       "source": "/sitemap.xml",
       "destination": "https://lwhqqhlvmtbcugzasamf.supabase.co/functions/v1/sitemap"
@@ -25,22 +9,37 @@
       "destination": "https://lwhqqhlvmtbcugzasamf.supabase.co/functions/v1/qr-redirect/:code"
     },
     {
-      "source": "/(.*)",
+      "source": "/admin/:path*",
       "destination": "/index.html"
+    },
+    {
+      "source": "/auth/:path*",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/profile",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/bookings/:path*",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/booking/:path*",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/payment/:path*",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/((?!index\\.html$|assets/|.*\\.(js|css|png|jpg|jpeg|gif|svg|ico|json|woff|woff2|ttf|eot|txt)).*)",
+      "destination": "https://lwhqqhlvmtbcugzasamf.supabase.co/functions/v1/inject-meta-tags/$1"
     }
   ],
   "headers": [
     {
       "source": "/assets/(.*)",
-      "headers": [
-        {
-          "key": "Cache-Control",
-          "value": "public, max-age=31536000, immutable"
-        }
-      ]
-    },
-    {
-      "source": "/og-:file*.jpg",
       "headers": [
         {
           "key": "Cache-Control",
