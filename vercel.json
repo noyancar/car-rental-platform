@@ -1,5 +1,21 @@
 {
   "rewrites": [
+{
+      "source": "/og-:file*.jpg",
+      "destination": "/og-:file*.jpg"
+    },
+    {
+      "source": "/robots.txt",
+      "destination": "/robots.txt"
+    },
+    {
+      "source": "/favicon.ico",
+      "destination": "/favicon.ico"
+    },
+    {
+      "source": "/assets/:path*",
+      "destination": "/assets/:path*"
+    },
     {
       "source": "/sitemap.xml",
       "destination": "https://lwhqqhlvmtbcugzasamf.supabase.co/functions/v1/sitemap"
@@ -16,6 +32,15 @@
   "headers": [
     {
       "source": "/assets/(.*)",
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "public, max-age=31536000, immutable"
+        }
+      ]
+    },
+    {
+      "source": "/og-:file*.jpg",
       "headers": [
         {
           "key": "Cache-Control",
