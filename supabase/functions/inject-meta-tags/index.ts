@@ -28,9 +28,9 @@ serve(async (req) => {
 
   try {
     const url = new URL(req.url)
-    const path = url.pathname.replace('/functions/v1/render', '') || '/'
+    const path = url.pathname.replace('/functions/v1/inject-meta-tags', '') || '/'
 
-    console.log(`[Render] Processing path: ${path}`)
+    console.log(`[inject-meta-tags] Processing path: ${path}`)
 
     // Get metadata based on path
     const metaData = await getMetaData(path)
@@ -49,7 +49,7 @@ serve(async (req) => {
       },
     })
   } catch (error) {
-    console.error('[Render] Error:', error)
+    console.error('[inject-meta-tags] Error:', error)
 
     // Fallback: serve basic HTML with generic meta tags
     const fallbackHTML = await getFallbackHTML()
