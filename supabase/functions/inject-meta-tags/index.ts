@@ -286,6 +286,7 @@ function injectMetaTags(html: string, meta: MetaData): string {
     <link rel="canonical" href="${url}" />
 
     <!-- Open Graph / Facebook -->
+    <meta property="fb:app_id" content="1298453702080361" />
     <meta property="og:type" content="${type}" />
     <meta property="og:url" content="${url}" />
     <meta property="og:title" content="${title}" />

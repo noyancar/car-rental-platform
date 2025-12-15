@@ -33,8 +33,12 @@
       "destination": "/index.html"
     },
     {
-      "source": "/:path*",
-      "destination": "https://lwhqqhlvmtbcugzasamf.supabase.co/functions/v1/inject-meta-tags/:path*"
+      "source": "/",
+      "destination": "https://lwhqqhlvmtbcugzasamf.supabase.co/functions/v1/inject-meta-tags/"
+    },
+    {
+      "source": "/:path+",
+      "destination": "https://lwhqqhlvmtbcugzasamf.supabase.co/functions/v1/inject-meta-tags/:path+"
     }
   ],
   "headers": [

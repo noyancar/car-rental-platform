@@ -61,6 +61,7 @@ export function SEO({
       {keywords.length > 0 && <meta name="keywords" content={keywords.join(', ')} />}
 
       {/* Open Graph / Facebook */}
+      <meta property="fb:app_id" content="1298453702080361" />
       <meta property="og:type" content={ogType} />
       <meta property="og:url" content={currentUrl} />
       <meta property="og:title" content={fullTitle} />
