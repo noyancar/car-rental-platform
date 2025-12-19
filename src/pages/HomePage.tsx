@@ -26,13 +26,11 @@ useEffect(() => {
   // Track funnel stage 1: Homepage view
   tracker.trackFunnelStage(
     'homepage',                 // 1. stage (string)
-    1,                          // 2. step (number) <-- You were missing this
-    undefined,            // 3. carId (string?) <-- Pass undefined to skip this
-    {                           // 4. metadata (any?)
-      carsDisplayed: featuredCars.length,
-    }
+    1,                          // 2. step (number)
+    undefined,            // 3. carId (string?)
+    {}                          // 4. metadata (any?)
   );
-}, [fetchFeaturedCars, featuredCars.length]);
+}, [fetchFeaturedCars]);
 
   return (
     <>

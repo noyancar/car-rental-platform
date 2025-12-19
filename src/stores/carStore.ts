@@ -90,14 +90,13 @@ export const useCarStore = create<CarState>((set, get) => ({
   fetchFeaturedCars: async () => {
     try {
       set({ loading: true, error: null });
-      
+
       const { data, error } = await supabase
         .from('cars')
         .select('*')
         .eq('available', true)
-        .order('created_at', { ascending: false })
-        .limit(4);
-      
+        .order('created_at', { ascending: false });
+
       if (error) throw error;
       
       // Process the data to ensure image_urls is always an array
