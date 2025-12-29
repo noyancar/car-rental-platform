@@ -210,6 +210,42 @@ export interface PricingPreview {
   priority: number;
 }
 
+// Car Unavailability Types (matches bookings structure)
+export interface CarUnavailability {
+  id: string;
+  car_id: string;
+  start_date: string;      // DATE format: YYYY-MM-DD
+  end_date: string;        // DATE format: YYYY-MM-DD
+  start_time?: string;     // VARCHAR format: HH:MM
+  end_time?: string;       // VARCHAR format: HH:MM
+  reason?: string;
+  notes?: string;
+  created_by?: string;
+  created_at: string;
+  updated_at: string;
+  // For joins
+  car?: Car;
+}
+
+export interface CreateCarUnavailabilityInput {
+  car_id: string;
+  start_date: string;
+  end_date: string;
+  start_time?: string;
+  end_time?: string;
+  reason?: string;
+  notes?: string;
+}
+
+export interface UpdateCarUnavailabilityInput {
+  start_date?: string;
+  end_date?: string;
+  start_time?: string;
+  end_time?: string;
+  reason?: string;
+  notes?: string;
+}
+
 // Blog Types
 export interface BlogPost {
   id: string;

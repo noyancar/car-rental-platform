@@ -113,3 +113,4 @@ export function getTodayString(): string {
   const day = String(today.getDate()).padStart(2, '0');
   return `${year}-${month}-${day}`;
 }
+

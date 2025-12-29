@@ -1,6 +1,15 @@
 import { create } from 'zustand';
 import { supabase } from '../lib/supabase';
-import type { Car, Booking, DiscountCode, Campaign, User } from '../types';
+import type {
+  Car,
+  Booking,
+  DiscountCode,
+  Campaign,
+  User,
+  CarUnavailability,
+  CreateCarUnavailabilityInput,
+  UpdateCarUnavailabilityInput
+} from '../types';
 
 interface CustomerWithStats extends User {
   is_blacklisted?: boolean;
@@ -29,33 +38,35 @@ interface AdminState {
   campaigns: Campaign[];
   // Customers
   allCustomers: CustomerWithStats[];
-  
+  // Car Unavailability
+  carUnavailabilities: CarUnavailability[];
+
   loading: boolean;
   error: string | null;
-  
+
   // Car management
   fetchAllCars: () => Promise<void>;
   addCar: (car: Omit<Car, 'id'>) => Promise<void>;
   updateCar: (id: string, car: Partial<Car>) => Promise<void>;
   toggleCarAvailability: (id: string, available: boolean) => Promise<void>;
   deleteCar: (id: string) => Promise<{ success: boolean; message?: string }>;
-  
+
   // Booking management
   fetchAllBookings: () => Promise<void>;
   updateBookingStatus: (id: string, status: Booking['status']) => Promise<void>;
-  
+
   // Discount code management
   fetchDiscountCodes: () => Promise<void>;
   addDiscountCode: (code: Omit<DiscountCode, 'id' | 'created_at' | 'current_uses'>) => Promise<void>;
   updateDiscountCode: (id: string, code: Partial<DiscountCode>) => Promise<void>;
   toggleDiscountCodeStatus: (id: string, active: boolean) => Promise<void>;
-  
+
   // Campaign management
   fetchCampaigns: () => Promise<void>;
   addCampaign: (campaign: Omit<Campaign, 'id' | 'created_at'>) => Promise<void>;
   updateCampaign: (id: string, campaign: Partial<Campaign>) => Promise<void>;
   toggleCampaignStatus: (id: string, active: boolean) => Promise<void>;
-  
+
   // Customer management
   fetchAllCustomers: () => Promise<void>;
   toggleCustomerBlacklist: (userId: string, blacklist: boolean, reason?: string | null) => Promise<boolean>;
@@ -63,6 +74,12 @@ interface AdminState {
   getCustomerBookings: (userId: string) => Promise<Booking[]>;
   getCustomerNotes: (userId: string) => Promise<CustomerNote[]>;
   addCustomerNote: (userId: string, note: string) => Promise<boolean>;
+
+  // Car Unavailability management
+  fetchCarUnavailabilities: (carId?: string) => Promise<void>;
+  addCarUnavailability: (input: CreateCarUnavailabilityInput) => Promise<CarUnavailability | null>;
+  updateCarUnavailability: (id: string, input: UpdateCarUnavailabilityInput) => Promise<boolean>;
+  deleteCarUnavailability: (id: string) => Promise<boolean>;
 }
 
 export const useAdminStore = create<AdminState>((set, get) => ({
@@ -71,6 +88,7 @@ export const useAdminStore = create<AdminState>((set, get) => ({
   discountCodes: [],
   campaigns: [],
   allCustomers: [],
+  carUnavailabilities: [],
   loading: false,
   error: null,
   
@@ -699,7 +717,7 @@ export const useAdminStore = create<AdminState>((set, get) => ({
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error('No authenticated user');
-      
+
       const { error } = await supabase
         .from('customer_notes')
         .insert([{
@@ -707,12 +725,132 @@ export const useAdminStore = create<AdminState>((set, get) => ({
           note,
           created_by: user.id
         }]);
-      
+
       if (error) throw error;
-      
+
       return true;
     } catch (error) {
       console.error('Error adding customer note:', error);
+      return false;
+    }
+  },
+
+  // ==========================================================================
+  // CAR UNAVAILABILITY MANAGEMENT
+  // ==========================================================================
+
+  fetchCarUnavailabilities: async (carId?: string) => {
+    try {
+      set({ error: null });
+
+      let query = supabase
+        .from('car_unavailability')
+        .select(`
+          *,
+          car:cars (id, make, model, year, license_plate)
+        `)
+        .order('start_date', { ascending: true });
+
+      // Filter by car if specified
+      if (carId) {
+        query = query.eq('car_id', carId);
+      }
+
+      const { data, error } = await query;
+
+      if (error) throw error;
+
+      set({ carUnavailabilities: data as CarUnavailability[] });
+    } catch (error) {
+      console.error('Error fetching car unavailabilities:', error);
+      set({ error: (error as Error).message });
+    }
+  },
+
+  addCarUnavailability: async (input: CreateCarUnavailabilityInput): Promise<CarUnavailability | null> => {
+    try {
+      set({ error: null });
+
+      // Get current user for created_by
+      const { data: { user } } = await supabase.auth.getUser();
+
+      const insertData = {
+        car_id: input.car_id,
+        start_date: input.start_date,
+        end_date: input.end_date,
+        start_time: input.start_time || '10:00',
+        end_time: input.end_time || '10:00',
+        reason: input.reason || null,
+        notes: input.notes || null,
+        created_by: user?.id || null
+      };
+
+      const { data, error } = await supabase
+        .from('car_unavailability')
+        .insert([insertData])
+        .select(`
+          *,
+          car:cars (id, make, model, year, license_plate)
+        `)
+        .single();
+
+      if (error) throw error;
+
+      // Update local state
+      set(state => ({
+        carUnavailabilities: [...state.carUnavailabilities, data as CarUnavailability]
+      }));
+
+      return data as CarUnavailability;
+    } catch (error) {
+      console.error('Error adding car unavailability:', error);
+      set({ error: (error as Error).message });
+      return null;
+    }
+  },
+
+  updateCarUnavailability: async (id: string, input: UpdateCarUnavailabilityInput): Promise<boolean> => {
+    try {
+      set({ error: null });
+
+      const { error } = await supabase
+        .from('car_unavailability')
+        .update(input)
+        .eq('id', id);
+
+      if (error) throw error;
+
+      // Refresh the list
+      await get().fetchCarUnavailabilities();
+
+      return true;
+    } catch (error) {
+      console.error('Error updating car unavailability:', error);
+      set({ error: (error as Error).message });
+      return false;
+    }
+  },
+
+  deleteCarUnavailability: async (id: string): Promise<boolean> => {
+    try {
+      set({ error: null });
+
+      const { error } = await supabase
+        .from('car_unavailability')
+        .delete()
+        .eq('id', id);
+
+      if (error) throw error;
+
+      // Update local state
+      set(state => ({
+        carUnavailabilities: state.carUnavailabilities.filter(u => u.id !== id)
+      }));
+
+      return true;
+    } catch (error) {
+      console.error('Error deleting car unavailability:', error);
+      set({ error: (error as Error).message });
       return false;
     }
   },
