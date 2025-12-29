@@ -1,10 +1,10 @@
 import React, { useEffect, useState, useMemo } from 'react';
-import { ChevronLeft, ChevronRight, Plus, X, Calendar, Lock, AlertCircle } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Plus, Calendar, Lock, AlertCircle, DollarSign } from 'lucide-react';
+import { Link } from 'react-router-dom';
 import {
   format,
   addDays,
   startOfWeek,
-  endOfWeek,
   isWithinInterval,
   parseISO,
   isSameDay,
@@ -18,6 +18,7 @@ import BookingDetailsModal from '../../components/admin/BookingDetailsModal';
 import UnavailabilityModal from '../../components/admin/UnavailabilityModal';
 import type { Booking, CarUnavailability, Car } from '../../types';
 import { toast } from 'sonner';
+import { buildCarDailyPricesMap, formatPrice, type CarDailyPricesMap } from '../../utils/pricingUtils';
 
 // Number of days to show in the timeline
 const DAYS_TO_SHOW = 14;
@@ -49,6 +50,10 @@ const AdminCalendar: React.FC = () => {
   const [showUnavailabilityModal, setShowUnavailabilityModal] = useState(false);
   const [selectedCarForBlock, setSelectedCarForBlock] = useState<Car | null>(null);
   const [selectedDateForBlock, setSelectedDateForBlock] = useState<Date | null>(null);
+  const [dailyPricesMap, setDailyPricesMap] = useState<CarDailyPricesMap>(new Map());
+
+  // Filter to only show available cars
+  const availableCars = useMemo(() => allCars.filter(car => car.available), [allCars]);
 
   // Fetch data on mount
   useEffect(() => {
@@ -56,6 +61,27 @@ const AdminCalendar: React.FC = () => {
     fetchAllBookings();
     fetchCarUnavailabilities();
   }, [fetchAllCars, fetchAllBookings, fetchCarUnavailabilities]);
+
+  // Fetch daily prices when cars or date range changes
+  useEffect(() => {
+    const fetchPrices = async () => {
+      if (availableCars.length === 0) return;
+
+      try {
+        const endDate = addDays(startDate, DAYS_TO_SHOW - 1);
+        const pricesMap = await buildCarDailyPricesMap(
+          availableCars.map(car => ({ id: car.id, price_per_day: car.price_per_day })),
+          format(startDate, 'yyyy-MM-dd'),
+          format(endDate, 'yyyy-MM-dd')
+        );
+        setDailyPricesMap(pricesMap);
+      } catch (error) {
+        console.error('Error fetching daily prices:', error);
+      }
+    };
+
+    fetchPrices();
+  }, [availableCars, startDate]);
 
   // Generate array of dates for the timeline
   const timelineDates = useMemo(() => {
@@ -133,11 +159,6 @@ const AdminCalendar: React.FC = () => {
     return isSameDay(event.startDate, date);
   };
 
-  // Check if date is end of an event
-  const isEventEnd = (event: TimelineEvent, date: Date): boolean => {
-    return isSameDay(event.endDate, date);
-  };
-
   // Calculate event span for display
   const getEventSpan = (event: TimelineEvent, date: Date): number => {
     if (!isEventStart(event, date)) return 0;
@@ -180,8 +201,6 @@ const AdminCalendar: React.FC = () => {
 
   // Handle delete unavailability
   const handleDeleteUnavailability = async (id: string) => {
-    if (!confirm('Are you sure you want to delete this block?')) return;
-
     const success = await deleteCarUnavailability(id);
     if (success) {
       toast.success('Block deleted successfully');
@@ -207,9 +226,6 @@ const AdminCalendar: React.FC = () => {
         return 'bg-gray-500';
     }
   };
-
-  // Filter to only show available cars
-  const availableCars = allCars.filter(car => car.available);
 
   if (loading && allCars.length === 0) {
     return (
@@ -283,24 +299,33 @@ const AdminCalendar: React.FC = () => {
 
       {/* Legend */}
       <div className="bg-white rounded-lg shadow-md p-4 mb-6">
-        <div className="flex flex-wrap items-center gap-x-6 gap-y-2 text-sm">
-          <span className="font-medium text-gray-700">Legend:</span>
-          <div className="flex items-center gap-2">
-            <div className="w-4 h-4 bg-gray-800 rounded"></div>
-            <span>Blocked (Turo/Maintenance)</span>
+        <div className="flex flex-wrap items-center justify-between gap-4">
+          <div className="flex flex-wrap items-center gap-x-6 gap-y-2 text-sm">
+            <span className="font-medium text-gray-700">Legend:</span>
+            <div className="flex items-center gap-2">
+              <div className="w-4 h-4 bg-gray-800 rounded"></div>
+              <span>Blocked (Turo/Maintenance)</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <div className="w-4 h-4 bg-green-500 rounded"></div>
+              <span>Confirmed Booking</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <div className="w-4 h-4 bg-blue-100 border border-blue-300 rounded"></div>
+              <span>Today</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <div className="w-4 h-4 bg-amber-50 border border-amber-200 rounded"></div>
+              <span>Weekend</span>
+            </div>
           </div>
-          <div className="flex items-center gap-2">
-            <div className="w-4 h-4 bg-green-500 rounded"></div>
-            <span>Confirmed Booking</span>
-          </div>
-          <div className="flex items-center gap-2">
-            <div className="w-4 h-4 bg-blue-100 border border-blue-300 rounded"></div>
-            <span>Today</span>
-          </div>
-          <div className="flex items-center gap-2">
-            <div className="w-4 h-4 bg-amber-50 border border-amber-200 rounded"></div>
-            <span>Weekend</span>
-          </div>
+          <Link
+            to="/admin/seasonal-pricing"
+            className="flex items-center gap-1.5 text-sm text-primary-600 hover:text-primary-700 font-medium"
+          >
+            <DollarSign size={16} />
+            Manage Pricing
+          </Link>
         </div>
       </div>
 
@@ -405,6 +430,18 @@ const AdminCalendar: React.FC = () => {
                           const booking = isBooking ? event.data as Booking : null;
                           const unavail = !isBooking ? event.data as CarUnavailability : null;
 
+                          // Get prices for each day in the span
+                          const spanPrices = [];
+                          for (let i = 0; i < span; i++) {
+                            const spanDate = addDays(date, i);
+                            const spanDateStr = format(spanDate, 'yyyy-MM-dd');
+                            const carPrices = dailyPricesMap.get(car.id);
+                            const dayPrice = carPrices?.get(spanDateStr);
+                            if (dayPrice) {
+                              spanPrices.push(dayPrice);
+                            }
+                          }
+
                           return (
                             <td
                               key={dateIndex}
@@ -414,16 +451,17 @@ const AdminCalendar: React.FC = () => {
                               }`}
                               onClick={() => handleCellClick(car, date)}
                             >
+                              {/* Event bar at top */}
                               <div
                                 className={`
-                                  h-10 rounded-md flex items-center justify-center gap-1 text-white text-xs font-medium
+                                  h-6 rounded-md flex items-center justify-center gap-1 text-white text-xs font-medium mb-1
                                   ${isBooking ? getBookingStatusColor(booking?.status || '') : 'bg-gray-800'}
                                   hover:opacity-90 transition-opacity
                                 `}
                                 title={
                                   isBooking
                                     ? `${booking?.first_name} ${booking?.last_name} - ${booking?.status}`
-                                    : `${unavail?.reason || 'Blocked'} - ${unavail?.source}`
+                                    : `${unavail?.reason || 'Blocked'}`
                                 }
                               >
                                 {isBooking ? (
@@ -432,12 +470,26 @@ const AdminCalendar: React.FC = () => {
                                   </span>
                                 ) : (
                                   <>
-                                    <Lock size={12} />
+                                    <Lock size={10} />
                                     <span className="truncate px-1">
                                       {unavail?.reason || 'Blocked'}
                                     </span>
                                   </>
                                 )}
+                              </div>
+                              {/* Prices row below */}
+                              <div className="flex justify-around">
+                                {spanPrices.map((price, idx) => (
+                                  <span
+                                    key={idx}
+                                    className={`text-[10px] font-medium ${
+                                      price.isSpecialPrice ? 'text-amber-600' : 'text-gray-400'
+                                    }`}
+                                    title={price.pricingName || 'Base price'}
+                                  >
+                                    {formatPrice(price.price)}
+                                  </span>
+                                ))}
                               </div>
                             </td>
                           );
@@ -449,7 +501,12 @@ const AdminCalendar: React.FC = () => {
                           return null; // Will be handled by colspan from start date
                         }
 
-                        // Empty cell
+                        // Empty cell with price
+                        const dateStr = format(date, 'yyyy-MM-dd');
+                        const carPrices = dailyPricesMap.get(car.id);
+                        const dailyPrice = carPrices?.get(dateStr);
+                        const isSpecialPrice = dailyPrice?.isSpecialPrice || false;
+
                         return (
                           <td
                             key={dateIndex}
@@ -458,7 +515,20 @@ const AdminCalendar: React.FC = () => {
                             }`}
                             onClick={() => handleCellClick(car, date)}
                           >
-                            <div className="h-10 rounded-md border-2 border-dashed border-transparent hover:border-gray-300 transition-colors" />
+                            <div
+                              className={`h-10 rounded-md border-2 border-dashed border-transparent hover:border-gray-300 transition-colors flex flex-col items-center justify-center ${
+                                isSpecialPrice ? 'bg-amber-50' : ''
+                              }`}
+                              title={dailyPrice?.pricingName || 'Base price'}
+                            >
+                              {dailyPrice && (
+                                <span className={`text-xs font-medium ${
+                                  isSpecialPrice ? 'text-amber-700' : 'text-gray-500'
+                                }`}>
+                                  {formatPrice(dailyPrice.price)}
+                                </span>
+                              )}
+                            </div>
                           </td>
                         );
                       })}
