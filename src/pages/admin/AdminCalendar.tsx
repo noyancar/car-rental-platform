@@ -5,9 +5,7 @@ import {
   format,
   addDays,
   startOfWeek,
-  isWithinInterval,
   parseISO,
-  isSameDay,
   startOfDay,
   endOfDay,
   isToday
@@ -83,7 +81,7 @@ const AdminCalendar: React.FC = () => {
     fetchPrices();
   }, [availableCars, startDate]);
 
-  // Generate array of dates for the timeline
+  // Generate array of dates for the timeline with pre-computed day boundaries
   const timelineDates = useMemo(() => {
     const dates: Date[] = [];
     for (let i = 0; i < DAYS_TO_SHOW; i++) {
@@ -91,6 +89,46 @@ const AdminCalendar: React.FC = () => {
     }
     return dates;
   }, [startDate]);
+
+  // Pre-compute normalized dates for efficient comparison (avoids repeated startOfDay calls)
+  const normalizedTimelineDates = useMemo(() =>
+    timelineDates.map(d => startOfDay(d).getTime()),
+  [timelineDates]);
+
+  // Pre-compute all events grouped by car (avoids re-parsing dates on every render)
+  const eventsByCarId = useMemo(() => {
+    const map = new Map<string, TimelineEvent[]>();
+
+    // Process bookings
+    allBookings
+      .filter(b => b.status === 'confirmed')
+      .forEach(booking => {
+        const carEvents = map.get(booking.car_id) || [];
+        carEvents.push({
+          id: booking.id,
+          type: 'booking',
+          startDate: parseISO(booking.start_date),
+          endDate: parseISO(booking.end_date),
+          data: booking
+        });
+        map.set(booking.car_id, carEvents);
+      });
+
+    // Process unavailabilities
+    carUnavailabilities.forEach(unavail => {
+      const carEvents = map.get(unavail.car_id) || [];
+      carEvents.push({
+        id: unavail.id,
+        type: 'unavailability',
+        startDate: parseISO(unavail.start_date),
+        endDate: parseISO(unavail.end_date),
+        data: unavail
+      });
+      map.set(unavail.car_id, carEvents);
+    });
+
+    return map;
+  }, [allBookings, carUnavailabilities]);
 
   // Navigation functions
   const goToPreviousWeek = () => {
@@ -105,82 +143,41 @@ const AdminCalendar: React.FC = () => {
     setStartDate(startOfWeek(new Date(), { weekStartsOn: 0 }));
   };
 
-  // Get events for a specific car
+  // Get events for a car from pre-computed map
   const getEventsForCar = (carId: string): TimelineEvent[] => {
-    const events: TimelineEvent[] = [];
-
-    // Add bookings - only confirmed ones
-    allBookings
-      .filter(b => b.car_id === carId && b.status === 'confirmed')
-      .forEach(booking => {
-        events.push({
-          id: booking.id,
-          type: 'booking',
-          startDate: parseISO(booking.start_date),
-          endDate: parseISO(booking.end_date),
-          data: booking
-        });
-      });
-
-    // Add unavailabilities (same structure as bookings now)
-    carUnavailabilities
-      .filter(u => u.car_id === carId)
-      .forEach(unavail => {
-        events.push({
-          id: unavail.id,
-          type: 'unavailability',
-          startDate: parseISO(unavail.start_date),
-          endDate: parseISO(unavail.end_date),
-          data: unavail
-        });
-      });
-
-    return events;
+    return eventsByCarId.get(carId) || [];
   };
 
-  // Check if a date is within an event
-  const getEventForDate = (events: TimelineEvent[], date: Date): TimelineEvent | null => {
-    const dayStart = startOfDay(date);
-    const dayEnd = endOfDay(date);
-
+  // Check if a date falls within an event (uses normalized timestamps for efficiency)
+  const getEventForDate = (events: TimelineEvent[], dateIndex: number): TimelineEvent | null => {
+    const dayTimestamp = normalizedTimelineDates[dateIndex];
     return events.find(event => {
-      const eventStart = startOfDay(event.startDate);
-      const eventEnd = endOfDay(event.endDate);
-      return (
-        isWithinInterval(dayStart, { start: eventStart, end: eventEnd }) ||
-        isWithinInterval(dayEnd, { start: eventStart, end: eventEnd }) ||
-        isWithinInterval(eventStart, { start: dayStart, end: dayEnd })
-      );
+      const eventStartTime = startOfDay(event.startDate).getTime();
+      const eventEndTime = endOfDay(event.endDate).getTime();
+      return dayTimestamp >= eventStartTime && dayTimestamp <= eventEndTime;
     }) || null;
   };
 
-  // Check if date is start of an event
-  const isEventStart = (event: TimelineEvent, date: Date): boolean => {
-    return isSameDay(event.startDate, date);
+  // Should we render the event bar at this cell position?
+  const shouldRenderEventAt = (event: TimelineEvent, dateIndex: number): boolean => {
+    const dayTimestamp = normalizedTimelineDates[dateIndex];
+    const eventStartTime = startOfDay(event.startDate).getTime();
+    // Render if: event starts today, OR event started before visible range and this is first cell
+    return eventStartTime === dayTimestamp || (dateIndex === 0 && eventStartTime < normalizedTimelineDates[0]);
   };
 
-  // Calculate event span for display
-  const getEventSpan = (event: TimelineEvent, date: Date): number => {
-    if (!isEventStart(event, date)) return 0;
-
-    let span = 1;
-    const endDateIndex = timelineDates.findIndex(d => isSameDay(d, event.endDate));
-    const startDateIndex = timelineDates.findIndex(d => isSameDay(d, date));
-
-    if (endDateIndex >= 0 && startDateIndex >= 0) {
-      span = Math.min(endDateIndex - startDateIndex + 1, DAYS_TO_SHOW - startDateIndex);
-    } else if (endDateIndex < 0) {
-      // Event extends beyond visible range
-      span = DAYS_TO_SHOW - startDateIndex;
-    }
-
-    return Math.max(1, span);
+  // Calculate span using pre-computed normalized dates (O(n) but n=14 max)
+  const getEventSpan = (event: TimelineEvent, dateIndex: number): number => {
+    const eventEndTime = startOfDay(event.endDate).getTime();
+    const endIndex = normalizedTimelineDates.findIndex(t => t === eventEndTime);
+    const effectiveEndIndex = endIndex >= 0 ? endIndex : DAYS_TO_SHOW - 1;
+    return Math.max(1, effectiveEndIndex - dateIndex + 1);
   };
 
   // Handle cell click - open modal to add block
-  const handleCellClick = (car: Car, date: Date) => {
+  const handleCellClick = (car: Car, date: Date, dateIndex: number) => {
     const events = getEventsForCar(car.id);
-    const existingEvent = getEventForDate(events, date);
+    const existingEvent = getEventForDate(events, dateIndex);
 
     if (existingEvent) {
       // Click on existing event
@@ -410,18 +407,18 @@ const AdminCalendar: React.FC = () => {
                       {timelineDates.map((date, dateIndex) => {
                         const isCurrentDay = isToday(date);
                         const isWeekend = date.getDay() === 0 || date.getDay() === 6;
-                        const event = getEventForDate(events, date);
+                        const event = getEventForDate(events, dateIndex);
 
-                        // Check if we already rendered a spanning event that covers this date
+                        // Skip if already covered by a previous colspan
                         if (processedDates.has(dateIndex)) {
-                          return null; // Skip - covered by colspan
+                          return null;
                         }
 
-                        // If there's an event starting on this date, calculate span
-                        if (event && isEventStart(event, date)) {
-                          const span = getEventSpan(event, date);
+                        // Render event cell if we should display it at this position
+                        if (event && shouldRenderEventAt(event, dateIndex)) {
+                          const span = getEventSpan(event, dateIndex);
 
-                          // Mark these dates as processed
+                          // Mark spanned dates as processed
                           for (let i = 0; i < span; i++) {
                             processedDates.add(dateIndex + i);
                           }
@@ -430,10 +427,10 @@ const AdminCalendar: React.FC = () => {
                           const booking = isBooking ? event.data as Booking : null;
                           const unavail = !isBooking ? event.data as CarUnavailability : null;
 
-                          // Get prices for each day in the span
+                          // Collect prices for each day in the span
                           const spanPrices = [];
                           for (let i = 0; i < span; i++) {
-                            const spanDate = addDays(date, i);
+                            const spanDate = timelineDates[dateIndex + i];
                             const spanDateStr = format(spanDate, 'yyyy-MM-dd');
                             const carPrices = dailyPricesMap.get(car.id);
                             const dayPrice = carPrices?.get(spanDateStr);
@@ -449,7 +446,7 @@ const AdminCalendar: React.FC = () => {
                               className={`relative p-1 border-r cursor-pointer transition-colors ${
                                 isCurrentDay ? 'bg-blue-50' : isWeekend ? 'bg-amber-50' : ''
                               }`}
-                              onClick={() => handleCellClick(car, date)}
+                              onClick={() => handleCellClick(car, date, dateIndex)}
                             >
                               {/* Event bar at top */}
                               <div
@@ -495,12 +492,6 @@ const AdminCalendar: React.FC = () => {
                           );
                         }
 
-                        // Event continues from previous (but didn't start today)
-                        if (event) {
-                          processedDates.add(dateIndex);
-                          return null; // Will be handled by colspan from start date
-                        }
-
                         // Empty cell with price
                         const dateStr = format(date, 'yyyy-MM-dd');
                         const carPrices = dailyPricesMap.get(car.id);
@@ -513,7 +504,7 @@ const AdminCalendar: React.FC = () => {
                             className={`p-1 border-r cursor-pointer transition-colors hover:bg-gray-100 ${
                               isCurrentDay ? 'bg-blue-50 hover:bg-blue-100' : isWeekend ? 'bg-amber-50 hover:bg-amber-100' : ''
                             }`}
-                            onClick={() => handleCellClick(car, date)}
+                            onClick={() => handleCellClick(car, date, dateIndex)}
                           >
                             <div
                               className={`h-10 rounded-md border-2 border-dashed border-transparent hover:border-gray-300 transition-colors flex flex-col items-center justify-center ${
