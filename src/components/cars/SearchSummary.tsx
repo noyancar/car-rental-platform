@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { CalendarClock, MapPin, Edit2, X, Check, Info, ArrowRight } from 'lucide-react';
 import { format } from 'date-fns';
 import { Button } from '../ui/Button';
@@ -8,12 +8,7 @@ import { useSearchStore } from '../../stores/searchStore';
 import { LocationSelector, LocationDisplay } from '../ui/LocationSelector';
 import { useLocations } from '../../hooks/useLocations';
 import { useDeliveryFees } from '../../hooks/useDeliveryFees';
-import { parseDateInLocalTimezone, parseDateTimeInLocalTimezone } from '../../utils/dateUtils';
-
-const HOURS = Array.from({ length: 24 }, (_, i) => {
-  const hour = i.toString().padStart(2, '0');
-  return { value: `${hour}:00`, label: `${hour}:00` };
-});
+import { parseDateInLocalTimezone, HOUR_OPTIONS, formatTimeToAMPM } from '../../utils/dateUtils';
 
 // Helper function to check if a time should be disabled
 const isTimeDisabled = (time: string, pickupTime: string, isSameDay: boolean): boolean => {
@@ -37,7 +32,7 @@ const SearchSummary: React.FC = () => {
   
   // Use custom hook for delivery fees (for editing mode)
   const effectiveReturnLocation = sameReturnLocation ? tempParams.pickupLocation : tempParams.returnLocation;
-  const deliveryFees = useDeliveryFees(tempParams.pickupLocation, effectiveReturnLocation);
+  const deliveryFees = useDeliveryFees(tempParams.pickupLocation || '', effectiveReturnLocation || '');
   
   // For display mode - use searchParams
   const displayPickup = searchParams.pickupLocation || searchParams.location || BASE_LOCATION?.value || '';
@@ -291,7 +286,7 @@ const SearchSummary: React.FC = () => {
             <div>
               <Select
                 label="Pickup Time"
-                options={HOURS}
+                options={HOUR_OPTIONS}
                 value={tempParams.pickupTime}
                 onChange={(e) => handleTempParamUpdate('pickupTime', e.target.value)}
               />
@@ -310,7 +305,7 @@ const SearchSummary: React.FC = () => {
               <div>
                 <Select
                   label="Return Time"
-                  options={HOURS.map((hour) => ({
+                  options={HOUR_OPTIONS.map((hour) => ({
                     ...hour,
                     disabled: isTimeDisabled(hour.value, tempParams.pickupTime, tempParams.pickupDate === tempParams.returnDate)
                   }))}
@@ -373,7 +368,7 @@ const SearchSummary: React.FC = () => {
                     {format(parseDateInLocalTimezone(searchParams.pickupDate), 'MMM d')} - {format(parseDateInLocalTimezone(searchParams.returnDate), 'MMM d, yyyy')}
                   </span>
                   <span className="text-gray-500 block">
-                    {searchParams.pickupTime} - {searchParams.returnTime}
+                    {formatTimeToAMPM(searchParams.pickupTime)} - {formatTimeToAMPM(searchParams.returnTime)}
                     {displayDeliveryFees.totalFee > 0 && (
                       <span className="text-primary-600 font-medium">
                         {' '}• ${displayDeliveryFees.totalFee} delivery
@@ -418,11 +413,11 @@ const SearchSummary: React.FC = () => {
                   <CalendarClock className="w-5 h-5 mr-2 text-primary-600 flex-shrink-0 mt-0.5" />
                   <div className="text-base">
                     <span className="font-medium">
-                      {formatDate(searchParams.pickupDate)} at {searchParams.pickupTime}
+                      {formatDate(searchParams.pickupDate)} at {formatTimeToAMPM(searchParams.pickupTime)}
                     </span>
                     <span className="text-gray-500 mx-1">-</span>
                     <span className="font-medium">
-                      {formatDate(searchParams.returnDate)} at {searchParams.returnTime}
+                      {formatDate(searchParams.returnDate)} at {formatTimeToAMPM(searchParams.returnTime)}
                     </span>
                   </div>
                 </div>

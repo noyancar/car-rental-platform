@@ -4,7 +4,7 @@ import { format } from 'date-fns';
 import { Button } from '../ui/Button';
 import { PriceBreakdown } from '../booking/PriceBreakdown';
 import type { Booking } from '../../types';
-import { parseDateInLocalTimezone } from '../../utils/dateUtils';
+import { parseDateInLocalTimezone, formatTimeToAMPM } from '../../utils/dateUtils';
 
 interface BookingDetailsModalProps {
   booking: Booking | null;
@@ -116,12 +116,12 @@ const BookingDetailsModal: React.FC<BookingDetailsModalProps> = ({ booking, onCl
               <div>
                 <span className="text-gray-600">Pickup:</span>
                 <p className="font-medium">{format(parseDateInLocalTimezone(booking.start_date), 'MMM d, yyyy')}</p>
-                <p className="text-gray-500">{booking.pickup_time}</p>
+                <p className="text-gray-500">{formatTimeToAMPM(booking.pickup_time || '10:00')}</p>
               </div>
               <div>
                 <span className="text-gray-600">Return:</span>
                 <p className="font-medium">{format(parseDateInLocalTimezone(booking.end_date), 'MMM d, yyyy')}</p>
-                <p className="text-gray-500">{booking.return_time}</p>
+                <p className="text-gray-500">{formatTimeToAMPM(booking.return_time || '10:00')}</p>
               </div>
             </div>
           </div>

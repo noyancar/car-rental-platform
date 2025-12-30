@@ -21,11 +21,7 @@ import ExtrasModal from '../../components/booking/ExtrasModal';
 import { PriceBreakdown } from '../../components/booking/PriceBreakdown';
 import { cn } from '../../lib/utils';
 import { tracker } from '../../lib/analytics/tracker';
-
-const HOURS = Array.from({ length: 24 }, (_, i) => {
-  const hour = i.toString().padStart(2, '0');
-  return { value: `${hour}:00`, label: `${hour}:00` };
-});
+import { HOUR_OPTIONS, formatTimeToAMPM } from '../../utils/dateUtils';
 
 // Helper function to check if a time should be disabled
 const isTimeDisabled = (time: string, pickupTime: string, isSameDay: boolean): boolean => {
@@ -103,7 +99,7 @@ const BookingPage: React.FC = () => {
   useEffect(() => {
     if (startDate === endDate && pickupTime >= returnTime) {
       // Find the next available time slot
-      const nextHour = HOURS.find(hour => !isTimeDisabled(hour.value, pickupTime, true));
+      const nextHour = HOUR_OPTIONS.find(hour => !isTimeDisabled(hour.value, pickupTime, true));
       if (nextHour) {
         setReturnTime(nextHour.value);
       }
@@ -506,7 +502,7 @@ const BookingPage: React.FC = () => {
                           label="Pickup Time"
                           value={pickupTime}
                           onChange={(e) => setPickupTime(e.target.value)}
-                          options={HOURS}
+                          options={HOUR_OPTIONS}
                           className="mt-2"
                           leftIcon={<Clock size={18} />}
                         />
@@ -524,7 +520,7 @@ const BookingPage: React.FC = () => {
                           label="Return Time"
                           value={returnTime}
                           onChange={(e) => setReturnTime(e.target.value)}
-                          options={HOURS.map((hour) => ({
+                          options={HOUR_OPTIONS.map((hour) => ({
                             ...hour,
                             disabled: isTimeDisabled(hour.value, pickupTime, startDate === endDate)
                           }))}
@@ -537,11 +533,11 @@ const BookingPage: React.FC = () => {
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
                       <div>
                         <p className="text-gray-500 mb-1">Pickup Date</p>
-                        <p className="font-medium">{format(parseISO(startDate), 'MMM d, yyyy')} at {pickupTime}</p>
+                        <p className="font-medium">{format(parseISO(startDate), 'MMM d, yyyy')} at {formatTimeToAMPM(pickupTime)}</p>
                       </div>
                       <div>
                         <p className="text-gray-500 mb-1">Return Date</p>
-                        <p className="font-medium">{format(parseISO(endDate), 'MMM d, yyyy')} at {returnTime}</p>
+                        <p className="font-medium">{format(parseISO(endDate), 'MMM d, yyyy')} at {formatTimeToAMPM(returnTime)}</p>
                       </div>
                       <div>
                         <p className="text-gray-500 mb-1">Duration</p>

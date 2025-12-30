@@ -114,3 +114,55 @@ export function getTodayString(): string {
   return `${year}-${month}-${day}`;
 }
 
+// ============================================
+// Time Formatting Utilities (12-hour AM/PM format)
+// ============================================
+
+/**
+ * Convert 24-hour time string to 12-hour AM/PM format
+ * @param time24 - Time string in format HH:MM (e.g., "14:00")
+ * @returns Formatted time string (e.g., "2:00 PM")
+ */
+export function formatTimeToAMPM(time24: string): string {
+  if (!time24) return '';
+
+  const [hourStr, minuteStr] = time24.split(':');
+  const hour = parseInt(hourStr, 10);
+  const minute = minuteStr || '00';
+
+  if (isNaN(hour)) return time24;
+
+  const period = hour >= 12 ? 'PM' : 'AM';
+  const hour12 = hour === 0 ? 12 : hour > 12 ? hour - 12 : hour;
+
+  return `${hour12}:${minute} ${period}`;
+}
+
+/**
+ * Hour option type for time selection dropdowns
+ */
+export interface TimeOption {
+  value: string;  // 24-hour format for backend (e.g., "14:00")
+  label: string;  // 12-hour format for display (e.g., "2:00 PM")
+}
+
+/**
+ * Generate hour options for time selection dropdowns
+ * Values are in 24-hour format (for backend), labels in 12-hour AM/PM format (for display)
+ * @returns Array of time options from 00:00 to 23:00
+ */
+export function generateHourOptions(): TimeOption[] {
+  return Array.from({ length: 24 }, (_, i) => {
+    const value = `${i.toString().padStart(2, '0')}:00`;
+    return {
+      value,
+      label: formatTimeToAMPM(value),
+    };
+  });
+}
+
+/**
+ * Pre-generated hour options constant for optimal performance
+ * Use this instead of calling generateHourOptions() in components
+ */
+export const HOUR_OPTIONS: TimeOption[] = generateHourOptions();

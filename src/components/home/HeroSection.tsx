@@ -10,11 +10,7 @@ import { useSearchStore } from '../../stores/searchStore';
 import { LocationSelector } from '../ui/LocationSelector';
 import { useLocations } from '../../hooks/useLocations';
 import { useDeliveryFees } from '../../hooks/useDeliveryFees';
-
-const HOURS = Array.from({ length: 24 }, (_, i) => {
-  const hour = i.toString().padStart(2, '0');
-  return { value: `${hour}:00`, label: `${hour}:00` };
-});
+import { HOUR_OPTIONS } from '../../utils/dateUtils';
 
 
 // Helper function to check if a time should be disabled
@@ -206,7 +202,7 @@ const HeroSection: React.FC = () => {
           />
           <Select
             label="Pickup Time"
-            options={HOURS}
+            options={HOUR_OPTIONS}
             value={searchParams.pickupTime}
             onChange={(e) => updateSearchParams({ pickupTime: e.target.value })}
             leftIcon={<Clock className="text-[#c51b37]" size={20} />}
@@ -226,7 +222,7 @@ const HeroSection: React.FC = () => {
           />
           <Select
             label="Return Time"
-            options={HOURS.map((hour) => ({
+            options={HOUR_OPTIONS.map((hour) => ({
               ...hour,
               disabled: isTimeDisabled(hour.value, searchParams.pickupTime, searchParams.pickupDate === searchParams.returnDate)
             }))}
@@ -274,7 +270,7 @@ const HeroSection: React.FC = () => {
         {/* Pickup Time */}
         <Select
           label="Pickup Time"
-          options={HOURS}
+          options={HOUR_OPTIONS}
           value={searchParams.pickupTime}
           onChange={(e) => updateSearchParams({ pickupTime: e.target.value })}
           leftIcon={<Clock className="text-[#c51b37]" size={20} />}
@@ -296,7 +292,7 @@ const HeroSection: React.FC = () => {
         {/* Return Time */}
         <Select
           label="Return Time"
-          options={HOURS.map((hour) => ({
+          options={HOUR_OPTIONS.map((hour) => ({
             ...hour,
             disabled: isTimeDisabled(hour.value, searchParams.pickupTime, searchParams.pickupDate === searchParams.returnDate)
           }))}
