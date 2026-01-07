@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import { Star, Car as CarIcon, Calendar, MapPin, Tag } from 'lucide-react';
 import { Button } from '../ui/Button';
@@ -10,12 +10,61 @@ import type { Car, PriceCalculationResult } from '../../types';
 interface CarWithPricing extends Car {
   calculatedPrice?: PriceCalculationResult;
   priceLoading?: boolean;
+  isAvailableForDates?: boolean;
 }
 
 const CarGrid: React.FC = () => {
-  const { filteredResults, loading, isSearchPerformed, error, searchParams } = useSearchStore();
+  const { filteredResults, loading, isSearchPerformed, error, searchParams, sortBy } = useSearchStore();
   const { calculatePriceWithBreakdown } = useBookingStore();
   const [carsWithPricing, setCarsWithPricing] = useState<CarWithPricing[]>([]);
+
+  // Calculate rental days using existing time-based calculation
+  const rentalDays = calculateRentalDuration(
+    searchParams.pickupDate,
+    searchParams.returnDate,
+    searchParams.pickupTime,
+    searchParams.returnTime
+  );
+
+  // Sort cars based on calculated prices
+  const sortedCars = useMemo(() => {
+    if (carsWithPricing.length === 0) return [];
+
+    const sorted = [...carsWithPricing];
+
+    switch (sortBy) {
+      case 'price-low-high':
+        sorted.sort((a, b) => {
+          const priceA = a.calculatedPrice ? a.calculatedPrice.average_per_day : a.price_per_day;
+          const priceB = b.calculatedPrice ? b.calculatedPrice.average_per_day : b.price_per_day;
+          return priceA - priceB;
+        });
+        break;
+      case 'price-high-low':
+        sorted.sort((a, b) => {
+          const priceA = a.calculatedPrice ? a.calculatedPrice.average_per_day : a.price_per_day;
+          const priceB = b.calculatedPrice ? b.calculatedPrice.average_per_day : b.price_per_day;
+          return priceB - priceA;
+        });
+        break;
+      case 'name-a-z':
+        sorted.sort((a, b) => {
+          const nameA = `${a.make} ${a.model}`.toLowerCase();
+          const nameB = `${b.make} ${b.model}`.toLowerCase();
+          return nameA.localeCompare(nameB);
+        });
+        break;
+      case 'name-z-a':
+        sorted.sort((a, b) => {
+          const nameA = `${a.make} ${a.model}`.toLowerCase();
+          const nameB = `${b.make} ${b.model}`.toLowerCase();
+          return nameB.localeCompare(nameA);
+        });
+        break;
+    }
+
+    return sorted;
+  }, [carsWithPricing, sortBy]);
 
   // Calculate pricing for each car when search is performed
   useEffect(() => {
@@ -23,7 +72,8 @@ const CarGrid: React.FC = () => {
       const loadPricing = async () => {
         const carsWithInitialState = filteredResults.map(car => ({
           ...car,
-          priceLoading: true
+          priceLoading: true,
+          isAvailableForDates: (car as any).isAvailableForDates
         }));
         setCarsWithPricing(carsWithInitialState);
 
@@ -40,14 +90,16 @@ const CarGrid: React.FC = () => {
             return {
               ...car,
               calculatedPrice: priceResult || undefined,
-              priceLoading: false
+              priceLoading: false,
+              isAvailableForDates: (car as any).isAvailableForDates
             };
           } catch (error) {
             console.error(`Error calculating price for car ${car.id}:`, error);
             return {
               ...car,
               calculatedPrice: undefined,
-              priceLoading: false
+              priceLoading: false,
+              isAvailableForDates: (car as any).isAvailableForDates
             };
           }
         });
@@ -61,7 +113,7 @@ const CarGrid: React.FC = () => {
       setCarsWithPricing([]);
     }
   }, [filteredResults, isSearchPerformed, searchParams.pickupDate, searchParams.returnDate, searchParams.pickupTime, searchParams.returnTime, calculatePriceWithBreakdown]);
-  
+
   if (loading) {
     return (
       <div className="flex justify-center py-20">
@@ -131,17 +183,9 @@ const CarGrid: React.FC = () => {
     );
   }
 
-  // Calculate rental days using existing time-based calculation
-  const rentalDays = calculateRentalDuration(
-    searchParams.pickupDate,
-    searchParams.returnDate,
-    searchParams.pickupTime,
-    searchParams.returnTime
-  );
-
   return (
     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
-      {carsWithPricing.map(car => {
+      {sortedCars.map(car => {
         const hasSpecialPricing = car.calculatedPrice && car.calculatedPrice.special_price_days > 0;
         const displayPrice = car.calculatedPrice
           ? car.calculatedPrice.average_per_day
@@ -209,15 +253,26 @@ const CarGrid: React.FC = () => {
               {car.description}
             </p>
             
-            <Link to={`/cars/${car.id}`} className="mt-auto">
-              <Button variant="primary" fullWidth className="shadow-md hover:shadow-lg"
-              pixel={{
-                event: "CarViewDetail",
-                params: { carMake: car.make, carModel: car.model, carYear: car.year }
-              }}>
-                View Details
+            {car.isAvailableForDates === false ? (
+              <Button
+                variant="secondary"
+                fullWidth
+                disabled
+                className="shadow-md cursor-not-allowed opacity-60"
+              >
+                Not Available
               </Button>
-            </Link>
+            ) : (
+              <Link to={`/cars/${car.id}`} className="mt-auto">
+                <Button variant="primary" fullWidth className="shadow-md hover:shadow-lg"
+                pixel={{
+                  event: "CarViewDetail",
+                  params: { carMake: car.make, carModel: car.model, carYear: car.year }
+                }}>
+                  View Details
+                </Button>
+              </Link>
+            )}
           </div>
         </div>
         );

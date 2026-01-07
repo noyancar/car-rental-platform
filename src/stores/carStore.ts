@@ -98,18 +98,40 @@ export const useCarStore = create<CarState>((set, get) => ({
         .order('created_at', { ascending: false });
 
       if (error) throw error;
-      
+
+      // Get today's date in YYYY-MM-DD format
+      const today = new Date().toISOString().split('T')[0];
+
+      // Fetch active seasonal pricing for all cars
+      const carIds = data.map(car => car.id);
+      const { data: seasonalPricings } = await supabase
+        .from('car_seasonal_pricing')
+        .select('*')
+        .in('car_id', carIds)
+        .eq('active', true)
+        .lte('valid_from', today)
+        .gte('valid_to', today)
+        .order('priority', { ascending: false });
+
       // Process the data to ensure image_urls is always an array
+      // and attach the highest priority seasonal pricing
       const processedData = data.map(car => {
         // If image_urls is not an array or is empty, create an array with image_url
         if (!Array.isArray(car.image_urls) || car.image_urls.length === 0) {
           car.image_urls = car.image_url ? [car.image_url] : [];
           car.main_image_index = 0;
         }
-        
+
+        // Find the highest priority seasonal pricing for this car
+        const carSeasonalPricing = seasonalPricings?.filter(sp => sp.car_id === car.id);
+        if (carSeasonalPricing && carSeasonalPricing.length > 0) {
+          // Already sorted by priority desc, so first one is highest
+          car.active_seasonal_pricing = carSeasonalPricing[0];
+        }
+
         return car;
       });
-      
+
       set({ featuredCars: processedData as Car[] });
     } catch (error) {
       set({ error: (error as Error).message });

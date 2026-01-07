@@ -11,6 +11,7 @@ interface PriceBreakdownProps {
   startTime?: string;
   endTime?: string;
   className?: string;
+  onPriceCalculated?: (priceCalculation: PriceCalculationResult | null) => void;
 }
 
 export const PriceBreakdown: React.FC<PriceBreakdownProps> = ({
@@ -19,7 +20,8 @@ export const PriceBreakdown: React.FC<PriceBreakdownProps> = ({
   endDate,
   startTime,
   endTime,
-  className = ''
+  className = '',
+  onPriceCalculated
 }) => {
   const { calculatePriceWithBreakdown } = useBookingStore();
   const [priceCalculation, setPriceCalculation] = useState<PriceCalculationResult | null>(null);
@@ -33,8 +35,15 @@ export const PriceBreakdown: React.FC<PriceBreakdownProps> = ({
         try {
           const result = await calculatePriceWithBreakdown(carId, startDate, endDate, startTime, endTime);
           setPriceCalculation(result);
+          // Notify parent component of price calculation
+          if (onPriceCalculated) {
+            onPriceCalculated(result);
+          }
         } catch (error) {
           console.error('Error calculating price breakdown:', error);
+          if (onPriceCalculated) {
+            onPriceCalculated(null);
+          }
         } finally {
           setLoading(false);
         }
@@ -42,7 +51,7 @@ export const PriceBreakdown: React.FC<PriceBreakdownProps> = ({
     };
 
     loadPricing();
-  }, [carId, startDate, endDate, startTime, endTime, calculatePriceWithBreakdown]);
+  }, [carId, startDate, endDate, startTime, endTime, calculatePriceWithBreakdown, onPriceCalculated]);
 
   if (loading) {
     return (

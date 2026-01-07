@@ -9,7 +9,7 @@ import { Select } from '../../components/ui/Select';
 import { useLocations } from '../../hooks/useLocations';
 import { useDeliveryFees } from '../../hooks/useDeliveryFees';
 import { calculateRentalDuration } from '../../utils/bookingPriceCalculations';
-import type { AppliedDiscount } from '../../types';
+import type { AppliedDiscount, PriceCalculationResult } from '../../types';
 import { LocationSelector } from '../../components/ui/LocationSelector';
 import { QuoteRequestModal, type QuoteRequestData } from '../../components/ui/QuoteRequestModal';
 import { useCarStore } from '../../stores/carStore';
@@ -71,6 +71,14 @@ const BookingPage: React.FC = () => {
   const [showExtrasModal, setShowExtrasModal] = useState(false);
   const [showQuoteModal, setShowQuoteModal] = useState(false);
   const [showMobileDetails, setShowMobileDetails] = useState(false);
+
+  // Insurance checkboxes states
+  const [hasPersonalInsurance, setHasPersonalInsurance] = useState(false);
+  const [insuranceCoversRentals, setInsuranceCoversRentals] = useState(false);
+  const [showInsuranceError, setShowInsuranceError] = useState(false);
+
+  // Price calculation result for displaying average_per_day
+  const [priceCalculation, setPriceCalculation] = useState<PriceCalculationResult | null>(null);
   
   // Location states
   const [pickupLocation, setPickupLocation] = useState(
@@ -262,6 +270,18 @@ const BookingPage: React.FC = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    // Validate insurance checkboxes
+    if (!hasPersonalInsurance || !insuranceCoversRentals) {
+      setShowInsuranceError(true);
+      toast.error('Please confirm both insurance requirements to proceed');
+      // Scroll to insurance section
+      const insuranceSection = document.getElementById('insurance-section');
+      if (insuranceSection) {
+        insuranceSection.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }
+      return;
+    }
 
     if (!validateDates() || !isAvailable || !currentCar) {
       return;
@@ -727,6 +747,108 @@ const BookingPage: React.FC = () => {
                   )}
                 </div>
 
+                {/* Insurance Requirements */}
+                <div id="insurance-section" className="p-6 border-b">
+                  <h2 className="text-lg font-semibold mb-4 flex items-center">
+                    <Shield size={20} className="mr-2" />
+                    Insurance Requirements
+                  </h2>
+
+                  <div className="space-y-4">
+                    {/* Checkbox 1 */}
+                    <div className={cn(
+                      "flex items-start p-4 rounded-lg border-2 transition-colors",
+                      showInsuranceError && !hasPersonalInsurance
+                        ? "border-red-500 bg-red-50"
+                        : "border-gray-200 hover:border-gray-300"
+                    )}>
+                      <input
+                        type="checkbox"
+                        id="hasPersonalInsurance"
+                        checked={hasPersonalInsurance}
+                        onChange={(e) => {
+                          setHasPersonalInsurance(e.target.checked);
+                          setShowInsuranceError(false);
+                        }}
+                        className={cn(
+                          "h-5 w-5 rounded mt-0.5 flex-shrink-0",
+                          showInsuranceError && !hasPersonalInsurance
+                            ? "text-red-600 focus:ring-red-500 border-red-500"
+                            : "text-primary-600 focus:ring-primary-500 border-gray-300"
+                        )}
+                      />
+                      <label htmlFor="hasPersonalInsurance" className="ml-3 cursor-pointer">
+                        <span className={cn(
+                          "font-medium",
+                          showInsuranceError && !hasPersonalInsurance ? "text-red-900" : "text-gray-900"
+                        )}>
+                          Do you have personal auto insurance?
+                        </span>
+                        <p className={cn(
+                          "text-sm mt-1",
+                          showInsuranceError && !hasPersonalInsurance ? "text-red-700" : "text-gray-600"
+                        )}>
+                          Confirmation that you currently have valid auto insurance.
+                        </p>
+                        <p className='text-sm mt-1 text-gray-600'>
+                          *Subject to verification
+                        </p>
+                      </label>
+                    </div>
+
+                    {/* Checkbox 2 */}
+                    <div className={cn(
+                      "flex items-start p-4 rounded-lg border-2 transition-colors",
+                      showInsuranceError && !insuranceCoversRentals
+                        ? "border-red-500 bg-red-50"
+                        : "border-gray-200 hover:border-gray-300"
+                    )}>
+                      <input
+                        type="checkbox"
+                        id="insuranceCoversRentals"
+                        checked={insuranceCoversRentals}
+                        onChange={(e) => {
+                          setInsuranceCoversRentals(e.target.checked);
+                          setShowInsuranceError(false);
+                        }}
+                        className={cn(
+                          "h-5 w-5 rounded mt-0.5 flex-shrink-0",
+                          showInsuranceError && !insuranceCoversRentals
+                            ? "text-red-600 focus:ring-red-500 border-red-500"
+                            : "text-primary-600 focus:ring-primary-500 border-gray-300"
+                        )}
+                      />
+                      <label htmlFor="insuranceCoversRentals" className="ml-3 cursor-pointer">
+                        <span className={cn(
+                          "font-medium",
+                          showInsuranceError && !insuranceCoversRentals ? "text-red-900" : "text-gray-900"
+                        )}>
+                          Does your insurance cover rental vehicles?
+                        </span>
+                        <p className={cn(
+                          "text-sm mt-1",
+                          showInsuranceError && !insuranceCoversRentals ? "text-red-700" : "text-gray-600"
+                        )}>
+                          Confirmation that your insurance policy extends to rental cars.
+                        </p>
+                      </label>
+                    </div>
+
+                    {/* Error Message */}
+                    {showInsuranceError && (
+                      <div className="flex items-start p-4 bg-red-50 border border-red-200 rounded-lg">
+                        <AlertCircle size={20} className="text-red-600 mr-2 flex-shrink-0 mt-0.5" />
+                        <div className="text-sm text-red-700">
+                          <p className="font-medium">Insurance confirmation required</p>
+                          <p className="mt-1">
+                            You must confirm both insurance requirements to proceed with the booking.
+                          </p>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </div>
+
                 {/* Submit Button */}
                 <div className="p-6">
                   <Button
@@ -735,7 +857,16 @@ const BookingPage: React.FC = () => {
                     fullWidth
                     size="lg"
                     isLoading={bookingLoading}
-                    disabled={(!isAvailable && !deliveryFees.requiresQuote) || bookingLoading || !startDate || !endDate || isEditingDates || isEditingLocations}
+                    disabled={
+                      (!isAvailable && !deliveryFees.requiresQuote) ||
+                      bookingLoading ||
+                      !startDate ||
+                      !endDate ||
+                      isEditingDates ||
+                      isEditingLocations ||
+                      !hasPersonalInsurance ||
+                      !insuranceCoversRentals
+                    }
                   >
                     {deliveryFees.requiresQuote ? 'Request Quote' : 'Complete Booking'}
                   </Button>
@@ -764,7 +895,7 @@ const BookingPage: React.FC = () => {
                     {currentCar.make} {currentCar.model} {currentCar.year}
                   </h3>
                   <p className="text-3xl font-bold text-primary-600 mb-4">
-                    ${currentCar.price_per_day}<span className="text-base font-normal text-gray-500">/day</span>
+                    ${priceCalculation ? priceCalculation.average_per_day.toFixed(0) : currentCar.price_per_day}<span className="text-base font-normal text-gray-500">/day</span>
                   </p>
 
                   {/* Features */}
@@ -807,6 +938,7 @@ const BookingPage: React.FC = () => {
                         startTime={pickupTime}
                         endTime={returnTime}
                         className="mb-4"
+                        onPriceCalculated={setPriceCalculation}
                       />
 
                       {/* Additional Fees */}
@@ -857,7 +989,7 @@ const BookingPage: React.FC = () => {
                   />
                   <div className="text-left">
                     <h3 className="font-semibold">{currentCar.make} {currentCar.model}</h3>
-                    <p className="text-primary-600 font-bold">${currentCar.price_per_day}/day</p>
+                    <p className="text-primary-600 font-bold">${priceCalculation ? priceCalculation.average_per_day.toFixed(0) : currentCar.price_per_day}/day</p>
                   </div>
                 </div>
                 {showMobileDetails ? <ChevronUp size={20} /> : <ChevronDown size={20} />}
@@ -897,6 +1029,7 @@ const BookingPage: React.FC = () => {
                         startTime={pickupTime}
                         endTime={returnTime}
                         className="mb-4"
+                        onPriceCalculated={setPriceCalculation}
                       />
 
                       {/* Additional Fees */}

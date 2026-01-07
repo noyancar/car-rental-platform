@@ -1,14 +1,15 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import { ChevronDown, ChevronUp, Sliders } from 'lucide-react';
+import { ChevronDown, ChevronUp, Sliders, ArrowUpDown } from 'lucide-react';
 import { SearchSummary, CarFilters, CarGrid } from '../../components/cars';
 import { useSearchStore } from '../../stores/searchStore';
 import { Button } from '../../components/ui/Button';
+import { Select } from '../../components/ui/Select';
 import { tracker } from '../../lib/analytics/tracker';
 import { SEO } from '../../components/seo/SEO';
 
 const CarsPage: React.FC = () => {
-  const { isSearchPerformed, setFilters, searchCars, filteredResults, searchParams: searchCriteria, filters } = useSearchStore();
+  const { isSearchPerformed, setFilters, searchCars, filteredResults, searchParams: searchCriteria, filters, sortBy, setSortBy } = useSearchStore();
   const [searchParams] = useSearchParams();
   const [showFilters, setShowFilters] = useState(false);
   const searchTrackedRef = useRef(false);
@@ -75,7 +76,32 @@ const CarsPage: React.FC = () => {
           <div className="mb-6 sm:mb-8">
             <SearchSummary />
           </div>
-        
+
+        {/* Sort By Dropdown */}
+        {isSearchPerformed && (
+          <div className="mb-4">
+            <div className="flex items-center gap-3">
+              <ArrowUpDown size={18} className="text-secondary-600 hidden sm:block" />
+              <div className="flex-1 sm:flex-initial sm:w-64">
+                <Select
+                  label=""
+                  value={sortBy}
+                  onChange={(e) => setSortBy(e.target.value as any)}
+                  options={[
+                    { value: 'price-low-high', label: 'Price: Low to High' },
+                    { value: 'price-high-low', label: 'Price: High to Low' },
+                    { value: 'name-a-z', label: 'Name: A to Z' },
+                    { value: 'name-z-a', label: 'Name: Z to A' },
+                  ]}
+                />
+              </div>
+              <div className="text-secondary-600 text-sm whitespace-nowrap">
+                {filteredResults.length} cars found
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* Mobile Filter Toggle Button */}
         {isSearchPerformed && (
           <div className="lg:hidden mb-4">

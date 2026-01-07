@@ -325,7 +325,7 @@ const HeroSection: React.FC = () => {
   );
 
   return (
-    <section className="relative min-h-[65vh] sm:min-h-[65vh] md:min-h-[65vh] flex items-start overflow-hidden">
+    <section className="relative min-h-[40vh] sm:min-h-[40vh] md:min-h-[40vh] flex items-start overflow-hidden">
 
       {/* Background Video */}
       <div className="absolute inset-0 z-0">
@@ -334,7 +334,7 @@ const HeroSection: React.FC = () => {
           loop
           muted
           playsInline
-          className="w-full h-[80vh] object-cover"
+          className="w-full h-[40vh] object-cover"
         >
           <source src="https://azu023qxep7q7kax.public.blob.vercel-storage.com/homepage.mp4" type="video/mp4" />
           {/* Fallback image if video doesn't load */}

@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { Star, ChevronLeft, ChevronRight, Users, DoorOpen, Fuel, Gauge, Settings2 } from 'lucide-react';
 import { Button } from '../ui/Button';
 import type { Car } from '../../types';
@@ -9,6 +9,20 @@ interface FeaturedCarsSectionProps {
 }
 
 const FeaturedCarsSection: React.FC<FeaturedCarsSectionProps> = ({ featuredCars, loading }) => {
+  // Sort cars by price (cheapest to most expensive), considering seasonal pricing
+  const sortedCars = useMemo(() => {
+    return [...featuredCars].sort((a, b) => {
+      // Use seasonal pricing if available, otherwise use regular price
+      const priceA = (a as any).active_seasonal_pricing
+        ? (a as any).active_seasonal_pricing.price_per_day
+        : a.price_per_day;
+      const priceB = (b as any).active_seasonal_pricing
+        ? (b as any).active_seasonal_pricing.price_per_day
+        : b.price_per_day;
+      return priceA - priceB;
+    });
+  }, [featuredCars]);
+
   const [currentPage, setCurrentPage] = useState(0);
   const [touchStart, setTouchStart] = useState(0);
   const [touchEnd, setTouchEnd] = useState(0);
@@ -38,7 +52,7 @@ const FeaturedCarsSection: React.FC<FeaturedCarsSectionProps> = ({ featuredCars,
     return () => window.removeEventListener('resize', handleResize);
   }, [itemsPerPage]);
 
-  const totalPages = Math.ceil(featuredCars.length / itemsPerPage);
+  const totalPages = Math.ceil(sortedCars.length / itemsPerPage);
 
   const scrollToSearch = () => {
     window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -59,14 +73,14 @@ const FeaturedCarsSection: React.FC<FeaturedCarsSectionProps> = ({ featuredCars,
 
   // Auto-play carousel
   useEffect(() => {
-    if (!isAutoPlaying || featuredCars.length <= itemsPerPage) return;
+    if (!isAutoPlaying || sortedCars.length <= itemsPerPage) return;
 
     const interval = setInterval(() => {
       nextPage();
     }, 5000);
 
     return () => clearInterval(interval);
-  }, [isAutoPlaying, featuredCars.length, itemsPerPage, nextPage]);
+  }, [isAutoPlaying, sortedCars.length, itemsPerPage, nextPage]);
 
   // Touch handlers for swipe
   const handleTouchStart = (e: React.TouchEvent) => {
@@ -97,7 +111,7 @@ const FeaturedCarsSection: React.FC<FeaturedCarsSectionProps> = ({ featuredCars,
 
   const getCurrentPageCars = () => {
     const startIndex = currentPage * itemsPerPage;
-    return featuredCars.slice(startIndex, startIndex + itemsPerPage);
+    return sortedCars.slice(startIndex, startIndex + itemsPerPage);
   };
 
   return (
@@ -112,7 +126,7 @@ const FeaturedCarsSection: React.FC<FeaturedCarsSectionProps> = ({ featuredCars,
           </p>
           <div className="mt-4 flex items-center justify-center gap-2 text-sm text-secondary-500">
             <span className="inline-block w-12 h-0.5 bg-primary-800"></span>
-            <span className="font-semibold">{featuredCars.length} Vehicles Available</span>
+            <span className="font-semibold">{sortedCars.length} Vehicles Available</span>
             <span className="inline-block w-12 h-0.5 bg-primary-800"></span>
           </div>
         </div>
@@ -122,7 +136,7 @@ const FeaturedCarsSection: React.FC<FeaturedCarsSectionProps> = ({ featuredCars,
             <div className="animate-spin rounded-full h-16 w-16 border-4 border-primary-200 border-t-primary-800 mb-4"></div>
             <p className="text-secondary-600 text-sm">Loading our fleet...</p>
           </div>
-        ) : featuredCars.length === 0 ? (
+        ) : sortedCars.length === 0 ? (
           <div className="text-center py-20">
             <p className="text-secondary-600 text-lg">No vehicles available at the moment.</p>
           </div>
@@ -138,10 +152,10 @@ const FeaturedCarsSection: React.FC<FeaturedCarsSectionProps> = ({ featuredCars,
             </div>
 
             {/* Thumbnail Preview Bar */}
-            {featuredCars.length > itemsPerPage && (
+            {sortedCars.length > itemsPerPage && (
               <div className="mb-6 sm:mb-8">
                 <div className="flex flex-wrap items-center justify-center gap-2 sm:gap-2.5 px-2 sm:px-4">
-                  {featuredCars.map((car, idx) => {
+                  {sortedCars.map((car, idx) => {
                     const isInCurrentPage = idx >= currentPage * itemsPerPage && idx < (currentPage + 1) * itemsPerPage;
                     const pageIndex = Math.floor(idx / itemsPerPage);
 
@@ -230,8 +244,15 @@ const FeaturedCarsSection: React.FC<FeaturedCarsSectionProps> = ({ featuredCars,
                           {car.category || 'Standard'}
                         </div>
                         <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 via-black/50 to-transparent p-3">
-                          <div className="bg-success-600 text-white px-3 py-1.5 rounded-lg font-bold text-base sm:text-lg shadow-lg inline-block">
-                            ${car.price_per_day}<span className="text-xs font-normal">/day</span>
+                          <div className="flex flex-col gap-1">
+                            <div className="bg-success-600 text-white px-3 py-1.5 rounded-lg font-bold text-base sm:text-lg shadow-lg inline-block w-fit">
+                              ${(car as any).active_seasonal_pricing ? (car as any).active_seasonal_pricing.price_per_day : car.price_per_day}<span className="text-xs font-normal">/day</span>
+                            </div>
+                            {(car as any).active_seasonal_pricing && (
+                              <div className="bg-orange-500/90 text-white px-2 py-0.5 rounded text-xs font-semibold shadow-md inline-block w-fit">
+                                Until {new Date((car as any).active_seasonal_pricing.valid_to).toLocaleDateString('en-US', { month: '2-digit', day: '2-digit', year: 'numeric' })}
+                              </div>
+                            )}
                           </div>
                         </div>
                       </div>
@@ -331,7 +352,7 @@ const FeaturedCarsSection: React.FC<FeaturedCarsSectionProps> = ({ featuredCars,
               </span>
               {' '}&middot;{' '}
               <span>
-                Showing {currentPage * itemsPerPage + 1}-{Math.min((currentPage + 1) * itemsPerPage, featuredCars.length)} of {featuredCars.length} vehicles
+                Showing {currentPage * itemsPerPage + 1}-{Math.min((currentPage + 1) * itemsPerPage, sortedCars.length)} of {sortedCars.length} vehicles
               </span>
             </div>
           </div>

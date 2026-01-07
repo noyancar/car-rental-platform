@@ -20,29 +20,36 @@ interface SearchParams {
   returnDate: string;
   returnTime: string;}
 
+type SortOption = 'price-low-high' | 'price-high-low' | 'name-a-z' | 'name-z-a';
+
 interface SearchState {
   // Search parameters
   searchParams: SearchParams;
-  
+
   // Additional filters
   filters: SearchFilters;
-  
+
+  // Sorting
+  sortBy: SortOption;
+
   // Results
   searchResults: Car[];
   filteredResults: Car[];
-  
+
   // UI states
   loading: boolean;
   error: string | null;
   isSearchPerformed: boolean;
-  
+
   // Actions
   setSearchParams: (params: SearchParams) => void;
   updateSearchParams: (params: Partial<SearchParams>) => void;
   setFilters: (filters: SearchFilters) => void;
   resetFilters: () => void;
+  setSortBy: (sort: SortOption) => void;
   searchCars: () => Promise<void>;
   applyFilters: () => void;
+  applySorting: () => void;
 }
 
 // Helper function to get today's date in local timezone
@@ -106,6 +113,7 @@ export const useSearchStore = create<SearchState>((set, get) => ({
   // Initial state
   searchParams: defaultSearchParams,
   filters: defaultFilters,
+  sortBy: 'price-low-high',
   searchResults: [],
   filteredResults: [],
   loading: false,
@@ -226,98 +234,112 @@ export const useSearchStore = create<SearchState>((set, get) => ({
     set({ filters: { ...get().filters, ...filters } });
     get().applyFilters();
   },
-  
+
   resetFilters: () => {
     set({ filters: defaultFilters });
     get().applyFilters();
+  },
+
+  setSortBy: (sortBy) => {
+    set({ sortBy });
+    get().applySorting();
   },
   
   searchCars: async () => {
     try {
       const { searchParams } = get();
       set({ loading: true, error: null });
-      
+
       // Check if locations are selected
-      if (!searchParams.pickupLocation || searchParams.pickupLocation === 'select location' || 
+      if (!searchParams.pickupLocation || searchParams.pickupLocation === 'select location' ||
           !searchParams.returnLocation || searchParams.returnLocation === 'select location') {
         throw new Error('Please select pickup and return locations');
       }
-      
-      // Remove authentication requirement - users can search without login
+
       // Get current session but don't require it
       const { data: { session } } = await supabase.auth.getSession();
-      
+
       // Kullanıcı tarafından seçilen tarihler
       const startDate = searchParams.pickupDate;
       const endDate = searchParams.returnDate;
       const pickupTime = searchParams.pickupTime;
       const returnTime = searchParams.returnTime;
-      
-      // Edge Function'ı çağır - use anon key if no session
+
+      // Step 1: Fetch ALL active cars
+      const { data: allCars, error: carsError } = await supabase
+        .from('cars')
+        .select('*')
+        .eq('available', true)
+        .order('price_per_day', { ascending: true });
+
+      if (carsError) {
+        throw new Error('Failed to fetch cars');
+      }
+
+      if (!allCars || allCars.length === 0) {
+        set({
+          searchResults: [],
+          filteredResults: [],
+          isSearchPerformed: true,
+        });
+        return;
+      }
+
+      // Step 2: Check availability for each car
       const headers: Record<string, string> = {
         'Content-Type': 'application/json',
       };
-      
-      // Use session token if available, otherwise use anon key
+
       if (session?.access_token) {
         headers['Authorization'] = `Bearer ${session.access_token}`;
       } else {
-        // Use the anon key from environment variable
         headers['apikey'] = import.meta.env.VITE_SUPABASE_ANON_KEY;
       }
-      
-      // Build query parameters
-      const queryParams = new URLSearchParams({
-        start_date: startDate,
-        end_date: endDate,
-        pickup_time: pickupTime,
-        return_time: returnTime,
-        include_details: 'true'
-      });
-      
-      // Add location parameters if available
-      if (searchParams.pickupLocation) {
-        queryParams.append('pickup_location', searchParams.pickupLocation);
-      }
-      if (searchParams.returnLocation) {
-        queryParams.append('return_location', searchParams.returnLocation);
-      }
-      
-      const response = await fetch(
-        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/check-car-availability?${queryParams.toString()}`,
-        {
-          method: 'GET',
-          headers,
-        }
+
+      // Check availability for all cars in parallel
+      const carsWithAvailability = await Promise.all(
+        allCars.map(async (car) => {
+          try {
+            const queryParams = new URLSearchParams({
+              start_date: startDate,
+              end_date: endDate,
+              pickup_time: pickupTime,
+              return_time: returnTime,
+              car_id: car.id
+            });
+
+            const response = await fetch(
+              `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/check-car-availability?${queryParams.toString()}`,
+              {
+                method: 'GET',
+                headers,
+              }
+            );
+
+            if (response.ok) {
+              const result = await response.json();
+              // When checking individual car, edge function returns { available: boolean }
+              const isAvailable = result.available === true;
+              return { ...car, isAvailableForDates: isAvailable };
+            } else {
+              // If check fails, mark as unavailable
+              return { ...car, isAvailableForDates: false };
+            }
+          } catch (error) {
+            console.error(`Error checking availability for car ${car.id}:`, error);
+            return { ...car, isAvailableForDates: false };
+          }
+        })
       );
-      
-      if (!response.ok) {
-        const errorText = await response.text();
-        
-        // Parse error message for user-friendly display
-        let userMessage = 'Unable to connect to our servers. Please check your internet connection and try again.';
-        
-        if (response.status === 500 || response.status === 503) {
-          userMessage = 'Our service is temporarily unavailable. Please try again in a few moments.';
-        } else if (errorText.includes('available') || response.status === 404) {
-          userMessage = 'No cars available for the selected dates. Please try different dates.';
-        } else if (errorText.includes('location')) {
-          userMessage = 'Please select pickup and return locations.';
-        }
-        
-        throw new Error(userMessage);
-      }
-      
-      const result = await response.json();
-      
-      // Edge function'dan gelen araçları kullan
-      const availableCars = result.cars || [];
-      
-      set({ 
-        searchResults: availableCars,
-        filteredResults: availableCars,
+
+      set({
+        searchResults: carsWithAvailability,
+        filteredResults: carsWithAvailability,
         isSearchPerformed: true,
       });
+
+      // Apply sorting after setting results (default: price-low-high)
+      get().applySorting();
     } catch (error) {
       set({ error: (error as Error).message });
     } finally {
@@ -327,33 +349,66 @@ export const useSearchStore = create<SearchState>((set, get) => ({
   
   applyFilters: () => {
     const { searchResults, filters } = get();
-    
+
     let filtered = [...searchResults];
-    
+
     // Apply make filter
     if (filters.make) {
       filtered = filtered.filter(car => car.make === filters.make);
     }
-    
+
     // Apply model filter
     if (filters.model) {
       filtered = filtered.filter(car => car.model === filters.model);
     }
-    
+
     // Apply price range filter
     if (filters.minPrice !== undefined) {
       filtered = filtered.filter(car => car.price_per_day >= filters.minPrice!);
     }
-    
+
     if (filters.maxPrice !== undefined) {
       filtered = filtered.filter(car => car.price_per_day <= filters.maxPrice!);
     }
-    
+
     // Apply category filter
     if (filters.category) {
       filtered = filtered.filter(car => car.category === filters.category);
     }
-    
+
     set({ filteredResults: filtered });
+    // Apply sorting after filtering
+    get().applySorting();
+  },
+
+  applySorting: () => {
+    const { filteredResults, sortBy } = get();
+
+    let sorted = [...filteredResults];
+
+    switch (sortBy) {
+      case 'price-low-high':
+        sorted.sort((a, b) => a.price_per_day - b.price_per_day);
+        break;
+      case 'price-high-low':
+        sorted.sort((a, b) => b.price_per_day - a.price_per_day);
+        break;
+      case 'name-a-z':
+        sorted.sort((a, b) => {
+          const nameA = `${a.make} ${a.model}`.toLowerCase();
+          const nameB = `${b.make} ${b.model}`.toLowerCase();
+          return nameA.localeCompare(nameB);
+        });
+        break;
+      case 'name-z-a':
+        sorted.sort((a, b) => {
+          const nameA = `${a.make} ${a.model}`.toLowerCase();
+          const nameB = `${b.make} ${b.model}`.toLowerCase();
+          return nameB.localeCompare(nameA);
+        });
+        break;
+    }
+
+    set({ filteredResults: sorted });
   }
 })); 
