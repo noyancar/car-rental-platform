@@ -55,7 +55,7 @@ const FeaturedCarsSection: React.FC<FeaturedCarsSectionProps> = ({ featuredCars,
   const totalPages = Math.ceil(sortedCars.length / itemsPerPage);
 
   const scrollToSearch = () => {
-    window.scrollTo({ top: 0, behavior: 'smooth' });
+    window.scrollTo({ top: 1040, behavior: 'smooth' });
   };
 
   const nextPage = useCallback(() => {
