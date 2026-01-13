@@ -224,47 +224,6 @@ const PaymentPage: React.FC = () => {
     }
   };
 
-  if (!user) {
-    return (
-      <>
-        <div className="min-h-screen pt-16 pb-12 bg-secondary-50">
-          <div className="container-custom">
-            <div className="mb-6">
-              <button 
-                onClick={() => navigate('/bookings')} 
-                className="inline-flex items-center text-primary-700 hover:text-primary-800"
-              >
-                <ArrowLeft size={20} className="mr-2" />
-                Back to My Bookings
-              </button>
-            </div>
-
-            <div className="bg-white rounded-lg shadow-md p-8 max-w-md mx-auto text-center">
-              <Shield className="w-16 h-16 text-primary-800 mx-auto mb-4" />
-              <h2 className="text-2xl font-semibold mb-2">Secure Checkout</h2>
-              <p className="text-gray-600 mb-6">
-                Please sign in to complete your booking. Your rental details have been saved.
-              </p>
-              <Button
-                variant="primary"
-                onClick={() => setShowAuthModal(true)}
-                size="lg"
-              >
-                Sign in to continue
-              </Button>
-            </div>
-          </div>
-        </div>
-
-        <AuthModal
-          isOpen={showAuthModal}
-          onClose={() => setShowAuthModal(false)}
-          onSuccess={handleAuthSuccess}
-        />
-      </>
-    );
-  }
-
   if (loading) {
     return (
       <div className="min-h-screen pt-16 pb-12 flex flex-col items-center justify-center">

@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
-import { Gift, X } from 'lucide-react';
-import { Button } from '../ui/Button';
+import { UserPlus, X } from 'lucide-react';
 import { AuthModal } from '../auth';
 
 interface RegistrationCTABannerProps {
@@ -22,7 +21,7 @@ export const RegistrationCTABanner: React.FC<RegistrationCTABannerProps> = ({ on
 
   return (
     <>
-      <div className="bg-gradient-to-r from-primary-600 to-primary-700 rounded-lg p-4 mb-6 relative">
+      <div className="bg-gradient-to-r from-primary-500 to-primary-600 rounded-lg p-4 mb-6 relative">
         <button
           onClick={handleDismiss}
           className="absolute top-3 right-3 text-white/80 hover:text-white transition-colors"
@@ -33,34 +32,30 @@ export const RegistrationCTABanner: React.FC<RegistrationCTABannerProps> = ({ on
 
         <div className="flex items-start gap-3 pr-8">
           <div className="flex-shrink-0 w-10 h-10 bg-white/20 rounded-full flex items-center justify-center">
-            <Gift className="w-5 h-5 text-white" />
+            <UserPlus className="w-5 h-5 text-white" />
           </div>
 
           <div className="flex-1">
             <h3 className="text-white font-semibold text-lg mb-1">
-              Get 10% off your next booking!
+              Create an account for a better experience
             </h3>
             <p className="text-white/90 text-sm mb-3">
-              Create an account now and receive a 10% discount code for your next reservation. Plus, easily track all your bookings in one place.
+              Sign up to track all your bookings in one place, save your preferences, and enjoy faster checkout on future rentals.
             </p>
 
             <div className="flex gap-3">
-              <Button
-                variant="secondary"
-                size="sm"
+              <button
                 onClick={() => setShowAuthModal(true)}
-                className="bg-white text-primary-700 hover:bg-gray-100"
+                className="px-4 py-2 bg-white text-primary-700 hover:bg-gray-100 rounded-md font-medium text-sm transition-colors"
               >
                 Create Account
-              </Button>
-              <Button
-                variant="ghost"
-                size="sm"
+              </button>
+              <button
                 onClick={handleDismiss}
-                className="text-white hover:bg-white/10"
+                className="px-4 py-2 text-white hover:bg-white/10 rounded-md font-medium text-sm transition-colors"
               >
                 Continue as Guest
-              </Button>
+              </button>
             </div>
           </div>
         </div>
@@ -69,7 +64,7 @@ export const RegistrationCTABanner: React.FC<RegistrationCTABannerProps> = ({ on
       <AuthModal
         isOpen={showAuthModal}
         onClose={() => setShowAuthModal(false)}
-        initialMode="register"
+        initialMode="signup"
       />
     </>
   );
