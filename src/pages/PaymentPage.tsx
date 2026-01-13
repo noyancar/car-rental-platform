@@ -37,15 +37,10 @@ const PaymentPage: React.FC = () => {
       return;
     }
 
-    // Check if user is authenticated
-    if (!user) {
-      // Store the current URL to redirect back after auth
-      localStorage.setItem('authRedirectUrl', window.location.pathname);
-      setShowAuthModal(true);
-    } else {
-      loadBookingDetails();
-    }
-  }, [bookingId, user]);
+    // Load booking details regardless of user authentication
+    // (supports both registered users and guest checkouts)
+    loadBookingDetails();
+  }, [bookingId]);
 
   // Track funnel stage 5: Payment page
   useEffect(() => {
@@ -67,29 +62,29 @@ const PaymentPage: React.FC = () => {
   };
 
   const loadBookingDetails = async () => {
-    if (!user) return;
-
     try {
       setLoading(true);
 
-      // Fetch fresh profile data from database to check completeness
-      const { data: profile, error: profileError } = await supabase
-        .from('profiles')
-        .select('first_name, last_name, phone')
-        .eq('id', user.id)
-        .single();
+      // For registered users, check profile completeness
+      if (user) {
+        const { data: profile, error: profileError } = await supabase
+          .from('profiles')
+          .select('first_name, last_name, phone')
+          .eq('id', user.id)
+          .single();
 
-      if (profileError) {
-        console.error('Profile fetch error:', profileError);
-        toast.error('Failed to load profile');
-        return;
-      }
+        if (profileError) {
+          console.error('Profile fetch error:', profileError);
+          toast.error('Failed to load profile');
+          return;
+        }
 
-      // Check if user profile is complete (only essential fields)
-      if (!profile.first_name || !profile.last_name || !profile.phone) {
-        setShowProfileCompletion(true);
-        setLoading(false);
-        return;
+        // Check if user profile is complete (only essential fields)
+        if (!profile.first_name || !profile.last_name || !profile.phone) {
+          setShowProfileCompletion(true);
+          setLoading(false);
+          return;
+        }
       }
       
       // Fetch booking with extras, locations, and discount code
