@@ -302,6 +302,13 @@ const BookingPage: React.FC = () => {
       returnLocation
     });
 
+    // Check if user is authenticated - if not, show guest form FIRST
+    if (!user && !guestData) {
+      setShowGuestCheckout(true);
+      return;
+    }
+
+    // If user or guest data exists, proceed to extras
     setShowExtrasModal(true);
   };
   
@@ -314,23 +321,15 @@ const BookingPage: React.FC = () => {
     const pickupDeliveryFee = deliveryFees.pickupFee;
     const returnDeliveryFee = deliveryFees.returnFee;
     const totalDeliveryFee = deliveryFees.totalFee;
-    const grandTotal = carRentalSubtotal + totalDeliveryFee + extrasTotal;
 
     if (!currentCar) {
       toast.error('Car information not found');
       return;
     }
 
-    // If no user, check if guest checkout data is provided
-    if (!user && !guestData) {
-      // Show guest checkout form
-      setShowGuestCheckout(true);
-      setShowExtrasModal(false);
-      return;
-    }
-
     try {
       // Create booking - either for registered user or guest
+      // At this point, we either have user OR guestData (validated in handleSubmit)
       const booking = await createBooking({
         car_id: currentCar.id,
         user_id: user?.id || null, // null for guest bookings
