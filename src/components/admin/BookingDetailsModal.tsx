@@ -64,20 +64,22 @@ const BookingDetailsModal: React.FC<BookingDetailsModalProps> = ({ booking, onCl
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm">
               <div>
                 <span className="text-gray-600">Name:</span>
-                <p className="font-medium">{booking.first_name} {booking.last_name}</p>
+                <p className="font-medium">
+                  {booking.customer_name || `${booking.first_name || ''} ${booking.last_name || ''}`.trim() || 'Not provided'}
+                </p>
               </div>
               <div>
                 <span className="text-gray-600">Email:</span>
                 <p className="font-medium flex items-center gap-1">
                   <Mail size={14} />
-                  {booking.email || 'Not provided'}
+                  {booking.customer_email || booking.email || 'Not provided'}
                 </p>
               </div>
               <div>
                 <span className="text-gray-600">Phone:</span>
                 <p className="font-medium flex items-center gap-1">
                   <Phone size={14} />
-                  {booking.phone || 'Not provided'}
+                  {booking.customer_phone || booking.phone || 'Not provided'}
                 </p>
               </div>
             </div>

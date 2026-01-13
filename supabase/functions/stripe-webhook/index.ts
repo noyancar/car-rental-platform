@@ -160,6 +160,23 @@ serve(async (req) => {
               console.error('Error sending admin notification:', emailError);
               // Don't throw - email failure shouldn't fail the webhook
             }
+
+            // Send customer confirmation email
+            try {
+              console.log('Sending customer confirmation email...');
+              const customerEmailResult = await supabase.functions.invoke('send-customer-confirmation', {
+                body: { bookingId }
+              });
+
+              if (customerEmailResult.error) {
+                console.error('Failed to send customer confirmation:', customerEmailResult.error);
+              } else {
+                console.log('Customer confirmation email sent successfully');
+              }
+            } catch (customerEmailError) {
+              console.error('Error sending customer confirmation:', customerEmailError);
+              // Don't throw - email failure shouldn't fail the webhook
+            }
           }
         }
         break;

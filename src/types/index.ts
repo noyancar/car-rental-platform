@@ -79,6 +79,8 @@ export interface Booking {
   phone?: string;
   customer_email?: string;
   customer_name?: string;
+  customer_phone?: string;
+  guest_access_token?: string;
   stripe_customer_id?: string;
   // Pricing breakdown fields
   car_rental_subtotal?: number;

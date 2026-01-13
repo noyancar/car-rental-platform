@@ -303,7 +303,7 @@ Deno.serve(async (req) => {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          from: 'onboarding@resend.dev', // Resend test email
+          from: 'bookings@nynrentals.com', // Resend verified domain
           to: customerEmail,
           subject: `Booking Confirmation - #${booking.id.slice(0, 8).toUpperCase()}`,
           html: emailHtml,
