@@ -255,7 +255,7 @@ Deno.serve(async (req) => {
               </div>
               
               <div style="text-align: center; margin: 30px 0;">
-                <a href="${Deno.env.get('SITE_URL') || 'http://localhost:5173'}/bookings/${booking.id}" class="button">
+                <a href="${Deno.env.get('SITE_URL') || 'http://localhost:5173'}${booking.user_id ? `/bookings/${booking.id}` : `/bookings/guest?token=${booking.guest_access_token}`}" class="button">
                   View Booking Details
                 </a>
               </div>

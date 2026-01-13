@@ -24,13 +24,17 @@ interface BookingState {
 
   fetchUserBookings: () => Promise<void>;
   fetchBookingById: (id: string) => Promise<void>;
-  createBooking: (booking: Pick<Booking, 'car_id' | 'user_id' | 'start_date' | 'end_date' | 'total_price' | 'status' | 'pickup_time' | 'return_time'> & {
+  createBooking: (booking: Pick<Booking, 'car_id' | 'start_date' | 'end_date' | 'total_price' | 'status' | 'pickup_time' | 'return_time'> & {
+    user_id?: string | null;
     discount_code_id?: string;
     pickup_location?: string;
     return_location?: string;
     car_rental_subtotal?: number;
     pickup_delivery_fee?: number;
     return_delivery_fee?: number;
+    customer_email?: string;
+    customer_name?: string;
+    customer_phone?: string;
   }) => Promise<Booking | null>;
   updateBookingStatus: (id: string, status: Booking['status']) => Promise<void>;
   calculatePrice: (carId: string, startDate: string, endDate: string, pickupTime?: string, returnTime?: string, discountCodeId?: string) => Promise<number>;
@@ -205,7 +209,7 @@ export const useBookingStore = create<BookingState>((set) => ({
       // Make sure all booking fields are included - only use location IDs
       const bookingData = {
         car_id: booking.car_id,
-        user_id: booking.user_id,
+        user_id: booking.user_id || null, // Support guest bookings
         start_date: booking.start_date,
         end_date: booking.end_date,
         total_price: booking.total_price,
@@ -219,7 +223,11 @@ export const useBookingStore = create<BookingState>((set) => ({
         car_rental_subtotal: booking.car_rental_subtotal || 0,
         pickup_delivery_fee: booking.pickup_delivery_fee || 0,
         return_delivery_fee: booking.return_delivery_fee || 0,
-        expires_at: expiresAt
+        expires_at: expiresAt,
+        // Guest booking fields
+        customer_email: booking.customer_email || null,
+        customer_name: booking.customer_name || null,
+        customer_phone: booking.customer_phone || null,
       };
       
       // First insert the booking

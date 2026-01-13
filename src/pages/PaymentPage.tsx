@@ -9,6 +9,8 @@ import ProfileCompletionForm from '../components/payment/ProfileCompletionForm';
 import StripeProvider from '../components/payment/StripeProvider';
 import StripePaymentForm from '../components/payment/StripePaymentForm';
 import { PriceBreakdown } from '../components/booking/PriceBreakdown';
+import { RegistrationCTABanner } from '../components/payment/RegistrationCTABanner';
+import { PostPaymentRegistrationModal } from '../components/payment/PostPaymentRegistrationModal';
 import { useAuthStore } from '../stores/authStore';
 import { supabase } from '../lib/supabase';
 import { BookingWithExtras } from '../types';
@@ -27,6 +29,7 @@ const PaymentPage: React.FC = () => {
   const [paymentError, setPaymentError] = useState<string | null>(null);
   const [showAuthModal, setShowAuthModal] = useState(false);
   const [showProfileCompletion, setShowProfileCompletion] = useState(false);
+  const [showRegistrationModal, setShowRegistrationModal] = useState(false);
 
   useEffect(() => {
     if (!bookingId) {
@@ -194,9 +197,16 @@ const PaymentPage: React.FC = () => {
   };
 
   const handlePaymentSuccess = async () => {
-    // Webhook already updated the booking status, just show success and navigate
+    // Webhook already updated the booking status, just show success
     toast.success('Payment successful! Your booking is confirmed.');
-    navigate(`/bookings/${bookingId}`);
+
+    // If this is a guest booking, show registration modal
+    if (!user && booking && booking.user_id === null) {
+      setShowRegistrationModal(true);
+    } else {
+      // For registered users, navigate to booking details
+      navigate(`/bookings/${bookingId}`);
+    }
   };
 
   const handleProfileComplete = () => {
@@ -350,6 +360,11 @@ const PaymentPage: React.FC = () => {
                 </div>
               )}
 
+              {/* Registration CTA Banner - Show only for guest users */}
+              {!user && booking && booking.user_id === null && (
+                <RegistrationCTABanner />
+              )}
+
               {/* Security Notice */}
               <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 flex items-start mb-6">
                 <Shield className="w-5 h-5 text-blue-600 mr-3 mt-0.5" />
@@ -485,6 +500,20 @@ const PaymentPage: React.FC = () => {
           </div>
         </div>
       </div>
+
+      {/* Post-payment registration modal for guest users */}
+      {showRegistrationModal && booking && (
+        <PostPaymentRegistrationModal
+          isOpen={showRegistrationModal}
+          onClose={() => {
+            setShowRegistrationModal(false);
+            navigate(`/bookings/${bookingId}`);
+          }}
+          guestEmail={booking.customer_email || ''}
+          guestName={booking.customer_name || ''}
+          bookingId={bookingId!}
+        />
+      )}
     </div>
   );
 };

@@ -19,6 +19,7 @@ import { useSearchStore } from '../../stores/searchStore';
 import { useExtrasStore } from '../../stores/extrasStore';
 import ExtrasModal from '../../components/booking/ExtrasModal';
 import { PriceBreakdown } from '../../components/booking/PriceBreakdown';
+import { GuestCheckoutForm, type GuestCheckoutData } from '../../components/booking/GuestCheckoutForm';
 import { cn } from '../../lib/utils';
 import { tracker } from '../../lib/analytics/tracker';
 import { HOUR_OPTIONS, formatTimeToAMPM } from '../../utils/dateUtils';
@@ -76,6 +77,10 @@ const BookingPage: React.FC = () => {
   const [hasPersonalInsurance, setHasPersonalInsurance] = useState(false);
   const [insuranceCoversRentals, setInsuranceCoversRentals] = useState(false);
   const [showInsuranceError, setShowInsuranceError] = useState(false);
+
+  // Guest checkout states
+  const [showGuestCheckout, setShowGuestCheckout] = useState(false);
+  const [guestData, setGuestData] = useState<GuestCheckoutData | null>(null);
 
   // Price calculation result for displaying average_per_day
   const [priceCalculation, setPriceCalculation] = useState<PriceCalculationResult | null>(null);
@@ -310,43 +315,25 @@ const BookingPage: React.FC = () => {
     const returnDeliveryFee = deliveryFees.returnFee;
     const totalDeliveryFee = deliveryFees.totalFee;
     const grandTotal = carRentalSubtotal + totalDeliveryFee + extrasTotal;
-    
-    if (!currentCar || !user) {
-      // Store booking info and navigate to pending payment
-      const bookingData = {
-        car_id: currentCar?.id,
-        start_date: startDate,
-        end_date: endDate,
-        pickup_time: pickupTime,
-        return_time: returnTime,
-        pickup_location: pickupLocation,
-        return_location: returnLocation,
-        total_price: carRentalSubtotal + totalDeliveryFee,  // This is car + delivery only (after discount)
-        car_rental_subtotal: carRentalSubtotal,
-        pickup_delivery_fee: pickupDeliveryFee,
-        return_delivery_fee: returnDeliveryFee,
-        extras_total: extrasTotal,  // Store extras separately
-        grand_total: grandTotal,  // Total including extras
-        discount_code_id: appliedDiscount?.id || null,
-        extras: Array.from(selectedExtras.entries()).map(([id, { extra, quantity }]) => ({
-          id,
-          extra,
-          quantity
-        }))
-      };
-      
-      localStorage.setItem('pendingBooking', JSON.stringify(bookingData));
-      
-      // Navigate to payment page which will handle authentication
-      navigate('/payment/pending');
+
+    if (!currentCar) {
+      toast.error('Car information not found');
       return;
     }
-    
+
+    // If no user, check if guest checkout data is provided
+    if (!user && !guestData) {
+      // Show guest checkout form
+      setShowGuestCheckout(true);
+      setShowExtrasModal(false);
+      return;
+    }
+
     try {
-      // Create booking with authenticated user
+      // Create booking - either for registered user or guest
       const booking = await createBooking({
         car_id: currentCar.id,
-        user_id: user.id,
+        user_id: user?.id || null, // null for guest bookings
         start_date: startDate,
         end_date: endDate,
         pickup_location: pickupLocation,
@@ -358,13 +345,17 @@ const BookingPage: React.FC = () => {
         pickup_delivery_fee: pickupDeliveryFee,
         return_delivery_fee: returnDeliveryFee,
         discount_code_id: appliedDiscount?.id || undefined,
-        status: 'draft'
+        status: 'draft',
+        // Guest checkout fields (only if guest)
+        customer_email: !user ? guestData?.email : undefined,
+        customer_name: !user ? guestData?.name : undefined,
+        customer_phone: !user ? guestData?.phone : undefined,
       });
-      
+
       if (booking) {
         // Save extras
         await saveBookingExtras(booking.id);
-        
+
         // Navigate to payment page
         navigate(`/payment/${booking.id}`);
       }
@@ -374,6 +365,13 @@ const BookingPage: React.FC = () => {
       setShowExtrasModal(false);
       clearSelectedExtras();
     }
+  };
+
+  const handleGuestCheckoutSubmit = (data: GuestCheckoutData) => {
+    setGuestData(data);
+    setShowGuestCheckout(false);
+    // Re-open extras modal to continue
+    setShowExtrasModal(true);
   };
   
   const handleQuoteRequest = async (quoteData: QuoteRequestData) => {
@@ -1066,6 +1064,22 @@ const BookingPage: React.FC = () => {
       </div>
 
       {/* Modals */}
+      {showGuestCheckout && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 p-4">
+          <div className="bg-white rounded-xl shadow-lg max-w-md w-full p-6">
+            <h2 className="text-2xl font-bold mb-4">Complete Your Booking</h2>
+            <p className="text-gray-600 mb-6">
+              Provide your contact information to continue with your reservation.
+            </p>
+            <GuestCheckoutForm
+              onSubmit={handleGuestCheckoutSubmit}
+              onCancel={() => setShowGuestCheckout(false)}
+              isLoading={bookingLoading}
+            />
+          </div>
+        </div>
+      )}
+
       {showExtrasModal && (
         <ExtrasModal
           isOpen={showExtrasModal}
@@ -1086,7 +1100,7 @@ const BookingPage: React.FC = () => {
           } : null}
         />
       )}
-      
+
       {showQuoteModal && (
         <QuoteRequestModal
           isOpen={showQuoteModal}

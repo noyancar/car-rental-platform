@@ -26,6 +26,7 @@ import BlogPostPage from './pages/BlogPostPage';
 import BookingPage from './pages/bookings/BookingPage';
 import BookingsListPage from './pages/bookings/BookingsListPage';
 import BookingDetailsPage from './pages/bookings/BookingDetailsPage';
+import GuestBookingView from './pages/bookings/GuestBookingView';
 import PaymentPage from './pages/PaymentPage';
 import PaymentCallbackPage from './pages/PaymentCallbackPage';
 import PendingPaymentPage from './pages/PendingPaymentPage';
@@ -150,6 +151,9 @@ function App() {
             <Route path="/payment/pending" element={<PendingPaymentPage />} />
             <Route path="/payment/:bookingId" element={<PaymentPage />} />
             <Route path="/payment/callback" element={<PaymentCallbackPage />} />
+
+            {/* Guest booking view - Public route with magic link */}
+            <Route path="/bookings/guest" element={<GuestBookingView />} />
             
             {/* Protected routes */}
             <Route path="/bookings" element={
