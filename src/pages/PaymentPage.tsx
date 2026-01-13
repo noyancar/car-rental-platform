@@ -83,8 +83,23 @@ const PaymentPage: React.FC = () => {
           setLoading(false);
           return;
         }
+
+        // If user just registered, link guest booking to their account
+        const { data: currentBooking } = await supabase
+          .from('bookings')
+          .select('user_id, customer_email')
+          .eq('id', bookingId!)
+          .single();
+
+        if (currentBooking && currentBooking.user_id === null && currentBooking.customer_email === user.email) {
+          // This is a guest booking with matching email - link it to the user
+          await supabase
+            .from('bookings')
+            .update({ user_id: user.id })
+            .eq('id', bookingId!);
+        }
       }
-      
+
       // Fetch booking with extras, locations, and discount code
       const { data: bookingData, error: bookingError } = await supabase
         .from('bookings')
@@ -193,24 +208,22 @@ const PaymentPage: React.FC = () => {
     // Webhook already updated the booking status, just show success
     toast.success('Payment successful! Your booking is confirmed.');
 
-    // If this is a guest booking, redirect to guest booking view
-    if (!user && booking && booking.user_id === null) {
-      // Fetch guest token and redirect
-      const { data } = await supabase
-        .from('bookings')
-        .select('guest_access_token')
-        .eq('id', bookingId)
-        .single() as { data: { guest_access_token: string | null } | null };
+    // Re-fetch booking to get latest user_id (might have been linked during registration)
+    const { data: latestBooking } = await supabase
+      .from('bookings')
+      .select('user_id, guest_access_token')
+      .eq('id', bookingId)
+      .single() as { data: { user_id: string | null; guest_access_token: string | null } | null };
 
-      if (data?.guest_access_token) {
-        navigate(`/bookings/guest?token=${data.guest_access_token}`);
-      } else {
-        // Fallback to home if token not found
-        navigate('/');
-      }
-    } else {
-      // For registered users, navigate to booking details
+    // If booking is linked to a user (either originally or after registration), go to booking details
+    if (latestBooking?.user_id) {
       navigate(`/bookings/${bookingId}`);
+    } else if (latestBooking?.guest_access_token) {
+      // Guest booking - redirect to guest view
+      navigate(`/bookings/guest?token=${latestBooking.guest_access_token}`);
+    } else {
+      // Fallback to home
+      navigate('/');
     }
   };
 

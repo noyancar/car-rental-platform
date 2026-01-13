@@ -302,17 +302,23 @@ const BookingPage: React.FC = () => {
       returnLocation
     });
 
-    // Check if user is authenticated - if not, show guest form FIRST
-    if (!user && !guestData) {
-      setShowGuestCheckout(true);
-      return;
-    }
-
-    // If user or guest data exists, proceed to extras
+    // Always show extras modal first
     setShowExtrasModal(true);
   };
   
   const handleExtrasModalContinue = async (selectedExtras: Map<string, { extra: any; quantity: number }>) => {
+    // If user is not authenticated and no guest data, show guest form
+    if (!user && !guestData) {
+      setShowExtrasModal(false);
+      setShowGuestCheckout(true);
+      return;
+    }
+
+    // Proceed with booking creation
+    await createBookingAndNavigate(guestData);
+  };
+
+  const createBookingAndNavigate = async (guestInfo: GuestCheckoutData | null) => {
     // Calculate extras total
     const { extrasTotal } = calculateTotal();
 
@@ -329,7 +335,6 @@ const BookingPage: React.FC = () => {
 
     try {
       // Create booking - either for registered user or guest
-      // At this point, we either have user OR guestData (validated in handleSubmit)
       const booking = await createBooking({
         car_id: currentCar.id,
         user_id: user?.id || null, // null for guest bookings
@@ -346,9 +351,9 @@ const BookingPage: React.FC = () => {
         discount_code_id: appliedDiscount?.id || undefined,
         status: 'draft',
         // Guest checkout fields (only if guest)
-        customer_email: !user ? guestData?.email : undefined,
-        customer_name: !user ? guestData?.name : undefined,
-        customer_phone: !user ? guestData?.phone : undefined,
+        customer_email: !user ? guestInfo?.email : undefined,
+        customer_name: !user ? guestInfo?.name : undefined,
+        customer_phone: !user ? guestInfo?.phone : undefined,
       });
 
       if (booking) {
@@ -362,15 +367,16 @@ const BookingPage: React.FC = () => {
       toast.error((error as Error).message || 'Failed to create booking');
     } finally {
       setShowExtrasModal(false);
+      setShowGuestCheckout(false);
       clearSelectedExtras();
     }
   };
 
-  const handleGuestCheckoutSubmit = (data: GuestCheckoutData) => {
+  const handleGuestCheckoutSubmit = async (data: GuestCheckoutData) => {
     setGuestData(data);
     setShowGuestCheckout(false);
-    // Re-open extras modal to continue
-    setShowExtrasModal(true);
+    // Create booking with the guest data directly (don't rely on state)
+    await createBookingAndNavigate(data);
   };
   
   const handleQuoteRequest = async (quoteData: QuoteRequestData) => {
