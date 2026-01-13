@@ -10,7 +10,6 @@ import StripeProvider from '../components/payment/StripeProvider';
 import StripePaymentForm from '../components/payment/StripePaymentForm';
 import { PriceBreakdown } from '../components/booking/PriceBreakdown';
 import { RegistrationCTABanner } from '../components/payment/RegistrationCTABanner';
-import { PostPaymentRegistrationModal } from '../components/payment/PostPaymentRegistrationModal';
 import { useAuthStore } from '../stores/authStore';
 import { supabase } from '../lib/supabase';
 import { BookingWithExtras } from '../types';
@@ -29,7 +28,6 @@ const PaymentPage: React.FC = () => {
   const [paymentError, setPaymentError] = useState<string | null>(null);
   const [showAuthModal, setShowAuthModal] = useState(false);
   const [showProfileCompletion, setShowProfileCompletion] = useState(false);
-  const [showRegistrationModal, setShowRegistrationModal] = useState(false);
 
   useEffect(() => {
     if (!bookingId) {
@@ -195,9 +193,21 @@ const PaymentPage: React.FC = () => {
     // Webhook already updated the booking status, just show success
     toast.success('Payment successful! Your booking is confirmed.');
 
-    // If this is a guest booking, show registration modal
+    // If this is a guest booking, redirect to guest booking view
     if (!user && booking && booking.user_id === null) {
-      setShowRegistrationModal(true);
+      // Fetch guest token and redirect
+      const { data } = await supabase
+        .from('bookings')
+        .select('guest_access_token')
+        .eq('id', bookingId)
+        .single() as { data: { guest_access_token: string | null } | null };
+
+      if (data?.guest_access_token) {
+        navigate(`/bookings/guest?token=${data.guest_access_token}`);
+      } else {
+        // Fallback to home if token not found
+        navigate('/');
+      }
     } else {
       // For registered users, navigate to booking details
       navigate(`/bookings/${bookingId}`);
@@ -454,20 +464,6 @@ const PaymentPage: React.FC = () => {
           </div>
         </div>
       </div>
-
-      {/* Post-payment registration modal for guest users */}
-      {showRegistrationModal && booking && (
-        <PostPaymentRegistrationModal
-          isOpen={showRegistrationModal}
-          onClose={() => {
-            setShowRegistrationModal(false);
-            navigate(`/bookings/${bookingId}`);
-          }}
-          guestEmail={booking.customer_email || ''}
-          guestName={booking.customer_name || ''}
-          bookingId={bookingId!}
-        />
-      )}
     </div>
   );
 };
