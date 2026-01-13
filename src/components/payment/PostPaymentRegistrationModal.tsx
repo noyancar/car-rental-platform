@@ -88,7 +88,7 @@ export const PostPaymentRegistrationModal: React.FC<PostPaymentRegistrationModal
           discount_percentage: 10,
           max_uses: 1,
           current_uses: 0,
-          is_active: true,
+          active: true,
           expires_at: expiryDate.toISOString(),
           description: 'Welcome bonus - 10% off your next booking',
         });
