@@ -12,8 +12,38 @@ interface GuestCheckoutFormProps {
 export interface GuestCheckoutData {
   email: string;
   name: string;
-  phone?: string;
+  phone: string;
 }
+
+type FormErrors = {
+  email?: string;
+  name?: string;
+  phone?: string;
+};
+
+// Constants outside component - good practice, not over-engineering
+const VALIDATION_RULES = {
+  PHONE_MIN_DIGITS: 10,
+  NAME_MIN_LENGTH: 2,
+} as const;
+
+const ERROR_MESSAGES = {
+  EMAIL_REQUIRED: 'Email is required',
+  EMAIL_INVALID: 'Please enter a valid email address',
+  NAME_REQUIRED: 'Full name is required',
+  NAME_TOO_SHORT: 'Please enter your full name',
+  PHONE_REQUIRED: 'Phone number is required',
+  PHONE_INVALID: 'Please enter a valid phone number (at least 10 digits)',
+} as const;
+
+const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+const validateEmail = (email: string): boolean => EMAIL_REGEX.test(email);
+
+const validatePhone = (phone: string): boolean => {
+  const digitsOnly = phone.replace(/\D/g, '');
+  return digitsOnly.length >= VALIDATION_RULES.PHONE_MIN_DIGITS;
+};
 
 export const GuestCheckoutForm: React.FC<GuestCheckoutFormProps> = ({
   onSubmit,
@@ -23,30 +53,35 @@ export const GuestCheckoutForm: React.FC<GuestCheckoutFormProps> = ({
   const [email, setEmail] = useState('');
   const [name, setName] = useState('');
   const [phone, setPhone] = useState('');
-  const [errors, setErrors] = useState<{ email?: string; name?: string }>({});
+  const [errors, setErrors] = useState<FormErrors>({});
 
-  const validateEmail = (email: string): boolean => {
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    return emailRegex.test(email);
+  const clearFieldError = (field: keyof FormErrors) => {
+    if (errors[field]) {
+      setErrors((prev) => ({ ...prev, [field]: undefined }));
+    }
   };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
 
-    const newErrors: { email?: string; name?: string } = {};
+    const newErrors: FormErrors = {};
 
-    // Validate email
     if (!email.trim()) {
-      newErrors.email = 'Email is required';
+      newErrors.email = ERROR_MESSAGES.EMAIL_REQUIRED;
     } else if (!validateEmail(email)) {
-      newErrors.email = 'Please enter a valid email address';
+      newErrors.email = ERROR_MESSAGES.EMAIL_INVALID;
     }
 
-    // Validate name
     if (!name.trim()) {
-      newErrors.name = 'Full name is required';
-    } else if (name.trim().length < 2) {
-      newErrors.name = 'Please enter your full name';
+      newErrors.name = ERROR_MESSAGES.NAME_REQUIRED;
+    } else if (name.trim().length < VALIDATION_RULES.NAME_MIN_LENGTH) {
+      newErrors.name = ERROR_MESSAGES.NAME_TOO_SHORT;
+    }
+
+    if (!phone.trim()) {
+      newErrors.phone = ERROR_MESSAGES.PHONE_REQUIRED;
+    } else if (!validatePhone(phone)) {
+      newErrors.phone = ERROR_MESSAGES.PHONE_INVALID;
     }
 
     if (Object.keys(newErrors).length > 0) {
@@ -54,12 +89,11 @@ export const GuestCheckoutForm: React.FC<GuestCheckoutFormProps> = ({
       return;
     }
 
-    // Clear errors and submit
     setErrors({});
     onSubmit({
       email: email.trim(),
       name: name.trim(),
-      phone: phone.trim() || undefined,
+      phone: phone.trim(),
     });
   };
 
@@ -77,7 +111,7 @@ export const GuestCheckoutForm: React.FC<GuestCheckoutFormProps> = ({
           value={email}
           onChange={(e) => {
             setEmail(e.target.value);
-            if (errors.email) setErrors({ ...errors, email: undefined });
+            clearFieldError('email');
           }}
           placeholder="your@email.com"
           leftIcon={<Mail size={18} />}
@@ -92,7 +126,7 @@ export const GuestCheckoutForm: React.FC<GuestCheckoutFormProps> = ({
           value={name}
           onChange={(e) => {
             setName(e.target.value);
-            if (errors.name) setErrors({ ...errors, name: undefined });
+            clearFieldError('name');
           }}
           placeholder="John Doe"
           leftIcon={<User size={18} />}
@@ -103,11 +137,16 @@ export const GuestCheckoutForm: React.FC<GuestCheckoutFormProps> = ({
 
         <Input
           type="tel"
-          label="Phone Number (Optional)"
+          label="Phone Number"
           value={phone}
-          onChange={(e) => setPhone(e.target.value)}
+          onChange={(e) => {
+            setPhone(e.target.value);
+            clearFieldError('phone');
+          }}
           placeholder="+1 (555) 123-4567"
           leftIcon={<Phone size={18} />}
+          error={errors.phone}
+          required
           disabled={isLoading}
         />
 
