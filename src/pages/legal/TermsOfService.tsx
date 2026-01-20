@@ -173,7 +173,25 @@ const TermsOfService: React.FC = () => {
 
             <section>
               <h2 className="text-2xl font-semibold text-primary-800 mb-3 mt-8">
-                13. Amendments
+                13. Privacy and Contact Information
+              </h2>
+              <p>
+                By using our Site or Services, whether as a registered user or a guest, you acknowledge
+                and consent to the collection, processing, storage, and use of your contact information
+                (including name, email address, phone number, and mailing address) as described in our{' '}
+                <a href="/privacy" className="text-primary-600 hover:text-primary-800 underline">
+                  Privacy Policy
+                </a>
+                . This includes our right to contact you via email, phone, SMS, or other communication
+                channels regarding your reservations, service updates, and promotional offers. You may
+                opt out of promotional communications at any time, but will continue to receive essential
+                service-related communications.
+              </p>
+            </section>
+
+            <section>
+              <h2 className="text-2xl font-semibold text-primary-800 mb-3 mt-8">
+                14. Amendments
               </h2>
               <p>
                 NYN Rentals reserves the right to modify these Terms at any time. Updates will be posted on
@@ -184,7 +202,7 @@ const TermsOfService: React.FC = () => {
 
             <section>
               <h2 className="text-2xl font-semibold text-primary-800 mb-3 mt-8">
-                14. Contact
+                15. Contact
               </h2>
               <p>
                 Questions regarding these Terms may be directed to: NYN Rentals, nynrentals@gmail.com,

@@ -35,10 +35,30 @@ const PrivacyPolicy: React.FC = () => {
               <h2 className="text-2xl font-semibold text-primary-800 mb-3 mt-8">
                 2. Information We Collect
               </h2>
-              <p>
-                We may collect personal information (such as name, email, driver's license, passport, and
-                payment info), rental information, technical data (IP address, cookies), and communication data.
+              <p className="mb-3">
+                We collect information from all users of our Services, including both registered account
+                holders and guest users who make reservations without creating an account. The types of
+                information we may collect include:
               </p>
+              <ul className="list-disc list-inside space-y-2 ml-4">
+                <li>
+                  <strong>Contact Information:</strong> Name, email address, phone number, and mailing address
+                </li>
+                <li>
+                  <strong>Identity Information:</strong> Driver's license details, passport information (for
+                  international customers), and date of birth
+                </li>
+                <li>
+                  <strong>Payment Information:</strong> Credit card details and billing address (processed
+                  securely through Stripe)
+                </li>
+                <li>
+                  <strong>Rental Information:</strong> Reservation details, rental history, and vehicle preferences
+                </li>
+                <li>
+                  <strong>Technical Data:</strong> IP address, browser type, device information, and cookies
+                </li>
+              </ul>
             </section>
 
             <section>
@@ -55,9 +75,23 @@ const PrivacyPolicy: React.FC = () => {
               <h2 className="text-2xl font-semibold text-primary-800 mb-3 mt-8">
                 4. Use of Information
               </h2>
-              <p>
-                We use your data to process reservations and payments, communicate with you, improve our
-                services, comply with laws, and send promotional updates with your consent.
+              <p className="mb-3">We use your information for the following purposes:</p>
+              <ul className="list-disc list-inside space-y-2 ml-4">
+                <li>Processing and managing your reservations and payments</li>
+                <li>Providing customer support and responding to inquiries</li>
+                <li>
+                  <strong>Communicating with you</strong> via email, phone, SMS, or other channels regarding
+                  booking confirmations, rental updates, service announcements, and important notices
+                </li>
+                <li>Sending promotional offers and marketing communications (with your consent)</li>
+                <li>Improving our Services and user experience</li>
+                <li>Complying with legal obligations and protecting our rights</li>
+              </ul>
+              <p className="mt-3">
+                <strong>Consent to Communication:</strong> By providing your contact information and using
+                our Services, you expressly consent to receive communications from us related to your
+                reservations and our Services. You may opt out of promotional communications at any time
+                by contacting us at nynrentals@gmail.com.
               </p>
             </section>
 

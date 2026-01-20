@@ -95,6 +95,10 @@ export interface Booking {
   stripe_refund_id?: string;
   // Extras relation
   booking_extras?: BookingExtra[];
+  // SMS consent fields
+  sms_consent?: boolean;
+  sms_consent_at?: string;
+  sms_consent_text?: string;
 }
 
 export type DiscountCode = {

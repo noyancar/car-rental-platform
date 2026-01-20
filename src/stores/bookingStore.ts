@@ -35,6 +35,8 @@ interface BookingState {
     customer_email?: string;
     customer_name?: string;
     customer_phone?: string;
+    sms_consent?: boolean;
+    sms_consent_text?: string;
   }) => Promise<Booking | null>;
   updateBookingStatus: (id: string, status: Booking['status']) => Promise<void>;
   calculatePrice: (carId: string, startDate: string, endDate: string, pickupTime?: string, returnTime?: string, discountCodeId?: string) => Promise<number>;
@@ -228,6 +230,9 @@ export const useBookingStore = create<BookingState>((set) => ({
         customer_email: booking.customer_email || null,
         customer_name: booking.customer_name || null,
         customer_phone: booking.customer_phone || null,
+        // SMS consent fields (required for Twilio A2P 10DLC compliance)
+        sms_consent: booking.sms_consent || false,
+        sms_consent_text: booking.sms_consent_text || null,
       };
       
       // First insert the booking
