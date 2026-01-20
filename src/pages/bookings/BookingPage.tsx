@@ -78,6 +78,13 @@ const BookingPage: React.FC = () => {
   const [insuranceCoversRentals, setInsuranceCoversRentals] = useState(false);
   const [showInsuranceError, setShowInsuranceError] = useState(false);
 
+  // SMS consent state
+  const [smsConsent, setSmsConsent] = useState(false);
+  const [showSmsConsentError, setShowSmsConsentError] = useState(false);
+
+  // SMS consent text for Twilio A2P 10DLC compliance
+  const SMS_CONSENT_TEXT = "I agree to receive SMS notifications about my booking, including confirmations, reminders, and important updates from NYN Rentals.";
+
   // Guest checkout states
   const [showGuestCheckout, setShowGuestCheckout] = useState(false);
   const [guestData, setGuestData] = useState<GuestCheckoutData | null>(null);
@@ -288,6 +295,18 @@ const BookingPage: React.FC = () => {
       return;
     }
 
+    // Validate SMS consent
+    if (!smsConsent) {
+      setShowSmsConsentError(true);
+      toast.error('Please accept SMS notifications to proceed with your booking');
+      // Scroll to SMS consent section
+      const smsSection = document.getElementById('sms-consent-section');
+      if (smsSection) {
+        smsSection.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }
+      return;
+    }
+
     if (!validateDates() || !isAvailable || !currentCar) {
       return;
     }
@@ -354,6 +373,9 @@ const BookingPage: React.FC = () => {
         customer_email: !user ? guestInfo?.email : undefined,
         customer_name: !user ? guestInfo?.name : undefined,
         customer_phone: !user ? guestInfo?.phone : undefined,
+        // SMS consent fields (required for Twilio A2P 10DLC compliance)
+        sms_consent: smsConsent,
+        sms_consent_text: SMS_CONSENT_TEXT,
       });
 
       if (booking) {
@@ -852,6 +874,77 @@ const BookingPage: React.FC = () => {
                   </div>
                 </div>
 
+                {/* SMS Consent Section */}
+                <div id="sms-consent-section" className="p-6 border-b">
+                  <h2 className="text-lg font-semibold mb-4 flex items-center">
+                    <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z" />
+                    </svg>
+                    SMS Notifications
+                  </h2>
+
+                  <div className={cn(
+                    "flex items-start p-4 rounded-lg border-2 transition-colors",
+                    showSmsConsentError && !smsConsent
+                      ? "border-red-500 bg-red-50"
+                      : "border-gray-200 hover:border-gray-300"
+                  )}>
+                    <input
+                      type="checkbox"
+                      id="smsConsent"
+                      checked={smsConsent}
+                      onChange={(e) => {
+                        setSmsConsent(e.target.checked);
+                        setShowSmsConsentError(false);
+                      }}
+                      className={cn(
+                        "h-5 w-5 rounded mt-0.5 flex-shrink-0",
+                        showSmsConsentError && !smsConsent
+                          ? "text-red-600 focus:ring-red-500 border-red-500"
+                          : "text-primary-600 focus:ring-primary-500 border-gray-300"
+                      )}
+                    />
+                    <label htmlFor="smsConsent" className="ml-3 cursor-pointer">
+                      <span className={cn(
+                        "font-medium",
+                        showSmsConsentError && !smsConsent ? "text-red-900" : "text-gray-900"
+                      )}>
+                        I agree to receive SMS notifications
+                      </span>
+                      <p className={cn(
+                        "text-sm mt-1",
+                        showSmsConsentError && !smsConsent ? "text-red-700" : "text-gray-600"
+                      )}>
+                        {SMS_CONSENT_TEXT}
+                      </p>
+                      <p className="text-xs mt-2 text-gray-500">
+                        See our{' '}
+                        <Link to="/privacy" className="text-primary-600 hover:underline" target="_blank">
+                          Privacy Policy
+                        </Link>
+                        {' '}and{' '}
+                        <Link to="/terms" className="text-primary-600 hover:underline" target="_blank">
+                          Terms of Service
+                        </Link>
+                        {' '}for more details.
+                      </p>
+                    </label>
+                  </div>
+
+                  {/* Error Message */}
+                  {showSmsConsentError && !smsConsent && (
+                    <div className="flex items-start p-4 mt-4 bg-red-50 border border-red-200 rounded-lg">
+                      <AlertCircle size={20} className="text-red-600 mr-2 flex-shrink-0 mt-0.5" />
+                      <div className="text-sm text-red-700">
+                        <p className="font-medium">SMS consent required</p>
+                        <p className="mt-1">
+                          You must accept SMS notifications to proceed with your booking. This allows us to send you important updates about your reservation.
+                        </p>
+                      </div>
+                    </div>
+                  )}
+                </div>
+
                 {/* Submit Button */}
                 <div className="p-6">
                   <Button
@@ -868,7 +961,8 @@ const BookingPage: React.FC = () => {
                       isEditingDates ||
                       isEditingLocations ||
                       !hasPersonalInsurance ||
-                      !insuranceCoversRentals
+                      !insuranceCoversRentals ||
+                      !smsConsent
                     }
                   >
                     {deliveryFees.requiresQuote ? 'Request Quote' : 'Complete Booking'}
