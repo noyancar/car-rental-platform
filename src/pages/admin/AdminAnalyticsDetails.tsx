@@ -17,6 +17,9 @@ interface SessionData {
   utm_campaign: string | null;
   landing_page: string;
   country: string;
+  ip_address: string | null;
+  city: string | null;
+  region: string | null;
 }
 
 interface ActivityEvent {
@@ -88,7 +91,7 @@ const AdminAnalyticsDetails: React.FC = () => {
 
       let query = supabase
         .from('analytics_sessions' as any)
-        .select('session_id, first_seen, last_seen, device_type, utm_source, utm_campaign, landing_page, country')
+        .select('session_id, first_seen, last_seen, device_type, utm_source, utm_campaign, landing_page, country, ip_address, city, region')
         .order('first_seen', { ascending: false })
         .limit(50);
 
@@ -109,7 +112,7 @@ const AdminAnalyticsDetails: React.FC = () => {
       }
 
       const { data } = await query;
-      setSessions(data || []);
+      setSessions((data as unknown as SessionData[]) || []);
     } catch (error) {
       console.error('Error loading sessions:', error);
     } finally {
@@ -442,7 +445,7 @@ const AdminAnalyticsDetails: React.FC = () => {
                       )}
                     </div>
 
-                    <div className="flex-1 grid grid-cols-6 gap-4">
+                    <div className="flex-1 grid grid-cols-8 gap-4">
                       <div>
                         <p className="text-xs text-gray-500">Session ID</p>
                         <p className="text-sm font-mono">{session.session_id.substring(0, 8)}...</p>
@@ -450,6 +453,18 @@ const AdminAnalyticsDetails: React.FC = () => {
                       <div>
                         <p className="text-xs text-gray-500">First Seen</p>
                         <p className="text-sm">{formatTimestamp(session.first_seen)}</p>
+                      </div>
+                      <div>
+                        <p className="text-xs text-gray-500">IP Address</p>
+                        <p className="text-sm font-mono text-blue-600">{session.ip_address || 'N/A'}</p>
+                      </div>
+                      <div>
+                        <p className="text-xs text-gray-500">Location</p>
+                        <p className="text-sm">
+                          {session.city && session.city !== 'Unknown'
+                            ? `${session.city}${session.region ? `, ${session.region}` : ''}`
+                            : session.country || 'Unknown'}
+                        </p>
                       </div>
                       <div>
                         <p className="text-xs text-gray-500">Device</p>

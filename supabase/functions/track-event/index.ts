@@ -108,6 +108,13 @@ serve(async (req) => {
       `Processing event: ${eventType} for session: ${sessionId.substring(0, 8)}...`
     );
 
+    // Get geolocation for session init (only fetch for new sessions to save API calls)
+    let geoLocation = null;
+    if (eventType === "init_session") {
+      geoLocation = await getGeoLocation(ipAddress);
+      console.log(`Geolocation for ${ipAddress}:`, geoLocation);
+    }
+
     // Route to appropriate handler based on eventType
     let result;
     switch (eventType) {
@@ -118,7 +125,8 @@ serve(async (req) => {
           userId,
           data,
           ipAddress,
-          deviceInfo
+          deviceInfo,
+          geoLocation
         );
         break;
       case "page_view":
@@ -188,6 +196,57 @@ serve(async (req) => {
 });
 
 // ================================================
+// Helper: Get Geolocation from IP
+// ================================================
+interface GeoLocation {
+  country: string;
+  countryCode: string;
+  city: string;
+  region: string;
+}
+
+async function getGeoLocation(ipAddress: string): Promise<GeoLocation | null> {
+  // Skip for localhost/private IPs
+  if (
+    ipAddress === "unknown" ||
+    ipAddress === "127.0.0.1" ||
+    ipAddress.startsWith("192.168.") ||
+    ipAddress.startsWith("10.") ||
+    ipAddress.startsWith("172.")
+  ) {
+    return null;
+  }
+
+  try {
+    // Using ip-api.com (free, no API key required, 45 requests/minute limit)
+    const response = await fetch(
+      `http://ip-api.com/json/${ipAddress}?fields=status,country,countryCode,region,regionName,city`
+    );
+
+    if (!response.ok) {
+      console.error("Geolocation API error:", response.status);
+      return null;
+    }
+
+    const data = await response.json();
+
+    if (data.status === "success") {
+      return {
+        country: data.country || "Unknown",
+        countryCode: data.countryCode || "",
+        city: data.city || "Unknown",
+        region: data.regionName || "",
+      };
+    }
+
+    return null;
+  } catch (error) {
+    console.error("Geolocation fetch error:", error);
+    return null;
+  }
+}
+
+// ================================================
 // Helper: Parse User-Agent
 // ================================================
 function parseUserAgent(ua: string) {
@@ -246,7 +305,8 @@ async function handleSessionInit(
   userId: string | null,
   data: any,
   ipAddress: string,
-  deviceInfo: any
+  deviceInfo: any,
+  geoLocation: GeoLocation | null
 ) {
   // Check if session exists
   const { data: existingSession } = await supabase
@@ -268,7 +328,7 @@ async function handleSessionInit(
     if (error) throw error;
     return { action: "updated", sessionId };
   } else {
-    // Create new session
+    // Create new session with IP and geolocation
     const { error } = await supabase
       .from("analytics_sessions")
       .insert({
@@ -282,7 +342,13 @@ async function handleSessionInit(
         screen_resolution: data.screenResolution,
         language: data.language,
         timezone: data.timezone,
-        country: data.country || "Unknown",
+        // IP and Geolocation data
+        ip_address: ipAddress,
+        country: geoLocation?.country || data.country || "Unknown",
+        country_code: geoLocation?.countryCode || "",
+        city: geoLocation?.city || "",
+        region: geoLocation?.region || "",
+        // UTM parameters
         utm_source: data.utmSource,
         utm_medium: data.utmMedium,
         utm_campaign: data.utmCampaign,
@@ -293,7 +359,7 @@ async function handleSessionInit(
       });
 
     if (error) throw error;
-    return { action: "created", sessionId };
+    return { action: "created", sessionId, ipAddress, geoLocation };
   }
 }
 
