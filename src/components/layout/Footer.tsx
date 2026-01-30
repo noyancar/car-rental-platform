@@ -50,14 +50,14 @@ export const Footer: React.FC = () => {
               </li>
               <li className="flex items-center justify-center md:justify-start">
                 <Phone className="h-5 w-5 mr-2 text-secondary-300 flex-shrink-0" />
-                <a href="tel:+11234567890" className="text-secondary-300 hover:text-white transition-colors">
-                  808-909-1272
+                <a href="tel:+18089091272" className="text-secondary-300 hover:text-white transition-colors">
+                  +1 808-909-1272
                 </a>
               </li>
               <li className="flex items-center justify-center md:justify-start">
                 <Mail className="h-5 w-5 mr-2 text-secondary-300 flex-shrink-0" />
-                <a href="mailto:info@noyancar.com" className="text-secondary-300 hover:text-white transition-colors">
-                nynrentals@gmail.com
+                <a href="mailto:info@nynrentals.com" className="text-secondary-300 hover:text-white transition-colors">
+                info@nynrentals.com
                 </a>
               </li>
             </ul>

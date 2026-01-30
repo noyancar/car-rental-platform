@@ -280,12 +280,12 @@ Deno.serve(async (req) => {
                 <p><strong>Need to modify or cancel your booking?</strong></p>
                 <p>Please contact us at least 24 hours before your pick-up time.</p>
                 <p style="margin-top: 20px;">
-                  <a href="mailto:support@carrentalcompany.com">support@carrentalcompany.com</a> | 
-                  <a href="tel:+1234567890">+1 (234) 567-890</a>
+                  <a href="mailto:info@nynrentals.com">info@nynrentals.com</a> | 
+                  <a href="tel:+18089091272">+1 (808) 909-1272</a>
                 </p>
                 <p style="margin-top: 30px; font-size: 11px; color: #9ca3af;">
                   This is an automated confirmation email. Please do not reply directly to this message.<br>
-                  © 2025 Car Rental Company. All rights reserved.
+                  © 2025 NYN Rentals. All rights reserved.
                 </p>
               </div>
             </div>
