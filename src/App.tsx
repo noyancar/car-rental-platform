@@ -34,6 +34,7 @@ import HowItWorksPage from './pages/HowItWorksPage';
 import DealsPage from './pages/DealsPage';
 import ProfilePage from './pages/ProfilePage';
 import QRStatsPage from './pages/QRStatsPage';
+import TwilioVerificationPage from './pages/TwilioVerificationPage';
 
 // Legal pages
 import PrivacyPolicy from './pages/legal/PrivacyPolicy';
@@ -141,6 +142,7 @@ function App() {
             <Route path="/how-it-works" element={<HowItWorksPage />} />
             <Route path="/deals" element={<DealsPage />} />
             <Route path="/qr-stats" element={<QRStatsPage />} />
+            <Route path="/twilio-verification-page-for-support" element={<TwilioVerificationPage />} />
 
             {/* Legal routes */}
             <Route path="/privacy" element={<PrivacyPolicy />} />
