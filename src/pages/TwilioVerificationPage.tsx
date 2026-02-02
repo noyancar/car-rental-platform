@@ -1,4 +1,5 @@
 import { Helmet } from 'react-helmet-async';
+import logo from '../assets/images/logo.png';
 
 const TwilioVerificationPage = () => {
   return (
@@ -10,6 +11,7 @@ const TwilioVerificationPage = () => {
       <div className="min-h-screen bg-white flex items-center justify-center px-4 py-16">
         <div className="max-w-2xl w-full">
           <div className="text-center mb-8">
+            <img src={logo} alt="NYN Rentals Logo" className="h-16 mx-auto mb-4" />
             <h1 className="text-3xl font-bold text-gray-900 mb-2">NYN Rentals</h1>
             <p className="text-lg text-gray-500">Twilio Account Verification</p>
           </div>
