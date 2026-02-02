@@ -18,7 +18,7 @@ const TwilioVerificationPage = () => {
             <div>
               <h2 className="text-xl font-semibold text-gray-900 mb-3">Business Information</h2>
               <ul className="space-y-2 text-gray-700">
-                <li><span className="font-medium">Company Name:</span> NYN Rentals LLC</li>
+                <li><span className="font-medium">Company Name:</span> Noyan Trade LLC dba NYN Rentals</li>
                 <li><span className="font-medium">Website:</span> <a href="https://nynrentals.com" className="text-blue-600 hover:underline">https://nynrentals.com</a></li>
                 <li><span className="font-medium">Industry:</span> Car Rental Services</li>
               </ul>
