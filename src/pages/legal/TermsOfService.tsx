@@ -183,9 +183,7 @@ const TermsOfService: React.FC = () => {
                   Privacy Policy
                 </a>
                 . This includes our right to contact you via email, phone, SMS, or other communication
-                channels regarding your reservations, service updates, and promotional offers. You may
-                opt out of promotional communications at any time, but will continue to receive essential
-                service-related communications.
+                channels regarding your reservations andservice updates.
               </p>
             </section>
 

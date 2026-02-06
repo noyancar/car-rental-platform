@@ -83,15 +83,13 @@ const PrivacyPolicy: React.FC = () => {
                   <strong>Communicating with you</strong> via email, phone, SMS, or other channels regarding
                   booking confirmations, rental updates, service announcements, and important notices
                 </li>
-                <li>Sending promotional offers and marketing communications (with your consent)</li>
                 <li>Improving our Services and user experience</li>
                 <li>Complying with legal obligations and protecting our rights</li>
               </ul>
               <p className="mt-3">
                 <strong>Consent to Communication:</strong> By providing your contact information and using
                 our Services, you expressly consent to receive communications from us related to your
-                reservations and our Services. You may opt out of promotional communications at any time
-                by contacting us at nynrentals@gmail.com.
+                reservations and our Services.
               </p>
             </section>
 
