@@ -16,7 +16,7 @@ Deno.serve(async (req) => {
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!
     const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
     const resendApiKey = Deno.env.get('RESEND_API_KEY')
-    const adminEmail = 'nynrentals@gmail.com'
+    const adminEmails = ['nynrentals@gmail.com', 'alper_5li@hotmail.com', 'mithatis@gmail.com']
     
     const supabase = createClient(supabaseUrl, supabaseServiceKey)
     
@@ -219,7 +219,7 @@ Deno.serve(async (req) => {
         },
         body: JSON.stringify({
           from: 'bookings@nynrentals.com', // Resend verified domain
-          to: adminEmail,
+          to: adminEmails,
           subject: `New Booking - ${customerName}`,
           html: emailHtml,
         }),
@@ -240,14 +240,14 @@ Deno.serve(async (req) => {
       )
     } else {
       // If Resend is not configured, just log (for development)
-      console.log('Email would be sent to:', adminEmail)
+      console.log('Email would be sent to:', adminEmails)
       console.log('Booking details:', booking)
       
       return new Response(
         JSON.stringify({ 
           success: true, 
           message: 'Email notification logged (Resend not configured)',
-          adminEmail: adminEmail,
+          adminEmails: adminEmails,
           bookingId: booking.id
         }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
